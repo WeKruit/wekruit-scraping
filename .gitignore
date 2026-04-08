@@ -1,0 +1,6 @@
+# Output data (large, regeneratable)
+devpost/output/
+github/output/
+__pycache__/
+*.pyc
+.DS_Store
