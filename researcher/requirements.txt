@@ -1,0 +1,4 @@
+pyalex>=0.18
+habanero>=1.2
+requests>=2.32
+pytest>=9.0

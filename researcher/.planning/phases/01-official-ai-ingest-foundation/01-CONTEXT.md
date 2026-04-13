@@ -1,123 +1,99 @@
 # Phase 1 Context: Official AI Ingest Foundation
 
-## Title
-Phase 1: Official AI Ingest Foundation
+## Goal
 
-## Objective
-Deliver a replayable, AI/ML-first ingest backbone that pulls paper and author records from official scholarly sources, preserves raw source-native payloads, and records enough run metadata to support audit, replay, and incremental reruns.
+Deliver a replayable AI/ML ingest path from official scholarly sources with source-native raw
+staging and source-aware run metadata. Phase 1 stops at ingest foundation; it does not normalize
+into the canonical researcher profile yet.
 
-## Phase Boundary
-This phase is only about ingest foundation.
+## Sources Read
 
-Included:
-- Source config surface for official scholarly ingest
-- Source registry and source-aware run metadata
-- Raw staging contract for papers, authors, and source responses
-- OpenAlex-led paper/author ingest
-- AI/ML query presets for concept, venue, and keyword entrypoints
-- Crossref metadata backfill for DOI-enriched paper metadata
-- Replay and incremental controls for reruns
+- `.planning/PROJECT.md`
+- `.planning/REQUIREMENTS.md`
+- `.planning/ROADMAP.md`
+- `.planning/research/SUMMARY.md`
+- `reference/p9-research-pipeline/README.md`
+- `reference/p9-research-pipeline/scripts/s1_openalex_fetch.py`
+- `reference/p9-research-pipeline/schemas/unified_schema.py`
 
-Explicitly excluded:
-- Canonical schema and merge logic
-- Identity resolution across sources
-- ORCID, OpenReview, DBLP, homepage, PubMed, or any contact enrichment
-- Ranking, export, dashboards, or operator UI
-- Generic crawling of websites or homepages
+## Decisions
 
-## Repo Alignment
-The root repo uses flat Python entrypoints in sibling pipelines:
-- `github/` uses one config module plus flat stage modules and one orchestrator
-- `devpost/` is source-specific and script-driven
+- **D-01**: OpenAlex is the only primary Phase 1 ingest backbone. Phase 1 discovery starts from
+  OpenAlex works/authorships, not from Crossref or generic crawling.
+- **D-02**: Crossref is Phase 1 metadata backfill only. It may enrich DOI-backed records that were
+  already discovered through OpenAlex, but it must not become a second primary discovery path.
+- **D-03**: Raw staging and run metadata are mandatory in Phase 1. Every source fetch must produce
+  source-native raw envelopes plus a run manifest that supports replay and audit.
+- **D-04**: AI/ML presets are mandatory in Phase 1 for all three slice types: venue, concept, and
+  keyword.
+- **D-05**: Keep the implementation flat and repo-aligned. Use simple Python modules, argparse
+  CLIs, file-backed state, and JSONL staging. Do not introduce a workflow framework, service
+  layer, database, or UI.
+- **D-06**: Phase 1 ends at official ingest foundation. Canonical identity merge, contact
+  enrichment, ranking, export, and domain expansion stay in later phases.
+- **D-07**: Generic crawling is not allowed in Phase 1, even as a fallback path for missing OpenAlex
+  or Crossref fields.
 
-Phase 1 should follow the cleaner `github/` pattern inside `researcher/`:
-- one config module
-- one source registry module
-- one raw staging / run-state module
-- one OpenAlex adapter
-- one Crossref adapter
-- one orchestrator entrypoint
+## Deferred Ideas
 
-Do not introduce a framework, queue, database, or multi-layer package structure in this phase.
+- ORCID, OpenReview, DBLP, PubMed, Semantic Scholar, or homepage enrichment
+- Canonical researcher schema implementation and identity merge logic
+- Contact quality labeling, recruiter ranking, or CSV/JSONL export logic
+- Non-AI domain expansion
+- Dashboard, operator UI, background workers, databases, or orchestration frameworks
 
-## Deliverable Shape
-By the end of Phase 1, the executor should leave `researcher/` with a minimal but complete ingest surface like:
-- `researcher/researcher_config.py`
-- `researcher/researcher_sources.py`
-- `researcher/researcher_run_state.py`
-- `researcher/researcher_openalex.py`
-- `researcher/researcher_crossref.py`
-- `researcher/researcher_pipeline.py`
-- `researcher/tests/` for phase-1 verification
+## Claude's Discretion
 
-The runtime artifact shape should be deterministic and replayable:
-- `researcher/data/runs/<run_id>/run.json`
-- `researcher/data/runs/<run_id>/openalex/papers_raw.jsonl`
-- `researcher/data/runs/<run_id>/openalex/authors_raw.jsonl`
-- `researcher/data/runs/<run_id>/crossref/papers_backfill_raw.jsonl`
-- `researcher/data/runs/<run_id>/checkpoints/*.json`
-- `researcher/data/latest/*.jsonl` or manifest pointers for the most recent successful run
+- Use minimal module names under the `researcher/` project root as long as they stay explicit about
+  source and responsibility.
+- Prefer stdlib data structures or lightweight dataclasses for Phase 1 run/staging contracts unless
+  tests become materially worse without a validation library.
+- Keep automated verification fixture-driven or monkeypatched. Do not make live API calls part of
+  the default test path.
+- Reuse the useful shape of the reference package where it helps, but do not inherit its incorrect
+  ORCID assumptions or its broader multi-source scope.
 
-## Plan Split
-Phase 1 is intentionally split into three executable plans with one correctness boundary each.
+## Phase 1 Plan Mapping
 
-### 01-01: Config / Registry / Run Metadata / Raw Staging
-Purpose:
-- define the ingest contract before any source logic is added
-- prevent OpenAlex and Crossref from inventing incompatible output shapes
+- `01-01-PLAN.md`: config surface, source registry, run metadata, and raw staging contract
+- `01-02-PLAN.md`: OpenAlex-led ingest and AI/ML query presets
+- `01-03-PLAN.md`: Crossref metadata backfill and replay/incremental controls
 
-Produces:
-- config model
-- source registry
-- run manifest schema
-- raw staging writer/reader contract
+## Phase Boundaries
 
-### 01-02: OpenAlex-Led Ingest And AI/ML Query Presets
-Purpose:
-- implement the actual AI/ML-first discovery path
-- make OpenAlex the phase-1 ingest backbone
+### In Scope
 
-Produces:
-- OpenAlex adapter
-- venue/concept/keyword presets
-- paper/author raw outputs tied to run metadata
+- OpenAlex-backed AI/ML raw ingest
+- Crossref DOI metadata backfill against staged OpenAlex works
+- Source registry, run manifest, raw staging envelope, replay/incremental controls
+- Fixture-backed verification for OpenAlex and Crossref adapters
 
-### 01-03: Crossref Backfill And Replay / Incremental Controls
-Purpose:
-- add DOI-driven paper metadata backfill without changing the raw contract
-- make reruns deterministic and resumable
+### Out Of Scope
 
-Produces:
-- Crossref backfill step
-- replay mode and checkpoint rules
-- incremental fetch logic for same preset / newer publication windows
+- Generic crawling
+- Any Phase 2+ schema/merge/enrichment/ranking work
+- Production scheduling, queues, service hosting, or dashboards
 
-## Execution Order
-Plans must execute in order:
-1. `01-01-PLAN.md`
-2. `01-02-PLAN.md`
-3. `01-03-PLAN.md`
+## Expected Project-Root Shape After Phase 1
 
-`01-02` must consume the contracts defined in `01-01`.
-`01-03` must extend those contracts without redefining them.
+- `requirements.txt`
+- `config/settings.example.py`
+- `config/source_registry.py`
+- `pipeline/run_context.py`
+- `pipeline/raw_staging.py`
+- `pipeline/incremental_state.py`
+- `presets/ai_ml.py`
+- `sources/openalex.py`
+- `sources/crossref.py`
+- `scripts/s1_openalex_fetch.py`
+- `scripts/s1_crossref_backfill.py`
+- `tests/` for phase-1 verification
+- `data/runs/<run_id>/...` and `data/state/...` for runtime artifacts only
 
-## Requirement Mapping
-- `INGEST-01`: covered by OpenAlex and Crossref official-source ingest
-- `INGEST-02`: covered by AI/ML concept, venue, and keyword presets
-- `INGEST-03`: covered by raw staging contract plus replay controls
-- `QUALITY-02`: covered by run metadata, retries, limits, checkpoints, and incremental reruns
+## Notes From Reference Material
 
-## Phase Done Criteria
-Phase 1 is ready to mark complete only when all of the following are true:
-- A user can run one AI/ML preset through `researcher/researcher_pipeline.py` without generic crawling
-- OpenAlex raw paper and author payloads are written under a run-scoped directory with run metadata
-- Crossref can backfill DOI-linked paper metadata into the same run without overwriting OpenAlex raw files
-- The same run configuration can be replayed from staged raw files without a network call
-- Incremental reruns write a new run manifest while preserving prior run artifacts
-- Limits, retries, and checkpoint state are source-aware and recorded in run metadata
-
-## Risks And Dependencies
-- OpenAlex query semantics must be pinned carefully so concept / venue / keyword presets are reproducible
-- Crossref backfill depends on DOI presence and must not become a discovery path
-- Live rate limits and polite client requirements must be confirmed from official docs during execution
-- The raw staging contract must stay source-native; if the executor normalizes here, Phase 2 will be polluted
+- The preserved `reference/p9-research-pipeline/` is useful for CLI shape and source naming, but it
+  is not authoritative.
+- `reference/.../schemas/unified_schema.py` informs future naming and data expectations, but Phase 1
+  should only preserve raw source-native data and run metadata, not implement the Phase 2 canonical
+  merge model early.

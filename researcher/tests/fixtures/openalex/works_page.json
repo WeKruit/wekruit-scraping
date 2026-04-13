@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "count": 2,
+    "db_response_time_ms": 12,
+    "page": 1,
+    "per_page": 2,
+    "next_cursor": "cursor-2"
+  },
+  "results": [
+    {
+      "id": "https://openalex.org/W1",
+      "doi": "https://doi.org/10.1000/example1",
+      "title": "Transformer Models for AI",
+      "publication_year": 2024,
+      "publication_date": "2024-05-01",
+      "cited_by_count": 42,
+      "type": "article",
+      "primary_location": {
+        "source": {
+          "display_name": "NeurIPS"
+        }
+      },
+      "concepts": [
+        {
+          "id": "C1",
+          "display_name": "Artificial intelligence"
+        }
+      ],
+      "authorships": [
+        {
+          "author": {
+            "id": "https://openalex.org/A1",
+            "display_name": "Ada Lovelace",
+            "orcid": "https://orcid.org/0000-0001-1111-1111"
+          },
+          "institutions": [
+            {
+              "id": "https://openalex.org/I1",
+              "display_name": "Institute of AI",
+              "ror": "https://ror.org/01abcde23",
+              "country_code": "US"
+            }
+          ],
+          "is_corresponding": true
+        },
+        {
+          "author": {
+            "id": "https://openalex.org/A2",
+            "display_name": "Grace Hopper",
+            "orcid": null
+          },
+          "institutions": [
+            {
+              "id": "https://openalex.org/I2",
+              "display_name": "Research Lab",
+              "ror": "https://ror.org/02fghij45",
+              "country_code": "US"
+            }
+          ],
+          "is_corresponding": false
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2",
+      "doi": null,
+      "title": "Attention Methods for Neural Networks",
+      "publication_year": 2023,
+      "publication_date": "2023-10-12",
+      "cited_by_count": 17,
+      "type": "preprint",
+      "primary_location": {
+        "source": {
+          "display_name": "ICLR"
+        }
+      },
+      "concepts": [
+        {
+          "id": "C1",
+          "display_name": "Artificial intelligence"
+        },
+        {
+          "id": "C2",
+          "display_name": "Machine learning"
+        }
+      ],
+      "authorships": [
+        {
+          "author": {
+            "id": "https://openalex.org/A1",
+            "display_name": "Ada Lovelace",
+            "orcid": "https://orcid.org/0000-0001-1111-1111"
+          },
+          "institutions": [
+            {
+              "id": "https://openalex.org/I1",
+              "display_name": "Institute of AI",
+              "ror": "https://ror.org/01abcde23",
+              "country_code": "US"
+            }
+          ],
+          "is_corresponding": false
+        }
+      ]
+    }
+  ]
+}
