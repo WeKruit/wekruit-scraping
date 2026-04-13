@@ -57,6 +57,13 @@ The initial rollout is AI/ML first because that is the highest-signal wedge for 
 architecture, schema, and source ordering should remain broad enough to support adjacent domains
 without redesigning the core merge model.
 
+The supplemental P9 source plan is useful as a source-tiering and enrichment checklist, not as an
+authoritative source contract. Its biggest contribution is clarifying which systems belong in the
+core scholarly graph versus later expansion. Its main corrections are around ORCID and rate-limit
+assumptions: production ORCID usage is not a no-auth anonymous path for this pipeline, and exact
+per-source quotas must come from current official docs during phase planning instead of being copied
+from older examples.
+
 ## Constraints
 
 - **Source policy**: Official scholarly APIs and dumps first — generic crawling may only appear after identity resolution.
@@ -67,6 +74,8 @@ without redesigning the core merge model.
 - **Scope discipline**: AI/ML first, broader domains later — no all-domain blast radius in phase 1.
 - **Operational resilience**: Per-source rate limits, retries, and replayable raw staging are mandatory from the start.
 - **No compatibility layer**: Define one canonical researcher record shape up front instead of maintaining multiple legacy formats.
+- **Tiered sources, staged activation**: A source can be core (`P0`) for the overall program without being a phase-1 blocking ingest dependency.
+- **Official-doc precedence**: If a handoff note conflicts with live official docs, planning follows the official docs.
 
 ## Key Decisions
 
@@ -76,6 +85,8 @@ without redesigning the core merge model.
 | OpenAlex is the ingest backbone | Broad paper/author/affiliation coverage with stable identifiers and bulk/snapshot options | — Pending |
 | Crossref is metadata backfill, not backbone | Strong DOI and affiliation metadata, but not the best primary discovery layer | — Pending |
 | OpenReview and DBLP are AI/CS enrichers | Stronger profile signal for AI/ML and CS than general-purpose sources | — Pending |
+| Source tiers use `P0/P1/P2`, but phase order still gates activation | `P0` identifies core source families, not “implement all at once in phase 1” | — Pending |
+| ORCID stays behind a verified source contract | Official docs require client credentials for API use and constrain Public API usage; public fields are not a blanket direct-email guarantee | — Pending |
 | Contact is an enrichment layer | Contact quality varies by source and must not distort identity resolution | — Pending |
 | AI/ML is the first domain slice | Highest immediate value and cleanest place to validate the architecture | — Pending |
 | Reference package stays under `reference/` | Preserves prior work without forcing unreviewed code into the mainline | ✓ Good |
@@ -98,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 after initialization*
+*Last updated: 2026-04-13 after P9 supplemental source-plan absorption*

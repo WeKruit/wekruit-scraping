@@ -19,6 +19,13 @@ AI/CS enrichers, and keep ORCID behind a compliance-aware enrichment gate rather
 is a frictionless public-email source. Generic crawling should stay a secondary enrichment tactic,
 not the foundation.
 
+A later supplemental source plan usefully sharpened source tiering: `OpenAlex`, `ORCID`,
+`OpenReview`, and `DBLP` are now best treated as the core (`P0`) source family for the overall
+program, while `Semantic Scholar`, `Crossref`, `arXiv`, `PubMed/PMC`, and similar sources remain
+secondary (`P1/P2`) enrichers or expansion paths. That tiering does **not** change phase order:
+`OpenAlex` is still the phase-1 ingest backbone, while `ORCID`/`OpenReview`/`DBLP` stay gated
+enrichment sources until their source contracts are validated.
+
 The biggest risks are identity mistakes, ORCID/commercial-usage assumptions, and ranking drifting
 into academic prestige instead of sourcing usefulness. Those risks directly shape the phase order.
 
@@ -71,6 +78,8 @@ core correctness boundary.
 3. **Contact-before-identity** — enrich only after canonical merge
 4. **Prestige-only ranking** — score for recruiting usefulness, not only citations
 5. **Too-early domain expansion** — lock AI/ML first, then expand
+6. **Copying stale source limits/fields into planning** — quick-reference numbers must be checked
+   against live official docs before they become source contracts
 
 ## Implications for Roadmap
 
@@ -133,6 +142,8 @@ Phases with standard patterns:
 - ORCID production/commercial usage path must be explicitly resolved before implementation
 - Semantic Scholar integration should be validated as supplemental enrichment, not assumed critical-path ingest
 - OpenReview live API surface should be verified during phase planning, not assumed from historical examples alone
+- Coverage forecasts from handoff material should stay non-binding until measurement definitions are
+  part of the phase plan
 
 ## Sources
 

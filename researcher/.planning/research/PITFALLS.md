@@ -21,6 +21,7 @@ Treat ORCID as a gated enrichment source from day one. Validate credential mode,
 - ORCID is assumed to need no credentials
 - commercial usage review is missing
 - contact coverage forecasts depend heavily on ORCID email
+- project docs imply that public search/email visibility equals guaranteed production coverage
 
 **Phase to address:**
 Phase 3
@@ -124,7 +125,8 @@ Phase 5
 |-------------|----------------|------------------|
 | OpenAlex | Treating search as the only path | Use filtered ingest and keep query metadata |
 | Crossref | Anonymous/public use without identification | Use polite identification and limit it to metadata backfill |
-| ORCID | Assuming Public API is production-safe for commercial use | Treat credentials and ToS review as an implementation gate |
+| ORCID | Assuming Public API is production-safe for commercial use | Treat credentials, visibility, and ToS review as an implementation gate |
+| OpenReview | Treating profile email fields as an approved contact source without policy/access checks | Use it first for profile/homepage/history enrichment and validate email accessibility separately |
 | DBLP | Scraping HTML pages | Use DBLP API/XML/JSON endpoints |
 | PubMed | Using it as a universal backbone | Keep it targeted to biomedical expansion or corresponding-author use cases |
 
@@ -135,6 +137,7 @@ Phase 5
 | Unbounded source pagination | Runs slow or time out unpredictably | Add explicit query slices, cutoffs, and checkpoints | Early, once source coverage expands |
 | Contact enrichment on unresolved identities | Duplicate or conflicting contacts | Run enrichment after canonical merge | Immediately |
 | Ranking over raw staged data | Inconsistent exports | Rank only merged profiles | Immediately |
+| Hard-coded unofficial rate limits | Connectors fail or underperform after source changes | Build source contracts from live official docs during planning | As soon as real runs start |
 
 ## Security Mistakes
 
@@ -159,6 +162,7 @@ Phase 5
 - [ ] **Contact enrichment:** every contact field carries source and quality state
 - [ ] **Ranking:** scoring aligns with recruiting usefulness, not only academic prestige
 - [ ] **Cross-domain expansion:** uses the same canonical schema without source-specific hacks
+- [ ] **Source contracts:** auth mode, terms, and current throughput assumptions are documented from official docs before implementation
 
 ## Recovery Strategies
 
