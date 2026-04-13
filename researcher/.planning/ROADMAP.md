@@ -14,7 +14,7 @@ is driven by correctness: source truth first, merge correctness second, contact 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Official AI Ingest Foundation** - Build the AI/ML-first official-source ingest and raw staging backbone.
+- [x] **Phase 1: Official AI Ingest Foundation** - Build the AI/ML-first official-source ingest and raw staging backbone.
 - [ ] **Phase 2: Canonical Schema And Identity Graph** - Normalize records and merge researchers conservatively.
 - [ ] **Phase 3: Contact Enrichment And Quality** - Attach public contact signals with provenance and quality labels.
 - [ ] **Phase 4: Ranking And Recruiter Export** - Score profiles for recruiting use and export ranked outputs.
@@ -33,9 +33,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Define config, source registry, run metadata, and raw staging contract
-- [ ] 01-02: Implement OpenAlex-led ingest and AI/ML query presets
-- [ ] 01-03: Add Crossref metadata backfill and replay/incremental controls
+- [x] 01-01: Define config, source registry, run metadata, and raw staging contract
+- [x] 01-02: Implement OpenAlex-led ingest and AI/ML query presets
+- [x] 01-03: Add Crossref metadata backfill and replay/incremental controls
 
 ### Phase 2: Canonical Schema And Identity Graph
 **Goal**: Deliver one canonical researcher model with stable-ID-first merge rules and ambiguity-aware identity handling.
@@ -102,8 +102,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Official AI Ingest Foundation | 0/3 | Not started | - |
-| 2. Canonical Schema And Identity Graph | 0/3 | Not started | - |
+| 1. Official AI Ingest Foundation | 3/3 | Completed | 2026-04-13 |
+| 2. Canonical Schema And Identity Graph | 0/3 | Ready to plan | - |
 | 3. Contact Enrichment And Quality | 0/3 | Not started | - |
 | 4. Ranking And Recruiter Export | 0/2 | Not started | - |
 | 5. Domain Expansion And Source Hardening | 0/2 | Not started | - |
