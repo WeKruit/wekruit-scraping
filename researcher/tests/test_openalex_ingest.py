@@ -25,9 +25,9 @@ def test_ai_ml_presets_are_explicit_and_named():
     preset = get_preset("venue", "neurips")
     assert preset["family"] == "venue"
     assert preset["slug"] == "neurips"
-    assert preset["label"] == "NeurIPS"
+    assert preset["label"] == "Neural Information Processing Systems"
     assert preset["query"] == "NeurIPS"
-    assert preset["filter"] == {"primary_location.source.display_name": "NeurIPS"}
+    assert preset["filter"] == {"primary_location.source.id": "S4306420609"}
     assert preset["entity"] == "works"
 
     concept = get_preset("concept", "artificial-intelligence")
@@ -45,15 +45,17 @@ def test_openalex_adapter_builds_query_and_parses_fixture():
     preset = get_preset("venue", "neurips")
 
     query = adapter.build_query(preset, since_year=2024, max_records=2, max_pages=1)
-    assert query["params"]["search"] == "NeurIPS"
-    assert query["params"]["filter"] == "primary_location.source.display_name:NeurIPS,from_publication_date:2024-01-01"
+    assert "search" not in query["params"]
+    assert query["params"]["filter"] == "primary_location.source.id:S4306420609,from_publication_date:2024-01-01"
     assert query["params"]["per-page"] == 2
     assert query["params"]["cursor"] == "*"
+    api_query = OpenAlexAdapter(api_key="test-key").build_query(preset, since_year=2024, max_records=2, max_pages=1)
+    assert api_query["params"]["api_key"] == "test-key"
 
     works, authors = adapter.parse_page(page["results"], preset=preset, run_id="run-1")
     assert [work["source_record_id"] for work in works] == ["https://openalex.org/W1", "https://openalex.org/W2"]
     assert works[0]["raw"]["title"] == "Transformer Models for AI"
-    assert works[1]["slice"] == {"type": "venue", "value": "NeurIPS"}
+    assert works[1]["slice"] == {"type": "venue", "value": "Neural Information Processing Systems"}
 
     author_ids = [author["source_record_id"] for author in authors]
     assert author_ids == ["https://openalex.org/A1", "https://openalex.org/A2"]
@@ -71,7 +73,7 @@ def test_cli_stages_work_and_author_records_offline(tmp_path, monkeypatch):
     staged = []
 
     def fake_fetch_page(self, query, *, cursor=None):
-        assert query["params"]["search"] == "NeurIPS"
+        assert query["params"]["filter"] == "primary_location.source.id:S4306420609,from_publication_date:2024-01-01"
         assert cursor == "*"
         return page
 

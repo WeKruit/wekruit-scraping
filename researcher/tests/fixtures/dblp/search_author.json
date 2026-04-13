@@ -1,0 +1,22 @@
+{
+  "result": {
+    "hits": {
+      "hit": [
+        {
+          "info": {
+            "author": "Shan Wang",
+            "url": "https://dblp.org/pid/62/3650",
+            "notes": {
+              "note": [
+                {
+                  "@type": "homepage",
+                  "text": "https://dblp-home.example.edu"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

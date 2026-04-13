@@ -1,0 +1,11 @@
+{
+  "profiles": [
+    {
+      "id": "~Shan_Wang1",
+      "content": {
+        "homepage": "https://openreview-home.example.edu",
+        "dblp": "https://dblp.org/pid/62/3650"
+      }
+    }
+  ]
+}

@@ -11,6 +11,11 @@ from pipeline.raw_staging import build_raw_envelope
 
 OPENALEX_API_URL = "https://api.openalex.org/works"
 
+try:
+    from config.settings import OPENALEX_API_KEY  # type: ignore
+except ModuleNotFoundError:
+    OPENALEX_API_KEY = ""
+
 
 def _strip_openalex_id(value: str | None) -> str | None:
     if not value:
@@ -25,6 +30,9 @@ def _build_slice_definition(preset: dict[str, Any]) -> dict[str, str]:
 class OpenAlexAdapter:
     source_id = "openalex"
 
+    def __init__(self, *, api_key: str | None = None) -> None:
+        self.api_key = api_key if api_key is not None else OPENALEX_API_KEY
+
     def build_query(
         self,
         preset: dict[str, Any],
@@ -38,11 +46,14 @@ class OpenAlexAdapter:
         filters = dict(preset.get("filter", {}))
         filters["from_publication_date"] = f"{since_year}-01-01"
         params: dict[str, Any] = {
-            "search": str(preset["search"]),
             "filter": ",".join(f"{key}:{value}" for key, value in filters.items()),
             "per-page": per_page or min(max_records, 200),
             "cursor": cursor,
         }
+        if preset.get("search"):
+            params["search"] = str(preset["search"])
+        if self.api_key:
+            params["api_key"] = self.api_key
         return {
             "url": OPENALEX_API_URL,
             "params": params,
