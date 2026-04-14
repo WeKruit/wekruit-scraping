@@ -73,26 +73,26 @@
 | INGEST-02 | Phase 1 | Validated |
 | INGEST-03 | Phase 1 | Validated |
 | QUALITY-02 | Phase 1 | Validated |
-| CORPUS-01 | Unmapped | Pending |
-| CORPUS-02 | Unmapped | Pending |
-| CORPUS-03 | Unmapped | Pending |
-| IDENT-01 | Unmapped | Pending |
-| IDENT-02 | Unmapped | Pending |
-| IDENT-03 | Unmapped | Pending |
-| ENRICH-01 | Unmapped | Pending |
-| ENRICH-02 | Unmapped | Pending |
-| ENRICH-03 | Unmapped | Pending |
-| RANK-01 | Unmapped | Pending |
-| RANK-02 | Unmapped | Pending |
-| RANK-03 | Unmapped | Pending |
-| EXPORT-01 | Unmapped | Pending |
-| EXPORT-02 | Unmapped | Pending |
-| QUALITY-01 | Unmapped | Pending |
+| CORPUS-01 | Phase 6 | Pending |
+| CORPUS-02 | Phase 6 | Pending |
+| CORPUS-03 | Phase 6 | Pending |
+| IDENT-01 | Phase 7 | Pending |
+| IDENT-02 | Phase 7 | Pending |
+| IDENT-03 | Phase 7 | Pending |
+| ENRICH-01 | Phase 8 | Pending |
+| ENRICH-02 | Phase 8 | Pending |
+| ENRICH-03 | Phase 8 | Pending |
+| RANK-01 | Phase 9 | Pending |
+| RANK-02 | Phase 9 | Pending |
+| RANK-03 | Phase 9 | Pending |
+| EXPORT-01 | Phase 10 | Pending |
+| EXPORT-02 | Phase 10 | Pending |
+| QUALITY-01 | Phase 10 | Pending |
 
 **Coverage:**
 - Foundation requirements validated: 4
-- Milestone v1.1 requirements: 12
+- Milestone v1.1 requirements: 15
 - Future requirements deferred: 5
 
 ---
-*Last updated: 2026-04-14 after milestone v1.1 requirement scoping*
+*Last updated: 2026-04-14 after milestone v1.1 roadmap traceability update*

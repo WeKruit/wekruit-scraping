@@ -1,8 +1,8 @@
 ---
-phase: "Not started"
-name: "Milestone v1.1 definition"
+phase: "Phase 6"
+name: "AI/CS Corpus Gate And Venue Tiers"
 created: 2026-04-13
-status: defining_requirements
+status: ready_to_plan
 ---
 
 # Project State
@@ -12,21 +12,21 @@ status: defining_requirements
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and outreach can trust who the researcher is, what they worked on, and how the contact signal was found.
-**Current focus:** Milestone v1.1 AI/CS Ranking And Recruiter Readiness
+**Current focus:** Phase 6 — AI/CS Corpus Gate And Venue Tiers
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 6 of 10 (AI/CS Corpus Gate And Venue Tiers)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-13 — milestone v1.1 started for AI/CS ranking and recruiter readiness
+Status: Ready to plan
+Last activity: 2026-04-14 — v1.1 roadmap rewritten to phases 6-10 with milestone-only requirement coverage
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 18%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: 35 min
 - Total execution time: 1.75 hours
 
@@ -49,11 +49,10 @@ Progress: [█░░░░░░░░░] 10%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Init]: `researcher/` is a standalone third pipeline in the repo
-- [Init]: official scholarly APIs are the backbone, not generic crawling
-- [Init]: AI/ML is the first wedge before broader domain expansion
-- [Phase 1]: raw staging uses source-native `works` envelopes with replayable manifests
-- [Phase 1]: Crossref is DOI backfill only and inherits `parent_run_id` lineage from OpenAlex
+- [Phase 1]: OpenAlex ingest plus Crossref backfill remains the foundation for v1.1 work
+- [Roadmap]: v1.1 phase numbering continues at 6 and replaces prior forward-looking placeholder phases
+- [Roadmap]: AI/CS venue-tier corpus gating happens before canonical schema, enrichment, and ranking
+- [Roadmap]: Bio/Pharma and UI work stay out of scope for milestone v1.1
 
 ### Pending Todos
 
@@ -61,13 +60,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- ORCID production/commercial usage path must be resolved before phase 3 implementation
-- OpenReview live API surface should be validated during phase planning, not assumed from historical examples
-- AI/CS venue-tier source of truth must be fixed before ranking work begins
-- Ranking corpus must be gated before any scoring logic is treated as meaningful
+- Exact CCF/CORE venue-tier asset source and review cadence must be fixed during Phase 6 planning
+- OpenAlex author-detail throughput should be verified before Phase 8 implementation
+- OpenReview live-access reliability should be confirmed during Phase 8 planning
+- Ranking calibration must be accepted before exported recruiter outputs are treated as trustworthy
 
 ## Session Continuity
 
-Last session: 2026-04-13 16:45
-Stopped at: Phase 1 completed; milestone v1.1 planning kicked off
+Last session: 2026-04-14 14:48 PDT
+Stopped at: Milestone v1.1 roadmap created and next work staged at Phase 6 planning
 Resume file: None

@@ -2,9 +2,10 @@
 
 ## Overview
 
-This roadmap moves from deterministic AI/ML ingest to identity correctness, then contact
-enrichment, recruiter-facing ranking/export, and only then broader domain expansion. The ordering
-is driven by correctness: source truth first, merge correctness second, contact quality third.
+This roadmap is milestone-specific for v1.1 AI/CS Ranking And Recruiter Readiness. It replaces the
+previous forward-looking phases with the AI/CS-only work needed to close the loop from official
+ingest to recruiter-ready ranked outputs. UI/dashboard work and Bio/Pharma expansion remain out of
+scope for this milestone.
 
 ## Phases
 
@@ -14,96 +15,103 @@ is driven by correctness: source truth first, merge correctness second, contact 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Official AI Ingest Foundation** - Build the AI/ML-first official-source ingest and raw staging backbone.
-- [ ] **Phase 2: Canonical Schema And Identity Graph** - Normalize records and merge researchers conservatively.
-- [ ] **Phase 3: Contact Enrichment And Quality** - Attach public contact signals with provenance and quality labels.
-- [ ] **Phase 4: Ranking And Recruiter Export** - Score profiles for recruiting use and export ranked outputs.
-- [ ] **Phase 5: Domain Expansion And Source Hardening** - Add the first non-AI expansion path without changing the core schema.
+- [ ] **Phase 6: AI/CS Corpus Gate And Venue Tiers** - Gate the ranking corpus with explicit AI/CS venue-tier rules.
+- [ ] **Phase 7: Canonical Schema And Identity Resolution** - Normalize records and merge researchers conservatively.
+- [ ] **Phase 8: Author Detail And Contact Quality Enrichment** - Enrich resolved researchers with influence and contact-quality signals.
+- [ ] **Phase 9: Explainable Ranking Engine** - Score AI/CS papers and researchers with selectable explainable modes.
+- [ ] **Phase 10: Recruiter Export And Calibration** - Review ranked outputs and export recruiter-ready AI/CS datasets.
 
 ## Phase Details
 
-### Phase 1: Official AI Ingest Foundation
-**Goal**: Deliver a replayable AI/ML ingest path from official scholarly sources with raw staging and source-aware run metadata.
-**Depends on**: Nothing (first phase)
-**Requirements**: [INGEST-01, INGEST-02, INGEST-03, QUALITY-02]
-**Success Criteria** (what must be TRUE):
-  1. User can run the pipeline for an AI/ML venue, concept, or keyword slice and receive raw paper/author outputs from official scholarly sources.
-  2. Raw outputs preserve source-native fields plus run metadata needed for replay and audit.
-  3. Source limits, retries, and incremental reruns work without changing record semantics.
-**Plans**: 3 plans
-
-Plans:
-- [x] 01-01: Define config, source registry, run metadata, and raw staging contract
-- [x] 01-02: Implement OpenAlex-led ingest and AI/ML query presets
-- [x] 01-03: Add Crossref metadata backfill and replay/incremental controls
-
-### Phase 2: Canonical Schema And Identity Graph
-**Goal**: Deliver one canonical researcher model with stable-ID-first merge rules and ambiguity-aware identity handling.
+### Phase 6: AI/CS Corpus Gate And Venue Tiers
+**Goal**: Users can gate the AI/CS ranking corpus through explicit venue-tier rules before any downstream ranking or recruiter export happens.
 **Depends on**: Phase 1
-**Requirements**: [IDENT-01, IDENT-02]
+**Requirements**: [CORPUS-01, CORPUS-02, CORPUS-03]
 **Success Criteria** (what must be TRUE):
-  1. User can transform source-native staged data into one canonical profile shape for papers, researchers, affiliations, and contacts.
-  2. Stable IDs are used before names when linking records across sources.
-  3. Ambiguous matches remain unresolved instead of being force-merged.
+  1. User can review a local AI/CS venue-tier table with upstream source, grade, normalized tier, and last-reviewed metadata.
+  2. User can run the corpus gate and receive an AI/CS paper set limited to venues that pass explicit inclusion rules.
+  3. User can inspect why each paper was included or excluded from the AI/CS ranking corpus.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Define canonical profile schema and field-level provenance model
-- [ ] 02-02: Implement normalization transforms from staged source data
-- [ ] 02-03: Implement conservative merge rules and ambiguity handling
+- [ ] 06-01: Define and review the AI/CS venue-tier asset and normalization contract
+- [ ] 06-02: Implement corpus gating over staged paper data
+- [ ] 06-03: Emit inclusion/exclusion reasons for every gated paper record
 
-### Phase 3: Contact Enrichment And Quality
-**Goal**: Deliver a compliance-aware contact enrichment layer that attaches public signals only after identity is stable.
-**Depends on**: Phase 2
-**Requirements**: [ENRICH-01, ENRICH-02, ENRICH-03, QUALITY-01]
+### Phase 7: Canonical Schema And Identity Resolution
+**Goal**: Users can work from one canonical AI/CS paper and researcher graph with stable-ID-first identity handling and unresolved ambiguity preserved.
+**Depends on**: Phase 6
+**Requirements**: [IDENT-01, IDENT-02, IDENT-03]
 **Success Criteria** (what must be TRUE):
-  1. User can enrich merged researcher profiles with ORCID and AI/CS profile signals through explicit source contracts.
-  2. Contact candidates retain source provenance and quality state.
-  3. Homepage or PubMed/PMC contact hints are attached only to already-merged profiles.
+  1. User can transform staged AI/CS source data into one canonical schema for papers, researchers, venues, affiliations, and contact candidates.
+  2. User can see stable identifiers drive cross-source merges before any name-based matching is attempted.
+  3. User can keep ambiguous researcher matches unresolved instead of force-merging them.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Validate ORCID source contract and implement compliance-aware identity enrichment
-- [ ] 03-02: Add OpenReview and DBLP profile enrichment for AI/CS researchers
-- [ ] 03-03: Add secondary homepage/PubMed contact enrichment and quality labeling
+- [ ] 07-01: Define the canonical schema and provenance contract
+- [ ] 07-02: Implement normalization from staged source data into canonical records
+- [ ] 07-03: Implement stable-ID-first merge rules and unresolved-match handling
 
-### Phase 4: Ranking And Recruiter Export
-**Goal**: Deliver recruiter-facing ranked outputs that reflect relevance and actionability, not only academic prestige.
-**Depends on**: Phase 3
-**Requirements**: [EXPORT-01, EXPORT-02]
+### Phase 8: Author Detail And Contact Quality Enrichment
+**Goal**: Users can enrich resolved AI/CS researchers with source-native author influence inputs and public contact-quality signals without weakening identity correctness.
+**Depends on**: Phase 7
+**Requirements**: [ENRICH-01, ENRICH-02, ENRICH-03]
 **Success Criteria** (what must be TRUE):
-  1. User can produce a ranked researcher list that incorporates topic fit, recency, research signal, and contact quality.
-  2. User can export ranked profiles in CSV and JSONL with provenance retained.
-  3. Ranking logic remains explainable enough to audit why a profile was prioritized.
+  1. User can backfill key-author details from OpenAlex and inspect the source-native inputs used for author influence.
+  2. User can attach AI/CS public profile and homepage signals only to already-resolved researcher identities.
+  3. User can inspect each contact candidate with an explicit quality state instead of a binary `has email` flag.
+**Plans**: 3 plans
+
+Plans:
+- [ ] 08-01: Add OpenAlex author-detail enrichment for influence inputs
+- [ ] 08-02: Attach AI/CS profile and homepage signals after identity resolution
+- [ ] 08-03: Label contact candidates with quality states and provenance
+
+### Phase 9: Explainable Ranking Engine
+**Goal**: Users can rank AI/CS papers and researchers with explainable component scores and selectable scoring modes.
+**Depends on**: Phase 8
+**Requirements**: [RANK-01, RANK-02, RANK-03]
+**Success Criteria** (what must be TRUE):
+  1. User can rank AI/CS papers with explicit component scores for recency, citation signal, venue tier, and author influence.
+  2. User can rank researcher records from the gated AI/CS corpus and see which paper and influence inputs drove their position.
+  3. User can switch between `latest`, `impact`, and `balanced` ranking modes without changing the underlying corpus gate.
+  4. User can inspect score breakdowns for each ranked paper and ranked researcher record.
+**Plans**: 3 plans
+
+Plans:
+- [ ] 09-01: Define versioned ranking profiles and scoring components
+- [ ] 09-02: Implement paper and researcher scoring with mode selection
+- [ ] 09-03: Emit explainable score breakdown outputs for ranked records
+
+### Phase 10: Recruiter Export And Calibration
+**Goal**: Users can manually review ranked AI/CS outputs, then export recruiter-ready papers and researchers with provenance, score context, and contact-quality context retained.
+**Depends on**: Phase 9
+**Requirements**: [EXPORT-01, EXPORT-02, QUALITY-01]
+**Success Criteria** (what must be TRUE):
+  1. User can open a calibration output that surfaces top-ranked results and corpus exclusions for manual review before the ranking contract is accepted.
+  2. User can export ranked AI/CS papers as CSV and JSONL with provenance and score breakdowns retained.
+  3. User can export ranked AI/CS researchers as CSV and JSONL with top-paper context and contact-quality context retained.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Implement recruiter-oriented scoring inputs and weighting
-- [ ] 04-02: Implement ranked CSV/JSONL export and output validation
-
-### Phase 5: Domain Expansion And Source Hardening
-**Goal**: Deliver the first broader-domain expansion on the same schema and harden source contracts discovered in earlier phases.
-**Depends on**: Phase 4
-**Requirements**: [EXPAND-01, EXPAND-02]
-**Success Criteria** (what must be TRUE):
-  1. User can add at least one non-AI source family or domain preset without redesigning the core profile model.
-  2. Source-specific contracts and operational controls are documented and hardened based on earlier phase learnings.
-  3. The expanded path still produces the same canonical export shape.
-**Plans**: 2 plans
-
-Plans:
-- [ ] 05-01: Select first non-AI expansion path and map it onto the canonical schema
-- [ ] 05-02: Harden source contracts, limits, and operational runbook for expanded coverage
+- [ ] 10-01: Build calibration outputs for top-ranked results and corpus exclusions
+- [ ] 10-02: Implement recruiter-facing paper and researcher exports in CSV and JSONL
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
+
+**Historical Note:**
+- Phase 1 foundation shipped on 2026-04-13 and is preserved below for continuity.
+- Prior forward-looking placeholder Phases 2-5 were replaced by this milestone-specific v1.1 phase set.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Official AI Ingest Foundation | 3/3 | Completed | 2026-04-13 |
-| 2. Canonical Schema And Identity Graph | 0/3 | Ready to plan | - |
-| 3. Contact Enrichment And Quality | 0/3 | Not started | - |
-| 4. Ranking And Recruiter Export | 0/2 | Not started | - |
-| 5. Domain Expansion And Source Hardening | 0/2 | Not started | - |
+| 1. Official AI Ingest Foundation | 3/3 | Complete | 2026-04-13 |
+| 6. AI/CS Corpus Gate And Venue Tiers | 0/3 | Ready to plan | - |
+| 7. Canonical Schema And Identity Resolution | 0/3 | Not started | - |
+| 8. Author Detail And Contact Quality Enrichment | 0/3 | Not started | - |
+| 9. Explainable Ranking Engine | 0/3 | Not started | - |
+| 10. Recruiter Export And Calibration | 0/2 | Not started | - |
