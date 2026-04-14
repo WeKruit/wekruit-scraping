@@ -12,22 +12,33 @@ without relying on generic web scraping as the primary ingest path.
 Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and
 outreach can trust who the researcher is, what they worked on, and how the contact signal was found.
 
+## Current Milestone: v1.1 AI/CS Ranking And Recruiter Readiness
+
+**Goal:** Close the AI/CS-only loop from official ingest to recruiter-usable ranked outputs without mixing in broader-domain noise.
+
+**Target features:**
+- Build one canonical AI/CS paper and researcher model with stable-ID-first identity handling.
+- Gate the scoring corpus through an explicit AI/CS venue tier model instead of broad concept search alone.
+- Enrich AI/CS researchers with public profile and contact paths while preserving provenance and quality state.
+- Rank papers and researchers with explainable time, citation, venue, and author-influence signals.
+- Export recruiter-facing ranked outputs for AI/CS only; Bio/Pharma stays out of this milestone.
+
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- Official-source ingest backbone exists for AI/ML-first paper and author discovery (Phase 1).
+- Raw paper and author staging is replayable and audit-friendly through run manifests (Phase 1).
+- OpenAlex is the working ingest backbone and Crossref is the DOI backfill layer (Phase 1).
 
 ### Active
 
-- [ ] Build the researcher pipeline as a third isolated repo module, separate from `devpost/` and `github/`.
-- [ ] Use official scholarly APIs and dumps as the primary ingest path, starting with AI/ML-focused coverage.
-- [ ] Preserve source-native raw paper and author records so upstream data can be replayed and audited.
-- [ ] Normalize papers, researchers, affiliations, and contacts into one canonical record shape.
-- [ ] Merge identities conservatively using stable IDs first and names only as a late signal.
-- [ ] Enrich public contact paths with provenance and quality labels instead of treating any source as guaranteed-email truth.
-- [ ] Rank and export recruiter-usable researcher lists after identity and contact quality are established.
-- [ ] Expand beyond AI/ML only after the AI-first loop works end to end.
+- [ ] Normalize AI/CS papers, researchers, affiliations, venues, and contacts into one canonical record shape.
+- [ ] Merge identities conservatively using stable identifiers before any name-based heuristics.
+- [ ] Define an AI/CS venue tier contract that gates which papers enter ranking and recruiting outputs.
+- [ ] Enrich AI/CS public contact paths with provenance and quality labels instead of treating any source as guaranteed-email truth.
+- [ ] Rank papers and researchers with explainable AI/CS-specific scoring modes for recruiter use.
+- [ ] Export recruiter-usable AI/CS ranked outputs after identity, corpus quality, and contact quality are established.
 
 ### Out of Scope
 
@@ -36,6 +47,7 @@ outreach can trust who the researcher is, what they worked on, and how the conta
 - Social/profile scraping unrelated to scholarly identity resolution — increases noise without solving the core problem.
 - Closed-platform or login-gated scraping — conflicts with source-policy and compliance goals.
 - “Guaranteed direct email” as a product promise — contact is an enrichment output with varying quality.
+- Bio/Pharma ranking in the same milestone — broad-domain coverage is intentionally deferred until the AI/CS loop is trustworthy.
 
 ## Context
 
@@ -89,6 +101,9 @@ from older examples.
 | ORCID stays behind a verified source contract | Official docs require client credentials for API use and constrain Public API usage; public fields are not a blanket direct-email guarantee | — Pending |
 | Contact is an enrichment layer | Contact quality varies by source and must not distort identity resolution | — Pending |
 | AI/ML is the first domain slice | Highest immediate value and cleanest place to validate the architecture | — Pending |
+| AI/CS venue tiers gate ranking corpus | Broad concept search leaks non-AI papers into the ranking set; ranking starts only after corpus gating | — Pending |
+| AI/CS ranking uses explainable component scores | Recruiter trust requires seeing recency, citation, venue, and author-influence inputs separately | — Pending |
+| Bio/Pharma does not share the first ranking milestone | Cross-domain mixing would distort venue and citation semantics before the AI/CS loop is stable | ✓ Good |
 | Reference package stays under `reference/` | Preserves prior work without forcing unreviewed code into the mainline | ✓ Good |
 
 ## Evolution
@@ -109,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 after P9 supplemental source-plan absorption*
+*Last updated: 2026-04-13 after milestone v1.1 kickoff for AI/CS ranking and recruiter readiness*

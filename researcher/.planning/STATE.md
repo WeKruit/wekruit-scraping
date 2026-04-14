@@ -1,8 +1,8 @@
 ---
-phase: "02"
-name: "Canonical Schema And Identity Graph"
+phase: "Not started"
+name: "Milestone v1.1 definition"
 created: 2026-04-13
-status: ready_to_plan
+status: defining_requirements
 ---
 
 # Project State
@@ -12,16 +12,16 @@ status: ready_to_plan
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and outreach can trust who the researcher is, what they worked on, and how the contact signal was found.
-**Current focus:** Canonical Schema And Identity Graph
+**Current focus:** Milestone v1.1 AI/CS Ranking And Recruiter Readiness
 
 ## Current Position
 
-Phase: 2 of 5 (Canonical Schema And Identity Graph)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-04-13 — completed phase 1 ingest foundation and advanced roadmap to phase 2
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-13 — milestone v1.1 started for AI/CS ranking and recruiter readiness
 
-Progress: [██░░░░░░░░] 20%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
@@ -63,9 +63,11 @@ None yet.
 
 - ORCID production/commercial usage path must be resolved before phase 3 implementation
 - OpenReview live API surface should be validated during phase planning, not assumed from historical examples
+- AI/CS venue-tier source of truth must be fixed before ranking work begins
+- Ranking corpus must be gated before any scoring logic is treated as meaningful
 
 ## Session Continuity
 
 Last session: 2026-04-13 16:45
-Stopped at: Phase 1 completed, phase 2 ready to plan
+Stopped at: Phase 1 completed; milestone v1.1 planning kicked off
 Resume file: None
