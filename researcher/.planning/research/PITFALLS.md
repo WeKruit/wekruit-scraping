@@ -1,196 +1,115 @@
-# Pitfalls Research
+# Pitfalls Research — Milestone v1.1 AI/CS Ranking And Recruiter Readiness
 
-**Domain:** Academic researcher sourcing pipeline
-**Researched:** 2026-04-13
-**Confidence:** HIGH
+**Scope:** Only the mistakes that can break this milestone.
+**Researched:** 2026-04-14
+**Confidence:** High
 
-## Critical Pitfalls
+## Risk Register
 
-### Pitfall 1: Treating ORCID as a frictionless public-email source
+### P0 — Corpus contamination
 
-**What goes wrong:**
-The pipeline is built around direct ORCID calls and public-email expectations that do not hold for commercial usage or real-world coverage.
+**Failure mode**
+Broad OpenAlex concept search leaks non-AI/CS papers into the ranked set.
 
-**Why it happens:**
-Older examples and informal scripts make ORCID look like a simple public endpoint.
+**Why it happens**
+Concept IDs and keyword search are discovery tools, not clean ranking corpora.
 
-**How to avoid:**
-Treat ORCID as a gated enrichment source from day one. Validate credential mode, terms, and actual public-field coverage before making it part of the production contact path.
+**Prevention**
+- Gate ranking through explicit AI/CS venue tiers
+- Store exclusion reasons
+- Review top excluded and included examples during calibration
 
-**Warning signs:**
-- ORCID is assumed to need no credentials
-- commercial usage review is missing
-- contact coverage forecasts depend heavily on ORCID email
-- project docs imply that public search/email visibility equals guaranteed production coverage
+### P0 — Venue tier drift
 
-**Phase to address:**
-Phase 3
+**Failure mode**
+Venue rankings become stale or inconsistent across CCF and CORE sources.
 
----
+**Why it happens**
+Venue lists change over time and names vary across source systems.
 
-### Pitfall 2: Over-merging people with similar names
+**Prevention**
+- Maintain a local normalized tier table with `last_reviewed_at`
+- Record the upstream source and grade used for every mapping
+- Treat unknown venues as unknown, not low confidence top-tier substitutes
 
-**What goes wrong:**
-Different researchers get merged into one profile because name matching outruns identifier quality.
+### P0 — Bad citation fairness
 
-**Why it happens:**
-Researcher data is full of homonyms, initials, institution changes, and venue-specific profile variance.
+**Failure mode**
+Older papers dominate because raw total citations are used without normalization.
 
-**How to avoid:**
-Use stable identifiers first, institution/name only as secondary evidence, and leave ambiguous profiles unresolved instead of forcing a merge.
+**Why it happens**
+Raw `cited_by_count` is easy to compute and looks authoritative.
 
-**Warning signs:**
-- merge rules start with names
-- one profile has incompatible institutions or fields
-- OpenReview/DBLP/PubMed records collapse into suspiciously broad people
+**Prevention**
+- Normalize citations within publication year or recency bucket
+- Keep raw citation count and normalized citation score separate
 
-**Phase to address:**
-Phase 2
+### P0 — Wrong author influence semantics
 
----
+**Failure mode**
+Author influence is computed from all coauthors equally or guessed from shallow authorship data.
 
-### Pitfall 3: Letting contact enrichment drive identity logic
+**Why it happens**
+Large collaboration papers make naive averages look legitimate.
 
-**What goes wrong:**
-The pipeline chases emails and homepages before identity is stable, causing wrong attachments and low trust.
+**Prevention**
+- Backfill author detail explicitly
+- Limit influence inputs to key authors (`first`, `last`, `corresponding`)
+- Keep paper score and researcher score logic separate
 
-**Why it happens:**
-Recruiting pressure makes direct contact feel like the main output.
+### P1 — Black-box ranking
 
-**How to avoid:**
-Make identity resolution the gate. Contact enrichment happens only on merged profiles, and every contact candidate keeps provenance and quality state.
+**Failure mode**
+The export exposes a final score but not the reasons behind it.
 
-**Warning signs:**
-- email scraping is planned before canonical merge
-- contact source determines the profile shape
-- enrichment code mutates identity keys
+**Why it happens**
+Single-number scoring is easy to display.
 
-**Phase to address:**
-Phase 3
+**Prevention**
+- Emit component scores and ranking mode
+- Preserve `score_breakdown` in JSONL and flattened columns in CSV
 
----
+### P1 — Contact confidence inflation
 
-### Pitfall 4: Using prestige metrics as the ranking objective
+**Failure mode**
+Homepage or public-profile signals are shown as if they were equivalent to verified direct contacts.
 
-**What goes wrong:**
-The ranking becomes an academic leaderboard instead of a recruiter tool.
+**Why it happens**
+Recruiter workflows naturally bias toward any reachable signal.
 
-**Why it happens:**
-Citations and h-index proxies are easy to compute and easy to justify.
+**Prevention**
+- Preserve contact quality state
+- Separate researcher ranking from contact actionability
+- Never let contact quality alter identity logic
 
-**How to avoid:**
-Blend research signal with topical fit, recency, completeness, and contact quality. Keep the recruiting objective explicit.
+### P1 — Cross-domain leakage
 
-**Warning signs:**
-- score is mostly citations
-- recent/high-fit researchers rank below unreachable famous profiles
-- export is optimized for “top academics” rather than “actionable sourcing”
+**Failure mode**
+Bio/Pharma or unrelated CS-adjacent venue logic gets pulled into the same milestone and distorts ranking semantics.
 
-**Phase to address:**
-Phase 4
+**Why it happens**
+Coverage conversations expand faster than evaluation standards.
 
----
+**Prevention**
+- Keep `domain_scope=ai_cs` explicit in the venue tier asset
+- Reject mixed-domain ranking in this milestone
 
-### Pitfall 5: Expanding domains before the AI/ML loop is stable
+## Looks Done But Isn’t
 
-**What goes wrong:**
-Source-specific edge cases multiply before the core schema and merge model are proven.
+- [ ] Ranking corpus is gated before scoring
+- [ ] Venue tiers are versioned and reviewable
+- [ ] Citation normalization is explicit
+- [ ] Author influence uses real author details
+- [ ] Score breakdowns are exported
+- [ ] Unknown venues stay unknown instead of being silently coerced
 
-**Why it happens:**
-Coverage sounds more valuable than correctness in early discussions.
+## Phase Ownership
 
-**How to avoid:**
-Lock AI/ML as the first wedge and treat cross-domain expansion as a later phase on the same schema.
-
-**Warning signs:**
-- new source families are added before phase 2 or 3 is complete
-- schema fields keep changing to satisfy one new connector
-- merge rules become source-specific exceptions
-
-**Phase to address:**
-Phase 5
-
-## Technical Debt Patterns
-
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Merge while ingesting | Faster first script | Impossible to replay/debug source truth | Never |
-| Crawl homepages broadly before identity resolution | Higher raw email counts | Wrong-person contacts and noisy outputs | Never |
-| Skip provenance on contact fields | Faster export schema | No one can trust the output later | Never |
-| Defer retry/rate-limit handling | Faster prototype | Brittle reruns and inconsistent coverage | Only for disposable one-off tests |
-
-## Integration Gotchas
-
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| OpenAlex | Treating search as the only path | Use filtered ingest and keep query metadata |
-| Crossref | Anonymous/public use without identification | Use polite identification and limit it to metadata backfill |
-| ORCID | Assuming Public API is production-safe for commercial use | Treat credentials, visibility, and ToS review as an implementation gate |
-| OpenReview | Treating profile email fields as an approved contact source without policy/access checks | Use it first for profile/homepage/history enrichment and validate email accessibility separately |
-| DBLP | Scraping HTML pages | Use DBLP API/XML/JSON endpoints |
-| PubMed | Using it as a universal backbone | Keep it targeted to biomedical expansion or corresponding-author use cases |
-
-## Performance Traps
-
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Unbounded source pagination | Runs slow or time out unpredictably | Add explicit query slices, cutoffs, and checkpoints | Early, once source coverage expands |
-| Contact enrichment on unresolved identities | Duplicate or conflicting contacts | Run enrichment after canonical merge | Immediately |
-| Ranking over raw staged data | Inconsistent exports | Rank only merged profiles | Immediately |
-| Hard-coded unofficial rate limits | Connectors fail or underperform after source changes | Build source contracts from live official docs during planning | As soon as real runs start |
-
-## Security Mistakes
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Treating public researcher data as unbounded commercial free use | Terms/compliance exposure | Validate each source’s commercial usage expectations |
-| Storing secrets inline in scripts | Credential leakage | Use environment/config boundaries |
-| Scraping gated or personal pages broadly | Privacy and compliance issues | Limit enrichment to public, researcher-owned or official-source fields |
-
-## UX Pitfalls
-
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Export without provenance columns | Recruiters cannot trust the source of a contact | Include source and quality state in every export |
-| Export without domain or relevance context | Lists are hard to triage | Surface topic/venue/relevance cues alongside score |
-| Binary “has email / no email” output | Hides signal quality differences | Use quality states such as public, homepage, verified, unknown |
-
-## "Looks Done But Isn't" Checklist
-
-- [ ] **OpenAlex ingest:** query metadata and source provenance are stored with staged records
-- [ ] **Identity merge:** ambiguous profiles remain unresolved instead of being force-merged
-- [ ] **Contact enrichment:** every contact field carries source and quality state
-- [ ] **Ranking:** scoring aligns with recruiting usefulness, not only academic prestige
-- [ ] **Cross-domain expansion:** uses the same canonical schema without source-specific hacks
-- [ ] **Source contracts:** auth mode, terms, and current throughput assumptions are documented from official docs before implementation
-
-## Recovery Strategies
-
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Wrong ORCID assumptions | MEDIUM | Rework source contract, credential model, and forecast |
-| Bad identity merges | HIGH | Rebuild merged profiles from raw staging with corrected rules |
-| Prestige-only ranking | LOW | Reweight score and regenerate exports from merged profiles |
-
-## Pitfall-to-Phase Mapping
-
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| ORCID commercial/credential mismatch | Phase 3 | Document source contract before enabling ORCID production enrichment |
-| Name-based over-merge | Phase 2 | Review merge rules and ambiguous cases before enrichment |
-| Contact-before-identity | Phase 3 | Ensure enrichment input is merged profiles only |
-| Prestige-only ranking | Phase 4 | Verify score factors include relevance/contact quality |
-| Too-early domain expansion | Phase 5 | Expand only after AI/ML export loop is stable |
-
-## Sources
-
-- ORCID record-reading tutorial
-- DBLP XML Requests documentation
-- OpenAlex developer docs
-- Crossref REST API documentation
-- NCBI E-utilities documentation
-- Provided handoff package and current repo comparison
-
----
-*Pitfalls research for: academic researcher sourcing pipeline*
-*Researched: 2026-04-13*
+| Risk | Owning phase |
+|------|--------------|
+| Corpus contamination | Phase 6 |
+| Venue tier drift | Phase 6 |
+| Wrong author influence semantics | Phase 8 |
+| Black-box ranking | Phase 9 |
+| Contact confidence inflation | Phase 8 / 10 |
+| Cross-domain leakage | Whole milestone governance |

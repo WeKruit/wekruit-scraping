@@ -1,163 +1,68 @@
-# Project Research Summary
+# Research Summary — Milestone v1.1 AI/CS Ranking And Recruiter Readiness
 
-**Project:** Researcher Pipeline
-**Domain:** Academic researcher sourcing pipeline
-**Researched:** 2026-04-13
-**Confidence:** MEDIUM
+**Researched:** 2026-04-14
+**Confidence:** High for milestone direction, medium for a few live source contracts
 
 ## Executive Summary
 
-This project is an internal sourcing pipeline, not a consumer product. Its job is to discover
-researchers from official scholarly systems, link those researchers to papers and institutions,
-attach public contact signals conservatively, and export ranked recruiter-usable outputs. The
-correct build order is structured ingest first, identity correctness second, contact enrichment
-third, and ranking/export only after the merged profile model is stable.
+This milestone should not start with scoring code. It should start by constraining the AI/CS
+ranking corpus, then normalizing and resolving identities, then enriching key-author and contact
+signals, and only then computing explainable ranking outputs.
 
-The recommended approach is to keep the implementation flat and script-driven, matching the current
-repo. Use OpenAlex as the ingest backbone, Crossref as metadata backfill, OpenReview and DBLP as
-AI/CS enrichers, and keep ORCID behind a compliance-aware enrichment gate rather than assuming it
-is a frictionless public-email source. Generic crawling should stay a secondary enrichment tactic,
-not the foundation.
-
-A later supplemental source plan usefully sharpened source tiering: `OpenAlex`, `ORCID`,
-`OpenReview`, and `DBLP` are now best treated as the core (`P0`) source family for the overall
-program, while `Semantic Scholar`, `Crossref`, `arXiv`, `PubMed/PMC`, and similar sources remain
-secondary (`P1/P2`) enrichers or expansion paths. That tiering does **not** change phase order:
-`OpenAlex` is still the phase-1 ingest backbone, while `ORCID`/`OpenReview`/`DBLP` stay gated
-enrichment sources until their source contracts are validated.
-
-The biggest risks are identity mistakes, ORCID/commercial-usage assumptions, and ranking drifting
-into academic prestige instead of sourcing usefulness. Those risks directly shape the phase order.
+The biggest correction to the prior generic plan is this: **ranking must be venue-gated before it
+is weighted.** Broad concept search is useful for discovery, but it is not a trustworthy ranking
+corpus. The milestone therefore needs an explicit `CCF + CORE`-derived AI/CS venue tier asset and a
+corpus gate that records why papers are included or excluded.
 
 ## Key Findings
 
-### Recommended Stack
+### Stack additions
 
-The shortest path is Python 3.11+ with flat script stages, JSONL staging, CSV/JSONL export, and
-thin adapters around official scholarly APIs. This matches the current repo better than introducing
-an orchestration framework or database-first design.
+- Local `ai_cs_venue_tiers.csv` asset is mandatory
+- OpenAlex author-detail enrichment is mandatory for author influence
+- Ranking profiles must be versioned/configured, not hard-coded ad hoc
+- Flat Python stages remain the correct implementation shape
 
-**Core technologies:**
-- Python 3.11+: pipeline implementation
-- JSONL: replayable raw and intermediate staging
-- CSV: recruiter-facing export
+### Table-stakes features
 
-### Expected Features
+- AI/CS corpus gate
+- canonical paper/researcher schema
+- stable-ID-first identity resolution
+- explainable `latest` / `impact` / `balanced` ranking modes
+- recruiter-facing CSV/JSONL export with provenance
 
-**Must have (table stakes):**
-- Official-source ingest with replayable raw staging
-- Canonical researcher profile and conservative identity merge
-- Provenance-aware contact enrichment
-- Ranked recruiter export
+### Architecture
 
-**Should have (competitive):**
-- AI/ML-first presets for venues, concepts, and keywords
-- Cross-source identity resolution across OpenAlex, OpenReview, DBLP, and ORCID
+Recommended order:
 
-**Defer (v2+):**
-- Broad domain families before the AI/ML loop is stable
-- Commercial waterfall and operator UI before the profile quality is proven
+1. corpus gate
+2. canonical normalization
+3. identity graph
+4. author-detail + contact-quality enrichment
+5. explainable ranking
+6. recruiter export
 
-### Architecture Approach
+### Watch out for
 
-The architecture should be staged and file-backed: source adapters → raw staging → canonical
-normalization and identity merge → contact enrichment → ranking/export. The merge layer is the
-core correctness boundary.
+- concept-search corpus contamination
+- stale or conflicting venue tiers
+- raw citation counts dominating newer papers
+- averaging all coauthors into one “author influence” signal
+- black-box score outputs with no breakdown
 
-**Major components:**
-1. Source adapters — source-specific fetch and parse logic
-2. Raw staging — replayable source-native records and query metadata
-3. Canonical merge layer — normalized profile model and conservative identity linking
-4. Enrichment layer — public contact and affiliation signals with provenance
-5. Ranking/export layer — recruiter-facing scored outputs
+## Milestone Implications
 
-### Critical Pitfalls
+The milestone should be organized into **five phases** that continue numbering from the current
+roadmap:
 
-1. **Wrong ORCID assumptions** — treat credential and commercial-usage review as a hard gate
-2. **Over-merging identities** — stable IDs first, unresolved ambiguity left open
-3. **Contact-before-identity** — enrich only after canonical merge
-4. **Prestige-only ranking** — score for recruiting usefulness, not only citations
-5. **Too-early domain expansion** — lock AI/ML first, then expand
-6. **Copying stale source limits/fields into planning** — quick-reference numbers must be checked
-   against live official docs before they become source contracts
+1. **Phase 6 — AI/CS Corpus Gate And Venue Tiers**
+2. **Phase 7 — Canonical Schema And Identity Resolution**
+3. **Phase 8 — Author Detail And Contact Quality Enrichment**
+4. **Phase 9 — Explainable Ranking Engine**
+5. **Phase 10 — Recruiter Export And Calibration**
 
-## Implications for Roadmap
+## Still Needs Live Verification During Implementation
 
-Based on research, suggested phase structure:
-
-### Phase 1: Official AI Ingest Foundation
-**Rationale:** establishes deterministic source truth
-**Delivers:** OpenAlex/Crossref-backed AI/ML raw staging
-**Addresses:** ingest requirements and replayability
-**Avoids:** crawl-first architecture
-
-### Phase 2: Canonical Schema And Identity Graph
-**Rationale:** correctness gate before enrichment
-**Delivers:** normalized researcher/paper/contact model and conservative merge rules
-**Uses:** flat Python transforms and stable-ID precedence
-**Implements:** canonical merge component
-
-### Phase 3: Contact Enrichment And Quality
-**Rationale:** once identities are stable, public contact signals can attach safely
-**Delivers:** ORCID/profile/homepage/PubMed enrichment with quality labels
-
-### Phase 4: Ranking And Recruiter Export
-**Rationale:** output quality matters only after profile completeness is real
-**Delivers:** scoring and recruiter-facing exports
-
-### Phase 5: Domain Expansion And Source Hardening
-**Rationale:** schema and controls should be proven before adding new source families
-**Delivers:** broader-domain support on the same profile model
-
-### Phase Ordering Rationale
-
-- Identity correctness must precede contact enrichment
-- Contact enrichment must precede ranking
-- AI/ML must precede broad domain rollout
-- Compliance-sensitive sources must be validated before being treated as production inputs
-
-### Research Flags
-
-Phases likely needing deeper research during planning:
-- **Phase 3:** ORCID credential/commercial path and exact OpenReview/DBLP integration shape
-- **Phase 5:** which non-AI source family should be the first expansion target
-
-Phases with standard patterns:
-- **Phase 1:** flat ingest and raw staging
-- **Phase 2:** canonical schema and stable-ID-first merge design
-
-## Confidence Assessment
-
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | HIGH | Directly aligned to repo shape and official source constraints |
-| Features | MEDIUM | Clear for AI-first loop; broader-domain expansion still needs source-specific choice |
-| Architecture | HIGH | Phase order is dictated by correctness and source trust |
-| Pitfalls | HIGH | Main risks are already visible before implementation |
-
-**Overall confidence:** MEDIUM
-
-### Gaps to Address
-
-- ORCID production/commercial usage path must be explicitly resolved before implementation
-- Semantic Scholar integration should be validated as supplemental enrichment, not assumed critical-path ingest
-- OpenReview live API surface should be verified during phase planning, not assumed from historical examples alone
-- Coverage forecasts from handoff material should stay non-binding until measurement definitions are
-  part of the phase plan
-
-## Sources
-
-### Primary (HIGH confidence)
-- OpenAlex developer docs
-- Crossref REST API documentation
-- ORCID record-reading tutorial
-- DBLP XML Requests documentation
-- NCBI E-utilities documentation
-
-### Secondary (MEDIUM confidence)
-- Provided handoff package under `researcher/reference/p9-research-pipeline/`
-- Current repo patterns from `devpost/` and `github/`
-
----
-*Research completed: 2026-04-13*
-*Ready for roadmap: yes*
+- Exact CCF/CORE mapping asset source and review cadence
+- OpenAlex author-detail throughput assumptions at milestone scale
+- OpenReview live-access reliability for profile enrichment

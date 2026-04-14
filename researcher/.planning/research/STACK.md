@@ -1,85 +1,105 @@
-# Stack Research
+# Stack Research — Milestone v1.1 AI/CS Ranking And Recruiter Readiness
 
-**Domain:** Academic researcher sourcing pipeline
-**Researched:** 2026-04-13
-**Confidence:** MEDIUM
+**Scope:** Only the stack additions and source contracts needed to close the AI/CS-only ranking/export loop.
+**Researched:** 2026-04-14
+**Confidence:** Medium-high
 
-## Recommended Stack
+## Mandatory Stack Additions
 
-### Core Technologies
+| Item | Type | Why this milestone needs it | Decision |
+|------|------|-----------------------------|----------|
+| AI/CS venue tier seed table | Local data asset (`csv` or `jsonl`) | Ranking corpus cannot be trusted without explicit venue gating | Required |
+| OpenAlex author-detail fetch stage | Source adapter extension | Author influence needs stable source-native metrics, not guesses from authorships | Required |
+| Canonical normalized paper/researcher artifacts | Pipeline stage output | Ranking and export should never read raw envelopes directly | Required |
+| Ranking config / weight profile file | Local config asset | `latest` / `impact` / `balanced` must be explainable and versioned | Required |
+| Recruiter export schema contract | Local schema/spec | Export has to preserve provenance and score breakdowns | Required |
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Python | 3.11+ | Main implementation language | Matches the current repo, minimizes setup overhead, and is well-supported by scholarly API clients |
-| JSONL | n/a | Raw staging and intermediate exchange | Replayable, diffable, script-friendly, and consistent with the handoff package |
-| CSV | n/a | Recruiter-facing export | Lowest-friction downstream handoff format for ranked lists |
+## Keep Using
 
-### Supporting Libraries
+| Existing piece | Why it stays |
+|----------------|-------------|
+| Python 3.11+ flat scripts | Already matches repo shape and keeps execution/debugging cheap |
+| JSONL staging | Replayable and good enough for this milestone |
+| OpenAlex as ingest backbone | Already working and also provides author-detail APIs |
+| Crossref as DOI metadata backfill | Still useful, but not the ranking backbone |
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `requests` | 2.31+ | HTTP for APIs and secondary enrichment | Default for direct API work and simple authenticated flows |
-| `pyalex` | current stable | OpenAlex ingest client | Phase 1 backbone for papers/authors |
-| `habanero` | current stable | Crossref REST client | DOI metadata backfill and identifier enrichment |
-| `biopython` | current stable | NCBI E-utilities access | Targeted PubMed/PMC enrichment |
-| `beautifulsoup4` + `lxml` | current stable | Homepage parsing | Secondary contact enrichment after identity resolution |
+## External Source Contracts Needed Now
 
-### Development Tools
+| Source | Milestone use | Need to verify/live-check | Notes |
+|--------|---------------|---------------------------|-------|
+| OpenAlex | papers, venue metadata, author details, citation metrics | API key, rate limits, author fields used for influence | Ranking depends on it directly |
+| DBLP | AI/CS profile homepages | search/profile reliability and backoff behavior | Best as secondary profile enrichment, not corpus gate |
+| ORCID | public profile URLs and occasional public email | credential/commercial path and field visibility | Useful but not mandatory for ranking itself |
+| CCF directory | venue tier source of truth for AI/CS | mapping currency and licensing for local seed table | Human-curated reference |
+| CORE / ICORE | venue tier source of truth for AI/CS | mapping currency and licensing for local seed table | Complements CCF coverage |
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| `argparse` | CLI surface for pipeline modes | Consistent with existing repo scripts |
-| `pytest` or smoke scripts | Basic connector verification | Keep verification pragmatic; phase 1 can start with API smoke coverage |
-| environment variables | Secrets and source config | Aligns with the current repo’s flat-script style |
+## Recommended File-Level Additions
 
-## Installation
-
-```bash
-pip install requests pyalex habanero biopython beautifulsoup4 lxml
+```text
+researcher/
+├── data/
+│   └── reference/
+│       └── ai_cs_venue_tiers.csv
+├── pipeline/
+│   ├── canonical_schema.py
+│   ├── normalization.py
+│   ├── identity_graph.py
+│   └── ranking.py
+├── scripts/
+│   ├── s2_author_detail_backfill.py
+│   ├── s3_normalize_profiles.py
+│   ├── s4_rank_papers.py
+│   └── s5_export_ranked_outputs.py
+└── config/
+    └── ranking_profiles.example.py
 ```
 
-## Alternatives Considered
+## What Not To Add
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| Flat script modules | Heavy orchestration framework | Only if scheduling/state complexity becomes the real bottleneck |
-| JSONL intermediate files | Database-first ingest | Only after the normalized model is stable and replay needs exceed file-based staging |
-| Direct API clients + `requests` | Browser automation / generic scraping | Only for narrow secondary enrichment where no official source exists |
+| Avoid | Why |
+|-------|-----|
+| Pandas-first data layer | Overkill for staged pipeline size and obscures field provenance |
+| Database migration in this milestone | Canonical shape is not stable enough yet |
+| Generic crawler framework | Contradicts the official-source-first contract |
+| UI/dashboard work | Not part of closing the AI/CS ranking loop |
+| Bio/Pharma venue assets | Explicitly out of scope for this milestone |
 
-## What NOT to Use
+## Concrete Data Assets
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| Generic HTML crawling as phase 1 | Low determinism, brittle schema, higher compliance risk | Official scholarly APIs and dumps |
-| UI/dashboard work before core ingest works | Moves effort away from correctness | CSV/JSONL output first |
-| Premature frameworkization | The current repo is script-driven and this pipeline still needs schema discovery | Flat Python modules with explicit stage ownership |
+### `ai_cs_venue_tiers.csv`
 
-## Stack Patterns by Variant
+Minimum columns:
+- `venue_key`
+- `display_name`
+- `source_system`
+- `source_grade`
+- `normalized_tier`
+- `domain_scope`
+- `last_reviewed_at`
+- `notes`
 
-**If the source has an official Python client:**
-- Prefer the official or established client
-- Because it reduces pagination/auth boilerplate and keeps code focused on normalization
+### `ranking_profiles.example.py`
 
-**If the source has a simple authenticated REST flow:**
-- Use `requests` directly with a thin adapter
-- Because the pipeline needs conservative, inspectable I/O more than abstraction
+Minimum profiles:
+- `latest`
+- `impact`
+- `balanced`
 
-## Version Compatibility
+Each profile should expose only:
+- component weights
+- recency half-life
+- citation percentile rule
+- venue unknown-handling rule
 
-| Package A | Compatible With | Notes |
-|-----------|-----------------|-------|
-| `pyalex` | Python 3.11+ | Foundation for OpenAlex-backed ingest |
-| `habanero` | Python 3.11+ | Use polite pool with `mailto` for production calls |
-| `biopython` | Python 3.11+ | Keep PubMed use targeted, not core backbone |
+## Open Questions To Validate During Implementation
+
+1. Which exact CCF and CORE snapshots are safe to encode into the local seed table?
+2. Whether OpenAlex author-detail throughput is sufficient to backfill key authors inline or should be cached separately.
+3. Whether DBLP profile fetch needs a persistent retry/backoff state or the current adapter-level throttling is enough.
 
 ## Sources
 
-- OpenAlex Authentication & Pricing — API key required for scale; free snapshot/download path remains available: https://developers.openalex.org/guides/authentication
-- Crossref REST API / Access and authentication — no signup required; polite pool uses `mailto` or agent header: https://www.crossref.org/documentation/retrieve-metadata/rest-api/ and https://www.crossref.org/documentation/retrieve-metadata/rest-api/access-and-authentication/
-- ORCID “Read Data on a Record” tutorial — Public API uses client credentials; member API is the documented path when use exceeds public quotas or conflicts with Public API terms: https://info.orcid.org/documentation/api-tutorials/api-tutorial-read-data-on-a-record/
-- DBLP XML Requests — use API/XML endpoints instead of HTML pages: https://dblp.org/xml/docu/dblpxmlreq.pdf
-- NCBI E-utilities — public API to Entrez databases including PubMed and PMC: https://www.ncbi.nlm.nih.gov/books/NBK25501/
-
----
-*Stack research for: academic researcher sourcing pipeline*
-*Researched: 2026-04-13*
+- OpenAlex Authentication / API overview: https://developers.openalex.org/guides/authentication and https://developers.openalex.org/api-reference/introduction
+- CORE conference portal: https://portal.core.edu.au/conf-ranks/
+- CCF recommendation directory updates: https://www.ccf.org.cn/Academic_Evaluation/By_category/ and public 2026 announcement context: https://04665u.npoall.com/news/itemid-238821.html
+- Existing validated project docs under `.planning/`

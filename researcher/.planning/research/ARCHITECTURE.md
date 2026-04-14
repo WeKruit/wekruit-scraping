@@ -1,184 +1,151 @@
-# Architecture Research
+# Architecture Research — Milestone v1.1 AI/CS Ranking And Recruiter Readiness
 
-**Domain:** Academic researcher sourcing pipeline
-**Researched:** 2026-04-13
-**Confidence:** MEDIUM
+**Scope:** Integration design for the current milestone only.
+**Researched:** 2026-04-14
+**Confidence:** High
 
-## Standard Architecture
-
-### System Overview
+## Build Order
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                    Source Adapters Layer                    │
-├──────────────────────────────────────────────────────────────┤
-│  OpenAlex   Crossref   OpenReview   DBLP   ORCID   PubMed   │
-└───────────────┬───────────────┬───────────────┬──────────────┘
-                │               │               │
-                ▼               ▼               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                     Raw Staging Layer                       │
-├──────────────────────────────────────────────────────────────┤
-│      source-native JSONL + query metadata + replay state    │
-└───────────────┬──────────────────────────────────────────────┘
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│              Canonical Normalization / Identity             │
-├──────────────────────────────────────────────────────────────┤
-│ researcher schema   stable ID linking   conservative merge  │
-└───────────────┬──────────────────────────────────────────────┘
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Enrichment Layer                         │
-├──────────────────────────────────────────────────────────────┤
-│ ORCID/contact data   homepage signals   quality labels      │
-└───────────────┬──────────────────────────────────────────────┘
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Ranking / Export Layer                   │
-├──────────────────────────────────────────────────────────────┤
-│ recruiter score   ranked CSV/JSONL   source lineage output  │
-└──────────────────────────────────────────────────────────────┘
+raw ingest
+  -> corpus gate
+  -> canonical normalization
+  -> identity graph
+  -> author-detail enrichment
+  -> contact-quality enrichment
+  -> explainable ranking
+  -> recruiter export
 ```
 
-### Component Responsibilities
+## Required New Stages
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| Source adapters | Fetch source-native paper/author/profile data | One adapter per source with explicit request and parse logic |
-| Raw staging | Preserve replayable upstream records | Timestamped JSONL files plus latest snapshots |
-| Normalization layer | Convert source-native shapes into one canonical schema | Flat Python functions, not framework-heavy abstractions |
-| Identity merge | Link or split researchers conservatively | Stable-ID-first merge rules, ambiguity left unresolved |
-| Enrichment layer | Attach public contact and affiliation hints | Secondary passes after identity is already stable |
-| Ranking/export | Produce recruiter-facing outputs | Deterministic scoring + CSV/JSONL exports |
+### Stage A — Corpus Gate
 
-## Recommended Project Structure
+**Input**
+- staged OpenAlex `works_raw.jsonl`
+- local `ai_cs_venue_tiers.csv`
+
+**Output**
+- `works_gated.jsonl`
+- `works_excluded.jsonl`
+
+**Responsibility**
+- decide whether a paper is eligible for AI/CS ranking
+- store `included_reason` or `excluded_reason`
+
+### Stage B — Canonical Normalization
+
+**Input**
+- gated works
+- staged raw authors
+- Crossref backfill where available
+
+**Output**
+- canonical paper facts
+- canonical author stubs
+- paper-author edge facts
+
+**Responsibility**
+- convert source-native envelopes into one internal meaning
+- preserve provenance on normalized fields
+
+### Stage C — Identity Graph
+
+**Input**
+- canonical author stubs
+- source IDs (OpenAlex, ORCID, DBLP, OpenReview when available)
+
+**Output**
+- resolved researcher profiles
+- unresolved ambiguity queue
+
+**Responsibility**
+- merge only when stable-ID evidence is sufficient
+- keep ambiguous candidates unmerged
+
+### Stage D — Author Detail And Contact Enrichment
+
+**Input**
+- resolved researcher profiles
+- key paper-author edges
+
+**Output**
+- enriched researcher metrics
+- contact candidates with quality labels
+
+**Responsibility**
+- fetch OpenAlex author details for influence inputs
+- attach ORCID/DBLP/OpenReview/homepage signals only after identity is stable
+
+### Stage E — Explainable Ranking
+
+**Input**
+- canonical papers
+- resolved/enriched researchers
+- venue tiers
+- ranking profile config
+
+**Output**
+- `ranked_papers.jsonl`
+- `ranked_researchers.jsonl`
+
+**Responsibility**
+- compute component scores
+- support `latest`, `impact`, and `balanced`
+- emit component breakdowns
+
+### Stage F — Recruiter Export
+
+**Input**
+- ranked canonical outputs
+
+**Output**
+- `ranked_papers.csv`
+- `ranked_researchers.csv`
+
+**Responsibility**
+- flatten the ranked outputs for downstream sourcing use
+- preserve enough provenance for trust and audit
+
+## Integration Seams
+
+| Seam | Why it matters |
+|------|----------------|
+| Raw ingest -> corpus gate | Prevents non-AI/CS papers from polluting all downstream stages |
+| Corpus gate -> canonical normalization | Canonical schema should only model papers eligible for the milestone objective |
+| Identity graph -> enrichment | Contact and influence must attach to stable people, not raw author mentions |
+| Enrichment -> ranking | Ranking should consume explicit influence/contact-quality facts, not infer them ad hoc |
+| Ranking -> export | Export should be a formatting layer, not a place that invents logic |
+
+## Architectural Rules
+
+1. Ranking never reads raw source envelopes directly.
+2. Corpus gating happens before normalization and ranking.
+3. Author influence is a separate enrichment pass, not buried inside ranking code.
+4. Export is read-only over ranked artifacts.
+5. Bio/Pharma stays out of the architecture for this milestone.
+
+## Minimal Module Layout
 
 ```text
-researcher/
-├── researcher_config.py        # env vars, paths, source registry, limits
-├── researcher_pipeline.py      # top-level CLI / orchestration
-├── researcher_discover.py      # raw ingest + merge entry point
-├── sources/                    # source adapters only
-│   ├── openalex_source.py
-│   ├── crossref_source.py
-│   ├── orcid_source.py
-│   └── ...
-├── output/                     # runtime artifacts
-├── reference/                  # preserved handoff package
-└── .planning/                  # project docs and roadmap
+pipeline/
+  corpus_gate.py
+  canonical_schema.py
+  normalization.py
+  identity_graph.py
+  ranking.py
+  export.py
+
+scripts/
+  s2_author_detail_backfill.py
+  s3_normalize_profiles.py
+  s4_rank_outputs.py
+  s5_export_outputs.py
 ```
 
-### Structure Rationale
+## What To Avoid
 
-- **Flat top level:** Matches the current repo’s script-oriented shape and keeps the shortest path clear.
-- **`sources/` boundary:** Gives each upstream source a clean adapter without over-fragmenting the rest of the pipeline.
-- **`reference/` separation:** Keeps prior handoff code visible without confusing it with the production path.
-
-## Architectural Patterns
-
-### Pattern 1: Source-native first, canonical second
-
-**What:** Each adapter writes source-native data before canonical merge.
-**When to use:** Always, because source contracts will change.
-**Trade-offs:** Slightly more storage, much better replayability and auditability.
-
-### Pattern 2: Stable-ID-first identity merge
-
-**What:** ORCID/OpenAlex/DBLP-style identifiers outrank names.
-**When to use:** Every merge path.
-**Trade-offs:** Leaves some profiles unresolved, but prevents wrong merges.
-
-### Pattern 3: Secondary crawling only after identity resolution
-
-**What:** Homepage parsing is a narrow enrichment step, not the ingest backbone.
-**When to use:** Only when trusted sources have already identified the researcher.
-**Trade-offs:** Lower early coverage, much better correctness.
-
-## Data Flow
-
-### Request Flow
-
-```text
-CLI run
-    ↓
-researcher_pipeline.py
-    ↓
-source adapter(s)
-    ↓
-raw JSONL staging
-    ↓
-canonical normalization
-    ↓
-identity merge
-    ↓
-enrichment / quality labels
-    ↓
-ranked export
-```
-
-### Key Data Flows
-
-1. **Ingest flow:** source query → raw source-native records → canonical staging.
-2. **Identity flow:** canonical records → stable-ID matching → merged researcher profile.
-3. **Contact flow:** merged profile → ORCID/profile/homepage enrichment → quality-labeled contacts.
-4. **Export flow:** merged profile → scoring → CSV/JSONL output for recruiting.
-
-## Scaling Considerations
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| Early validation | File-based JSONL staging is sufficient |
-| Larger source volume | Add better incremental checkpoints and source partitioning |
-| Mature production | Move normalized artifacts into a database only after schema is stable |
-
-### Scaling Priorities
-
-1. **First bottleneck:** source-rate-limit coordination — solve with explicit per-source throttling and replay.
-2. **Second bottleneck:** merge correctness — solve with better stable-ID coverage before optimizing throughput.
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Merge while ingesting
-
-**What people do:** Deduplicate directly inside source fetch loops.
-**Why it's wrong:** It hides source-native truth and makes replay/debugging painful.
-**Do this instead:** Stage raw first, merge second.
-
-### Anti-Pattern 2: Build the contact waterfall before the identity graph
-
-**What people do:** Chase emails before researcher identity is stable.
-**Why it's wrong:** Contacts attach to the wrong person and pollute trust.
-**Do this instead:** Make identity correctness the gate to contact enrichment.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| OpenAlex | Primary ingest adapter | Backbone for papers/authors |
-| Crossref | Metadata backfill adapter | Use polite pool with identification |
-| ORCID | Credentialed enrichment adapter | Commercial usage and credential mode must be validated |
-| DBLP | Author/publication enrichment adapter | Use API/XML/JSON endpoints, not HTML scraping |
-| NCBI E-utilities | Targeted biomedical adapter | Only for bio-specific expansion |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| adapters ↔ staging | JSONL files | Makes reruns explicit |
-| staging ↔ normalization | canonical record transforms | Keep one schema meaning |
-| normalization ↔ export | merged researcher profiles | Ranking must not rewrite source truth |
-
-## Sources
-
-- OpenAlex developer docs
-- Crossref REST API docs
-- ORCID record-reading tutorial
-- DBLP XML Requests documentation
-- NCBI E-utilities documentation
-
----
-*Architecture research for: academic researcher sourcing pipeline*
-*Researched: 2026-04-13*
+- Directly modifying Phase 1 raw contracts just to support ranking
+- Embedding venue-tier decisions inside source adapters
+- Letting exporter code re-compute scores
+- Building one mega-script that owns all stages

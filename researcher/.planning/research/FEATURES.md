@@ -1,110 +1,97 @@
-# Feature Research
+# Feature Research — Milestone v1.1 AI/CS Ranking And Recruiter Readiness
 
-**Domain:** Academic researcher sourcing pipeline
-**Researched:** 2026-04-13
-**Confidence:** MEDIUM
+**Scope:** Feature set for the current milestone only.
+**Researched:** 2026-04-14
+**Confidence:** High
 
-## Feature Landscape
+## Category 1 — Corpus Gate
 
-### Table Stakes (Users Expect These)
+**Table stakes**
+- Explicit AI/CS corpus gate before ranking
+- Venue-tier-backed inclusion rules
+- Clear `excluded_reason` for papers filtered out
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Official-source ingest | The pipeline must start from trusted scholarly sources | MEDIUM | Backbone must not be crawl-first |
-| Raw staging and replay | Sourcing data must be auditable and re-runnable | MEDIUM | JSONL staging is sufficient initially |
-| Canonical researcher profile | Downstream users need one merged profile per person | HIGH | The identity model is the correctness gate |
-| Provenance-aware contact enrichment | Contact fields must show where they came from | HIGH | Prevents false confidence in outreach |
-| Ranked export | Recruiting needs prioritized output, not raw corpora | MEDIUM | Ranking must stay aligned to recruiting, not prestige only |
+**Differentiators**
+- Hybrid `CCF + CORE` mapping with normalized internal tiers
+- Ability to explain why a paper was included even if concept search was broad
 
-### Differentiators (Competitive Advantage)
+**Anti-features**
+- Ranking directly off OpenAlex concept search output
+- Mixing Bio/Pharma papers into the same ranked set
+- Treating unknown venues as equal to top-tier venues
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| AI/ML venue presets | Fast initial wedge for WeKruit’s highest-value use case | LOW | Keeps first loop narrow and testable |
-| Cross-source identity merge | Better researcher resolution than relying on a single database | HIGH | Stable IDs first, names last |
-| Domain-ready schema | Lets the pipeline expand beyond AI/ML without re-architecture | MEDIUM | Expansion comes after AI-first validation |
-| Contact quality labeling | Makes outreach safer by separating verified, public, and speculative channels | MEDIUM | Important for recruiter trust |
+## Category 2 — Canonical Identity
 
-### Anti-Features (Commonly Requested, Often Problematic)
+**Table stakes**
+- Canonical paper schema
+- Canonical researcher schema
+- Stable-ID-first identity merge
+- Ambiguity state instead of force-merge
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Generic crawl-first sourcing | Feels universal and fast | Poor identity quality, brittle extraction, higher compliance risk | Official-source backbone plus secondary enrichment |
-| Aggressive fuzzy merge | Increases record counts quickly | Easily merges different researchers with similar names | Stable-ID-first merge with unresolved leftovers |
-| Prestige-only ranking | Easy to explain using citation count | Misaligns with recruiting relevance | Blend citations with recency, topical fit, and contact quality |
-| Broad domain rollout immediately | Feels like faster coverage | Multiplies schema drift before the AI loop is correct | AI/ML first, then adjacent domains |
+**Differentiators**
+- Paper-to-key-author linkage preserved for author-influence scoring
+- Field-level provenance on normalized facts used in ranking/export
 
-## Feature Dependencies
+**Anti-features**
+- Name-first matching
+- Ranking directly off raw staged source records
 
-```text
-Official-source ingest
-    └──requires──> raw staging
-                         └──requires──> canonical schema
-                                              └──requires──> identity merge
-                                                                  └──requires──> contact enrichment
-                                                                                      └──requires──> ranked export
+## Category 3 — Influence And Contact Signals
 
-Domain expansion ──requires──> canonical schema + stable merge rules
-```
+**Table stakes**
+- OpenAlex author-detail enrichment for key-author metrics
+- Public profile/contact provenance retained
+- Contact quality state retained instead of binary `has_email`
 
-### Dependency Notes
+**Differentiators**
+- Separate “research influence” from “contact actionability”
+- Distinguish homepage-derived signals from direct public profile signals
 
-- **Ranked export requires contact enrichment:** recruiter output is lower value if profiles are not contactable.
-- **Contact enrichment requires identity merge:** otherwise contacts are assigned to the wrong person.
-- **Domain expansion requires schema stability:** otherwise each new source family changes the meaning of the profile model.
+**Anti-features**
+- Letting contact availability distort identity logic
+- Treating any scraped email as equal-confidence recruiter output
 
-## MVP Definition
+## Category 4 — Explainable Ranking
 
-### Launch With (v1)
+**Table stakes**
+- Paper ranking by `time / citation / venue / author influence`
+- Multiple ranking modes: `latest`, `impact`, `balanced`
+- Per-record score breakdown available in output
 
-- [ ] OpenAlex-led AI/ML ingest with replayable raw staging
-- [ ] Canonical paper/researcher/contact schema
-- [ ] Stable-ID-first identity merge
-- [ ] ORCID plus AI/CS enrichment path with provenance
-- [ ] Ranked CSV/JSONL recruiter export
+**Differentiators**
+- Year-normalized citation signal instead of raw total citations only
+- Recruiter-friendly explanation of why something ranked highly
 
-### Add After Validation (v1.x)
+**Anti-features**
+- Single opaque score with no component breakdown
+- Prestige-only ranking objective
+- Mixing recency and citation without normalization
 
-- [ ] Targeted PubMed/PMC enrichment for biomedical researchers
-- [ ] Better contact quality states and verification workflow
-- [ ] Additional ranking controls tuned for recruiting workflows
+## Category 5 — Recruiter Export
 
-### Future Consideration (v2+)
+**Table stakes**
+- Ranked paper export
+- Ranked researcher export
+- CSV + JSONL output
+- Provenance columns retained
 
-- [ ] Wider domain families beyond AI/ML and first adjacent domains
-- [ ] Commercial waterfall integrations after the core profile quality is proven
-- [ ] Operator/reporting UI if a real ops need emerges
+**Differentiators**
+- Export includes component scores, top venue, last publication date, and contact quality summary
+- Export schema stable enough for downstream sourcing flows
 
-## Feature Prioritization Matrix
+**Anti-features**
+- “Pretty” exports without traceability
+- Exporting unresolved ambiguous identities as if they were final
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Official-source ingest | HIGH | MEDIUM | P1 |
-| Canonical schema + merge | HIGH | HIGH | P1 |
-| Contact provenance | HIGH | MEDIUM | P1 |
-| Ranked export | HIGH | MEDIUM | P1 |
-| AI/ML presets | MEDIUM | LOW | P2 |
-| Domain expansion | MEDIUM | MEDIUM | P2 |
+## What Belongs In This Milestone
 
-**Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
+1. Close the AI/CS-only paper-to-researcher-to-rank loop.
+2. Make ranking auditable by humans.
+3. Produce recruiter-usable outputs from that ranked set.
 
-## Competitor Feature Analysis
+## What Stays Out
 
-| Feature | Competitor A | Competitor B | Our Approach |
-|---------|--------------|--------------|--------------|
-| Paper coverage | OpenAlex-style graph coverage | Crossref-style DOI metadata coverage | Use both, but keep one ingest backbone |
-| AI profile signal | OpenReview-style venue profiles | DBLP-style CS publication graph | Combine them only after identity is stable |
-| Contact signal | ORCID/public profile hints | Homepage/corresponding-author hints | Keep contact quality labeled, not binary |
-
-## Sources
-
-- Official source docs listed in `STACK.md`
-- Provided handoff package under `researcher/reference/p9-research-pipeline/`
-- Existing repo patterns from `devpost/` and `github/`
-
----
-*Feature research for: academic researcher sourcing pipeline*
-*Researched: 2026-04-13*
+1. Bio/Pharma ranking or mixed-domain ranking.
+2. Dashboard/UI work.
+3. Commercial enrichment waterfall as a primary dependency.
+4. Generic search expansion beyond the venue-gated AI/CS corpus.
