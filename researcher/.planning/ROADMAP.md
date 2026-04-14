@@ -15,7 +15,7 @@ scope for this milestone.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 6: AI/CS Corpus Gate And Venue Tiers** - Gate the ranking corpus with explicit AI/CS venue-tier rules.
+- [x] **Phase 6: AI/CS Corpus Gate And Venue Tiers** - Gate the ranking corpus with explicit AI/CS venue-tier rules.
 - [ ] **Phase 7: Canonical Schema And Identity Resolution** - Normalize records and merge researchers conservatively.
 - [ ] **Phase 8: Author Detail And Contact Quality Enrichment** - Enrich resolved researchers with influence and contact-quality signals.
 - [ ] **Phase 9: Explainable Ranking Engine** - Score AI/CS papers and researchers with selectable explainable modes.
@@ -34,9 +34,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Define the AI/CS venue-tier asset and strict source-ID join contract
-- [ ] 06-02-PLAN.md — Implement append-only corpus gating over staged OpenAlex works
-- [ ] 06-03-PLAN.md — Emit full include/exclude decision logs with lineage-safe rerun semantics
+- [x] 06-01-PLAN.md — Define the AI/CS venue-tier asset and strict source-ID join contract
+- [x] 06-02-PLAN.md — Implement append-only corpus gating over staged OpenAlex works
+- [x] 06-03-PLAN.md — Emit full include/exclude decision logs with lineage-safe rerun semantics
 
 ### Phase 7: Canonical Schema And Identity Resolution
 **Goal**: Users can work from one canonical AI/CS paper and researcher graph with stable-ID-first identity handling and unresolved ambiguity preserved.
@@ -110,7 +110,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Official AI Ingest Foundation | 3/3 | Complete | 2026-04-13 |
-| 6. AI/CS Corpus Gate And Venue Tiers | 0/3 | Ready to plan | - |
+| 6. AI/CS Corpus Gate And Venue Tiers | 3/3 | Complete | 2026-04-14 |
 | 7. Canonical Schema And Identity Resolution | 0/3 | Not started | - |
 | 8. Author Detail And Contact Quality Enrichment | 0/3 | Not started | - |
 | 9. Explainable Ranking Engine | 0/3 | Not started | - |

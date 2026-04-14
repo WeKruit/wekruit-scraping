@@ -1,4 +1,8 @@
 .venv/
-data/
+data/runs/
+data/latest/
+data/state/
+data/poc_*
+data/poc_assets/
 __pycache__/
 *.pyc

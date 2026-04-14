@@ -87,6 +87,36 @@ class RunManifest:
 
 
 @dataclass
+class DerivedRunManifest:
+    stage_name: str
+    run_id: str
+    parent_run_id: str
+    input_paths: dict[str, str]
+    output_paths: dict[str, str]
+    asset_fingerprints: dict[str, str]
+    included_count: int
+    excluded_count: int
+    created_at: str = field(default_factory=_utc_now)
+    completed_at: str | None = None
+    status: str = "running"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "stage_name": self.stage_name,
+            "run_id": self.run_id,
+            "parent_run_id": self.parent_run_id,
+            "input_paths": dict(self.input_paths),
+            "output_paths": dict(self.output_paths),
+            "asset_fingerprints": dict(self.asset_fingerprints),
+            "included_count": self.included_count,
+            "excluded_count": self.excluded_count,
+            "created_at": self.created_at,
+            "completed_at": self.completed_at,
+            "status": self.status,
+        }
+
+
+@dataclass
 class RunContext:
     data_root: Path
     manifest: RunManifest
@@ -231,6 +261,35 @@ def write_run_manifest(
         latest_target = Path(latest_path)
         latest_target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(target, latest_target)
+    return target
+
+
+def build_derived_run_manifest(
+    *,
+    stage_name: str,
+    run_id: str,
+    parent_run_id: str,
+    input_paths: dict[str, str],
+    output_paths: dict[str, str],
+    asset_fingerprints: dict[str, str],
+    included_count: int,
+    excluded_count: int,
+) -> DerivedRunManifest:
+    return DerivedRunManifest(
+        stage_name=stage_name,
+        run_id=run_id,
+        parent_run_id=parent_run_id,
+        input_paths=dict(input_paths),
+        output_paths=dict(output_paths),
+        asset_fingerprints=dict(asset_fingerprints),
+        included_count=included_count,
+        excluded_count=excluded_count,
+    )
+
+
+def write_derived_run_manifest(manifest: DerivedRunManifest, path: Path | str) -> Path:
+    target = Path(path)
+    _json_dump(target, manifest.to_dict())
     return target
 
 
