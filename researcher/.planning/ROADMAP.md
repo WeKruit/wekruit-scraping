@@ -34,9 +34,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Define and review the AI/CS venue-tier asset and normalization contract
-- [ ] 06-02: Implement corpus gating over staged paper data
-- [ ] 06-03: Emit inclusion/exclusion reasons for every gated paper record
+- [ ] 06-01-PLAN.md — Define the AI/CS venue-tier asset and strict source-ID join contract
+- [ ] 06-02-PLAN.md — Implement append-only corpus gating over staged OpenAlex works
+- [ ] 06-03-PLAN.md — Emit full include/exclude decision logs with lineage-safe rerun semantics
 
 ### Phase 7: Canonical Schema And Identity Resolution
 **Goal**: Users can work from one canonical AI/CS paper and researcher graph with stable-ID-first identity handling and unresolved ambiguity preserved.
