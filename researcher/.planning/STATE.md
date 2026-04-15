@@ -1,7 +1,7 @@
 ---
-phase: "Phase 7"
-name: "Canonical Schema And Identity Resolution"
-created: 2026-04-14
+phase: "Phase 11"
+name: "Storage And Source Profile Contract"
+created: 2026-04-15
 status: ready_to_plan
 ---
 
@@ -9,19 +9,19 @@ status: ready_to_plan
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-13)
+See: .planning/PROJECT.md (updated 2026-04-15)
 
-**Core value:** Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and outreach can trust who the researcher is, what they worked on, and how the contact signal was found.
-**Current focus:** Phase 7 — Canonical Schema And Identity Resolution
+**Core value:** Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and outreach can trust who the researcher is, what they worked on, how the contact signal was found, and why multiple source records were or were not merged.
+**Current focus:** Phase 11 — Storage And Source Profile Contract
 
 ## Current Position
 
-Phase: 7 of 10 (Canonical Schema And Identity Resolution)
+Phase: 11 of 15 (Storage And Source Profile Contract)
 Plan: —
 Status: Ready to plan
-Last activity: 2026-04-14 — Phase 6 shipped with venue-tier asset, corpus gate runtime, decision logs, and local POCs
+Last activity: 2026-04-15 — Milestone v1.2 started for four-source human-reviewed merge and durable storage
 
-Progress: [████░░░░░░] 35%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -39,7 +39,7 @@ Progress: [████░░░░░░] 35%
 
 **Recent Trend:**
 - Last 5 plans: 5 completed
-- Trend: Increasing
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -50,12 +50,14 @@ Progress: [████░░░░░░] 35%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Phase 1]: OpenAlex ingest plus Crossref backfill remains the foundation for v1.1 work
-- [Roadmap]: v1.1 phase numbering continues at 6 and replaces prior forward-looking placeholder phases
-- [Roadmap]: AI/CS venue-tier corpus gating happens before canonical schema, enrichment, and ranking
-- [Roadmap]: Bio/Pharma and UI work stay out of scope for milestone v1.1
-- [Phase 6]: AI/CS corpus membership is determined only by explicit venue-tier rows keyed by exact OpenAlex source IDs
-- [Storage]: Canonical identity should move into Postgres with append-only evidence, with Neo4j only as a later projection if traversal becomes a true product need
+- [Phase 1]: OpenAlex ingest plus Crossref backfill remains the foundation for paper and author discovery.
+- [Phase 6]: AI/CS corpus membership is determined only by explicit venue-tier rows keyed by exact OpenAlex source IDs.
+- [Milestone v1.2]: Ranking pauses until human-reviewed researcher groups exist.
+- [Milestone v1.2]: Four profile sources are OpenAlex, ORCID, DBLP, and OpenReview.
+- [Milestone v1.2]: Homepage, GitHub, and email extraction are derived signal stages, not separate canonical source systems.
+- [Storage]: Postgres is the durable store for source profiles, signals, candidate groups, review labels, and approved people.
+- [Storage]: NoSQL and Neo4j are not primary stores for this milestone; Neo4j can be reconsidered later as a projection if graph traversal becomes a measured need.
+- [Identity]: All candidate groups require human review. The system provides reasoning, not automatic merges.
 
 ### Pending Todos
 
@@ -63,13 +65,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- OpenAlex author-detail throughput should be verified before Phase 8 implementation
-- OpenReview live-access reliability should be confirmed during Phase 8 planning
-- Ranking calibration must be accepted before exported recruiter outputs are treated as trustworthy
-- Canonical identity tables and merge/unmerge evidence rules must be fixed in Phase 7 before any cross-source contact enrichment expands further
+- Phase 11 must lock the Postgres schema before any source pipeline writes durable data.
+- Candidate grouping must preserve negative and unsure labels so the system does not repeatedly ask humans to review the same rejected profiles.
+- OpenReview live-access reliability still needs validation before Phase 12 implementation.
+- Contact quality must remain evidence attached to source profiles and review groups, not a direct merge decision.
 
 ## Session Continuity
 
-Last session: 2026-04-14 18:10 PDT
-Stopped at: Phase 6 executed, local corpus-gate POCs completed, and graph-storage strategy synthesized from two research teams
+Last session: 2026-04-15 09:20 PDT
+Stopped at: Milestone v1.2 planning created; next step is Phase 11 planning.
 Resume file: None

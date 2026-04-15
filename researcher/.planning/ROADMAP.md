@@ -2,116 +2,118 @@
 
 ## Overview
 
-This roadmap is milestone-specific for v1.1 AI/CS Ranking And Recruiter Readiness. It replaces the
-previous forward-looking phases with the AI/CS-only work needed to close the loop from official
-ingest to recruiter-ready ranked outputs. UI/dashboard work and Bio/Pharma expansion remain out of
-scope for this milestone.
+This roadmap is milestone-specific for v1.2 Four-Source Human Review Merge Foundation. It pauses
+the previous ranking-first path after the completed AI/CS corpus gate and moves the critical path
+to durable source-profile storage, four independently triggerable profile pipelines, evidence-based
+candidate grouping, human review, and approved researcher-group export.
+
+Ranking, recruiter outreach, and graph-database projection are intentionally out of scope until
+human-reviewed people exist.
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+- Integer phases continue from prior researcher work.
+- Phase 1 and Phase 6 are shipped foundations.
+- Phase 7-10 from the prior ranking roadmap are superseded by this milestone and not executed.
 
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 6: AI/CS Corpus Gate And Venue Tiers** - Gate the ranking corpus with explicit AI/CS venue-tier rules.
-- [ ] **Phase 7: Canonical Schema And Identity Resolution** - Normalize records and merge researchers conservatively.
-- [ ] **Phase 8: Author Detail And Contact Quality Enrichment** - Enrich resolved researchers with influence and contact-quality signals.
-- [ ] **Phase 9: Explainable Ranking Engine** - Score AI/CS papers and researchers with selectable explainable modes.
-- [ ] **Phase 10: Recruiter Export And Calibration** - Review ranked outputs and export recruiter-ready AI/CS datasets.
+- [ ] **Phase 11: Storage And Source Profile Contract** - Define and implement the durable Postgres storage contract for source profiles, signals, candidate groups, review labels, and approved people.
+- [ ] **Phase 12: Four Source Profile Pipelines** - Trigger OpenAlex, ORCID, DBLP, and OpenReview profile pipelines independently and persist their outputs.
+- [ ] **Phase 13: Signal Extraction And Candidate Reasoning** - Extract comparable identity/contact signals and generate candidate groups with explicit reasons, without auto-merge.
+- [ ] **Phase 14: Human Review Queue And Label Ingest** - Export review queues and ingest human labels for same/not-same/unsure decisions.
+- [ ] **Phase 15: Approved People Export And Incremental Hygiene** - Export approved people and suppress repeated already-reviewed candidates in future runs.
 
 ## Phase Details
 
-### Phase 6: AI/CS Corpus Gate And Venue Tiers
-**Goal**: Users can gate the AI/CS ranking corpus through explicit venue-tier rules before any downstream ranking or recruiter export happens.
-**Depends on**: Phase 1
-**Requirements**: [CORPUS-01, CORPUS-02, CORPUS-03]
+### Phase 11: Storage And Source Profile Contract
+**Goal**: Users can persist source runs, source profiles, extracted signals, candidate groups, review labels, and approved people in Postgres with provenance intact.
+**Depends on**: Phase 1, Phase 6
+**Requirements**: [STORE-01, STORE-02, STORE-03]
 **Success Criteria** (what must be TRUE):
-  1. User can review a local AI/CS venue-tier table with upstream source, grade, normalized tier, and last-reviewed metadata.
-  2. User can run the corpus gate and receive an AI/CS paper set limited to venues that pass explicit inclusion rules.
-  3. User can inspect why each paper was included or excluded from the AI/CS ranking corpus.
-**Plans**: 3 plans
-
-Plans:
-- [x] 06-01-PLAN.md — Define the AI/CS venue-tier asset and strict source-ID join contract
-- [x] 06-02-PLAN.md — Implement append-only corpus gating over staged OpenAlex works
-- [x] 06-03-PLAN.md — Emit full include/exclude decision logs with lineage-safe rerun semantics
-
-### Phase 7: Canonical Schema And Identity Resolution
-**Goal**: Users can work from one canonical AI/CS paper and researcher graph with stable-ID-first identity handling and unresolved ambiguity preserved.
-**Depends on**: Phase 6
-**Requirements**: [IDENT-01, IDENT-02, IDENT-03]
-**Success Criteria** (what must be TRUE):
-  1. User can transform staged AI/CS source data into one canonical schema for papers, researchers, venues, affiliations, and contact candidates.
-  2. User can see stable identifiers drive cross-source merges before any name-based matching is attempted.
-  3. User can keep ambiguous researcher matches unresolved instead of force-merging them.
-**Plans**: 3 plans
-
-Plans:
-- [ ] 07-01: Define the canonical schema and provenance contract
-- [ ] 07-02: Implement normalization from staged source data into canonical records
-- [ ] 07-03: Implement stable-ID-first merge rules and unresolved-match handling
-
-### Phase 8: Author Detail And Contact Quality Enrichment
-**Goal**: Users can enrich resolved AI/CS researchers with source-native author influence inputs and public contact-quality signals without weakening identity correctness.
-**Depends on**: Phase 7
-**Requirements**: [ENRICH-01, ENRICH-02, ENRICH-03]
-**Success Criteria** (what must be TRUE):
-  1. User can backfill key-author details from OpenAlex and inspect the source-native inputs used for author influence.
-  2. User can attach AI/CS public profile and homepage signals only to already-resolved researcher identities.
-  3. User can inspect each contact candidate with an explicit quality state instead of a binary `has email` flag.
-**Plans**: 3 plans
-
-Plans:
-- [ ] 08-01: Add OpenAlex author-detail enrichment for influence inputs
-- [ ] 08-02: Attach AI/CS profile and homepage signals after identity resolution
-- [ ] 08-03: Label contact candidates with quality states and provenance
-
-### Phase 9: Explainable Ranking Engine
-**Goal**: Users can rank AI/CS papers and researchers with explainable component scores and selectable scoring modes.
-**Depends on**: Phase 8
-**Requirements**: [RANK-01, RANK-02, RANK-03]
-**Success Criteria** (what must be TRUE):
-  1. User can rank AI/CS papers with explicit component scores for recency, citation signal, venue tier, and author influence.
-  2. User can rank researcher records from the gated AI/CS corpus and see which paper and influence inputs drove their position.
-  3. User can switch between `latest`, `impact`, and `balanced` ranking modes without changing the underlying corpus gate.
-  4. User can inspect score breakdowns for each ranked paper and ranked researcher record.
-**Plans**: 3 plans
-
-Plans:
-- [ ] 09-01: Define versioned ranking profiles and scoring components
-- [ ] 09-02: Implement paper and researcher scoring with mode selection
-- [ ] 09-03: Emit explainable score breakdown outputs for ranked records
-
-### Phase 10: Recruiter Export And Calibration
-**Goal**: Users can manually review ranked AI/CS outputs, then export recruiter-ready papers and researchers with provenance, score context, and contact-quality context retained.
-**Depends on**: Phase 9
-**Requirements**: [EXPORT-01, EXPORT-02, QUALITY-01]
-**Success Criteria** (what must be TRUE):
-  1. User can open a calibration output that surfaces top-ranked results and corpus exclusions for manual review before the ranking contract is accepted.
-  2. User can export ranked AI/CS papers as CSV and JSONL with provenance and score breakdowns retained.
-  3. User can export ranked AI/CS researchers as CSV and JSONL with top-paper context and contact-quality context retained.
+  1. User can apply a Postgres schema for source runs, source profiles, signals, candidate groups, group reasons, review labels, and approved people.
+  2. User can store raw source payloads as JSONB while querying normalized identifiers and review state through relational columns.
+  3. User can trace every stored record back to source system, source record ID, run ID, and observed timestamp.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: Build calibration outputs for top-ranked results and corpus exclusions
-- [ ] 10-02: Implement recruiter-facing paper and researcher exports in CSV and JSONL
+- [ ] 11-01: Define Postgres schema and migration contract
+- [ ] 11-02: Implement storage adapter and loader fixtures
+
+### Phase 12: Four Source Profile Pipelines
+**Goal**: Users can trigger OpenAlex, ORCID, DBLP, and OpenReview profile pipelines independently and persist source-profile outputs.
+**Depends on**: Phase 11
+**Requirements**: [PIPE-01, PIPE-02, PIPE-03, PIPE-04, PIPE-05]
+**Success Criteria** (what must be TRUE):
+  1. User can run each of the four source pipelines independently.
+  2. User can run the four pipelines for the same researcher search batch.
+  3. Each pipeline writes source-native raw payload and a normalized source-profile envelope into durable storage.
+**Plans**: 3 plans
+
+Plans:
+- [ ] 12-01: Persist OpenAlex and ORCID profile pipeline outputs
+- [ ] 12-02: Persist DBLP and OpenReview profile pipeline outputs
+- [ ] 12-03: Add four-source batch trigger and run summary counts
+
+### Phase 13: Signal Extraction And Candidate Reasoning
+**Goal**: Users can extract comparable signals and generate human-review candidate groups with explicit reasons.
+**Depends on**: Phase 12
+**Requirements**: [SIGNAL-01, SIGNAL-02, SIGNAL-03, CAND-01, CAND-02, CAND-03]
+**Success Criteria** (what must be TRUE):
+  1. User can extract ORCID, email, homepage, GitHub, DBLP PID, OpenReview ID, Google Scholar ID, LinkedIn, institution, paper DOI, OpenAlex author ID, and OpenAlex work ID signals.
+  2. User can see candidate groups produced from exact and review-worthy signals.
+  3. User can inspect why each group exists and see suggested strength without any automatic approval.
+**Plans**: 3 plans
+
+Plans:
+- [ ] 13-01: Implement signal extraction with provenance and quality states
+- [ ] 13-02: Implement candidate grouping from evidence signals
+- [ ] 13-03: Emit candidate reasoning packets and strength labels
+
+### Phase 14: Human Review Queue And Label Ingest
+**Goal**: Users can review candidate groups manually and ingest labels without losing reasoning or provenance.
+**Depends on**: Phase 13
+**Requirements**: [REVIEW-01, REVIEW-02, REVIEW-03]
+**Success Criteria** (what must be TRUE):
+  1. User can export review queues as CSV and JSONL.
+  2. User can label candidate groups as `same_person`, `not_same_person`, or `unsure`.
+  3. User can ingest labels and preserve negative/unsure decisions for future suppression.
+**Plans**: 2 plans
+
+Plans:
+- [ ] 14-01: Export reviewer-ready candidate queue files
+- [ ] 14-02: Ingest human labels and persist reviewed state
+
+### Phase 15: Approved People Export And Incremental Hygiene
+**Goal**: Users can export approved researcher groups and avoid repeated review spam as new source-profile runs arrive.
+**Depends on**: Phase 14
+**Requirements**: [APPROVE-01, APPROVE-02, INCR-01, INCR-02]
+**Success Criteria** (what must be TRUE):
+  1. User can export `approved_people.jsonl` only from human-labeled `same_person` groups.
+  2. User can export unresolved candidates separately from approved people.
+  3. User can run new batches and see only new or materially changed candidate groups return to review.
+  4. User can inspect counts for profiles stored, signals extracted, candidates created, labels ingested, approved groups exported, and repeats suppressed.
+**Plans**: 2 plans
+
+Plans:
+- [ ] 15-01: Export approved people and unresolved candidates
+- [ ] 15-02: Add incremental review suppression and run-level metrics
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 11 → 12 → 13 → 14 → 15
 
 **Historical Note:**
-- Phase 1 foundation shipped on 2026-04-13 and is preserved below for continuity.
-- Prior forward-looking placeholder Phases 2-5 were replaced by this milestone-specific v1.1 phase set.
+- Phase 1 official-source ingest foundation shipped on 2026-04-13.
+- Phase 6 AI/CS corpus gate shipped on 2026-04-14.
+- Prior v1.1 ranking phases 7-10 are superseded until human-reviewed identity groups exist.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Official AI Ingest Foundation | 3/3 | Complete | 2026-04-13 |
 | 6. AI/CS Corpus Gate And Venue Tiers | 3/3 | Complete | 2026-04-14 |
-| 7. Canonical Schema And Identity Resolution | 0/3 | Not started | - |
-| 8. Author Detail And Contact Quality Enrichment | 0/3 | Not started | - |
-| 9. Explainable Ranking Engine | 0/3 | Not started | - |
-| 10. Recruiter Export And Calibration | 0/2 | Not started | - |
+| 11. Storage And Source Profile Contract | 0/2 | Ready to plan | - |
+| 12. Four Source Profile Pipelines | 0/3 | Not started | - |
+| 13. Signal Extraction And Candidate Reasoning | 0/3 | Not started | - |
+| 14. Human Review Queue And Label Ingest | 0/2 | Not started | - |
+| 15. Approved People Export And Incremental Hygiene | 0/2 | Not started | - |
