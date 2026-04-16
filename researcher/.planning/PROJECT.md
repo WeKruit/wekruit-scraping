@@ -21,17 +21,19 @@ Python scrapers into TypeScript.
 
 ## Current Milestone: v1.2 Sourcing Service And Human Review Foundation
 
-**Goal:** Build a shared Firebase-backed sourcing service where local Python workers upload schema-validated source records, and core-service manages storage, candidate reasoning, human review, and approved entities.
+**Goal:** Build a shared Firebase-backed sourcing service where local Python workers upload schema-validated source records, and core-service manages storage, evidence extraction, dedup candidates, human review, and approved entities.
 
 **Target features:**
 - Add a `sourcing` service to `wekruit-core-service-cloud-function` using the existing service layout: `domain`, `application`, `repositories`, `functions/http`, and `functions/tasks`.
-- Define zod schemas and Firestore collection contracts for source runs, source records, extracted signals, candidate groups, review labels, and approved entities.
+- Define zod schemas and Firestore collection contracts for source runs, source records, evidence records, dedup candidates, review labels, and approved entities.
 - Store large raw payloads through Cloud Storage pointers instead of forcing everything into Firestore documents.
 - Expose core-service HTTP ingest endpoints that Python workers call instead of writing directly to Firebase.
 - Add a Python ingest client in `wekruit-scraping` that can upload local JSONL/replay output to core-service.
 - Integrate researcher sources (`OpenAlex`, `ORCID`, `DBLP`, `OpenReview`) as `domain=researcher` source records.
 - Adapt existing scraping domains (`devpost`, `github`) to the same source-record contract.
-- Generate candidate groups with explicit reasons while requiring human review before any approved entity is created.
+- Create first-class evidence records for every merge-relevant signal, including source record ID, raw value, normalized value, value hash, extraction path, source URL, quality, and observed timestamp.
+- Generate dedup candidates that reference evidence IDs and reason codes while requiring human review before any approved entity is created.
+- Keep dedup inside the `sourcing` service as a domain/application submodule instead of creating a separate top-level service before the first review loop is proven.
 
 ## Requirements
 
@@ -52,7 +54,7 @@ Python scrapers into TypeScript.
 - [ ] Add a Python ingest client that validates/serializes source-record payloads and preserves local JSONL replay.
 - [ ] Map researcher OpenAlex/ORCID/DBLP/OpenReview outputs into generic source records.
 - [ ] Map existing `devpost` and `github` scraping outputs into the same generic source-record shape.
-- [ ] Extract comparable signals and create candidate groups with machine-readable reasoning.
+- [ ] Extract comparable evidence records and create dedup candidates with machine-readable reasoning.
 - [ ] Require human review labels before creating approved entities.
 
 ### Out of Scope
@@ -104,8 +106,10 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 - **No direct Firebase writes from Python**: Python should not carry Admin SDK credentials or bypass service validation.
 - **Existing file-management pattern**: New core-service code follows existing `src/services/{service}/domain|application|repositories|functions` conventions.
 - **Generic source record**: Do not hard-code the storage contract to researcher.
-- **Human-reviewed merge**: Candidate groups can be strong, medium, or weak, but no candidate becomes approved without a human label.
-- **Reasoning required**: Every candidate group must preserve reason codes such as `email_exact`, `orcid_exact`, `github_exact`, `homepage_exact`, `paper_overlap`, or `name_institution`.
+- **Evidence-first**: Review reasoning must reference durable evidence IDs, not only flattened strings or free-text reasons.
+- **Human-reviewed merge**: Dedup candidates can be strong, medium, or weak, but no candidate becomes approved without a human label.
+- **Dedup is not merge**: Dedup candidates are review proposals, not approved entities.
+- **Reasoning required**: Every dedup candidate must preserve reason codes such as `email_exact`, `orcid_exact`, `github_exact`, `homepage_exact`, `paper_overlap`, or `name_institution`.
 - **Ranking waits**: Ranking and outreach wait until approved entities exist.
 
 ## Key Decisions
@@ -120,7 +124,10 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 | Do not use Postgres for v1.2 | Conflicts with current Firebase backend and user preference against column management | ✓ Good |
 | Do not use MongoDB | Adds a new database when Firebase already covers document storage | ✓ Good |
 | Do not use Neo4j as primary store | Current bottleneck is review workflow and evidence, not graph traversal | ✓ Good |
-| All merge candidates require human review | The business requirement is explainable grouping, not automatic identity collapse | ✓ Good |
+| Keep dedup inside `sourcing` for v1.2 | Dedup only consumes source records/evidence and feeds review; a separate service boundary would add coordination before the first product loop exists | ✓ Good |
+| Evidence is first-class | Human review needs auditable proof objects, not hidden extraction output | ✓ Good |
+| Dedup candidates are separate from approved entities | The business requirement is explainable grouping, not automatic identity collapse | ✓ Good |
+| All merge candidates require human review | The system can suggest, but only human labels approve identity collapse | ✓ Good |
 
 ## Evolution
 

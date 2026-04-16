@@ -42,14 +42,14 @@
 
 **Target scope:**
 - Core-service `sourcing` service following the existing `matching` / `outbound` file-management pattern
-- Firestore collections and zod schemas for source runs, source records, extracted signals, candidate groups, review labels, and approved entities
+- Firestore collections and zod schemas for source runs, source records, evidence records, dedup candidates, review labels, and approved entities
 - Cloud Storage pointer contract for large raw payloads
 - HTTP ingest API in core-service
 - Python ingest client in `wekruit-scraping`
 - Local Python workers continue to execute scraping and upload source records through the core-service API
 - Researcher four-source integration: OpenAlex, ORCID, DBLP, OpenReview
 - Existing scraping domains can emit the same `sourceRecord` contract: `devpost`, `github`, and future sources
-- Candidate grouping with explicit reasoning and mandatory human review
+- Evidence extraction and dedup candidate generation with explicit reasoning, evidence links, and mandatory human review
 
 **Explicitly not in scope:**
 - Rewriting Python scrapers into TypeScript

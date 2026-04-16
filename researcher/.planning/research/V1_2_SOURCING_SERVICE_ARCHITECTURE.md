@@ -51,6 +51,10 @@ src/services/outbound/
 The sourcing service must follow this existing file-management pattern. Do not introduce a new
 framework or directory style.
 
+Dedup should not be a separate top-level service in v1.2. It belongs inside `src/services/sourcing`
+because it consumes sourcing records/evidence and feeds sourcing review labels. Split it internally by
+domain/application files, not by another service boundary.
+
 ## Boundary
 
 ```text
@@ -68,8 +72,8 @@ wekruit-core-service-cloud-function
   repositories
   HTTP ingest API
   task queues
-  signal extraction
-  candidate grouping
+  evidence extraction
+  dedup candidate generation
   review labels
   approved entities
 ```
@@ -153,8 +157,8 @@ Recommended collection names:
 export const sourcingCollections = {
   sourceRuns: 'sourcing-source-runs',
   sourceRecords: 'sourcing-source-records',
-  extractedSignals: 'sourcing-extracted-signals',
-  candidateGroups: 'sourcing-candidate-groups',
+  evidence: 'sourcing-evidence',
+  dedupCandidates: 'sourcing-dedup-candidates',
   reviewLabels: 'sourcing-review-labels',
   approvedEntities: 'sourcing-approved-entities',
 } as const;
@@ -162,6 +166,55 @@ export const sourcingCollections = {
 
 These should be added beside existing `matchingCollections` and `outboundCollections`, not as a
 separate config mechanism.
+
+## Evidence And Dedup Contract
+
+Evidence is the durable proof object used by review and dedup. It is not only an extracted string.
+
+Minimum evidence document:
+
+```json
+{
+  "evidenceId": "ev_sha256_...",
+  "domain": "researcher",
+  "entityType": "person_profile",
+  "sourceRecordId": "openalex:A123",
+  "source": "openalex",
+  "evidenceType": "orcid",
+  "rawValue": "https://orcid.org/0000-0002-3192-2550",
+  "normalizedValue": "0000-0002-3192-2550",
+  "valueHash": "sha256:...",
+  "extractedFrom": {
+    "sourcePath": "authorships[0].author.orcid",
+    "sourceUrl": "https://api.openalex.org/authors/A123"
+  },
+  "quality": "exact",
+  "observedAt": "2026-04-15T00:00:00.000Z",
+  "extractorVersion": "sourcing_evidence.v1"
+}
+```
+
+Minimum dedup candidate document:
+
+```json
+{
+  "dedupCandidateId": "dc_sha256_...",
+  "domain": "researcher",
+  "entityType": "person_profile",
+  "sourceRecordIds": ["openalex:A123", "orcid:0000-0002-3192-2550"],
+  "reasonCodes": ["orcid_exact"],
+  "evidenceIds": ["ev_sha256_a", "ev_sha256_b"],
+  "suggestedStrength": "strong",
+  "status": "pending_review",
+  "createdAt": "2026-04-15T00:00:00.000Z",
+  "candidateVersion": "sourcing_dedup_candidate.v1"
+}
+```
+
+Dedup candidates are proposals only. They can be strong enough to prioritize review, but they cannot
+create approved entities without a human `same_person` label. Candidate IDs should be deterministic
+from `domain`, `entityType`, source record IDs, and evidence hashes so repeat runs do not spam the
+review queue.
 
 ## API Boundary
 
@@ -176,6 +229,7 @@ POST /api/sourcing/source-runs/:runId/complete
 Later review API:
 
 ```text
+GET  /api/sourcing/dedup-candidates
 GET  /api/sourcing/review-queue
 POST /api/sourcing/review-labels
 GET  /api/sourcing/approved-entities
@@ -187,7 +241,7 @@ GET  /api/sourcing/approved-entities
 2. Implement core-service ingest API.
 3. Add Python upload client and JSONL replay bridge.
 4. Map researcher, Devpost, and GitHub outputs into the source-record contract.
-5. Add signal extraction and candidate reasoning.
+5. Add evidence extraction and dedup candidate generation.
 6. Add human review and approved entity materialization.
 
 ## Final Call
@@ -199,7 +253,7 @@ Local Python workers + JSONL replay
 -> core-service sourcing HTTP ingest API
 -> zod schema validation
 -> Firestore + Cloud Storage
--> signal extraction + candidate grouping
+-> evidence extraction + dedup candidate generation
 -> human review labels
 -> approved entities
 ```

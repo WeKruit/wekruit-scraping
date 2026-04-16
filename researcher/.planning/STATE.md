@@ -56,8 +56,10 @@ Recent decisions affecting current work:
 - [Milestone v1.2]: Local Python workers execute fetching/parsing and upload through core-service APIs.
 - [Milestone v1.2]: Core-service owns Firebase persistence, schema validation, review labels, and approved entities.
 - [Milestone v1.2]: Python workers must not write directly to Firestore.
+- [Milestone v1.2]: Evidence is a first-class Firestore document, not a hidden field on candidate reasoning.
+- [Milestone v1.2]: Dedup candidates are review proposals and never become approved entities without human labels.
 - [Milestone v1.2]: Full reviewer UI is deferred until API/CSV/JSONL review flow is proven.
-- [Identity]: All candidate groups require human review. The system provides reasoning, not automatic merges.
+- [Identity]: All dedup candidates require human review. The system provides evidence-linked reasoning, not automatic merges.
 
 ### Pending Todos
 
@@ -69,7 +71,8 @@ None yet.
 - Cross-repo execution means Phase 11 and Phase 12 must clearly separate core-service changes from scraping repo changes.
 - Core-service repository access and branch strategy must be confirmed before implementation starts.
 - OpenReview live-access reliability still needs validation before Phase 14 implementation.
-- Candidate grouping must preserve negative and unsure labels so the system does not repeatedly ask humans to review the same rejected profiles.
+- Dedup candidate generation must preserve negative and unsure labels so the system does not repeatedly ask humans to review the same rejected profiles.
+- Phase 15 must ensure dedup candidate IDs are deterministic and evidence-linked.
 
 ## Session Continuity
 

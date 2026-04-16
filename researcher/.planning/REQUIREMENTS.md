@@ -20,7 +20,7 @@
 ### Core-Service Sourcing Contract
 
 - [ ] **CORE-01**: User can review a `sourcing` service plan that follows the existing core-service file-management pattern: `domain`, `application`, `repositories`, `functions/http`, and `functions/tasks`.
-- [ ] **CORE-02**: User can validate source runs, source records, extracted signals, candidate groups, review labels, and approved entities through zod schemas before Firestore writes.
+- [ ] **CORE-02**: User can validate source runs, source records, evidence records, dedup candidates, review labels, and approved entities through zod schemas before Firestore writes.
 - [ ] **CORE-03**: User can store large raw payloads through Cloud Storage pointers while Firestore stores queryable summaries, IDs, hashes, and review state.
 - [ ] **CORE-04**: User can query sourcing Firestore collections without disrupting existing `matching` and `outbound` services.
 
@@ -45,26 +45,28 @@
 - [ ] **DOMAIN-04**: User can map existing `github` outputs into generic source records.
 - [ ] **DOMAIN-05**: User can add a future source by implementing the source-record contract without changing core Firestore collections.
 
-### Signal Extraction And Candidate Reasoning
+### Evidence Extraction And Dedup Candidate Generation
 
-- [ ] **SIGNAL-01**: User can extract comparable signals from source records: email, ORCID, GitHub, homepage, DBLP PID, OpenReview ID, Google Scholar ID, institution, paper DOI, source-native IDs, and source URLs.
-- [ ] **SIGNAL-02**: User can inspect signal provenance and quality state instead of seeing only flattened strings.
-- [ ] **CAND-01**: User can generate candidate groups from exact and review-worthy signals without automatically merging entities.
-- [ ] **CAND-02**: User can see machine-readable reasons for every candidate group, such as `orcid_exact`, `email_exact`, `github_exact`, `homepage_exact`, `dblp_link`, `paper_overlap`, or `name_institution`.
-- [ ] **CAND-03**: User can see suggested strength (`strong`, `medium`, `weak`) without that strength becoming an approval decision.
+- [ ] **EVIDENCE-01**: User can create first-class evidence records from source records for email, ORCID, GitHub, homepage, DBLP PID, OpenReview ID, Google Scholar ID, institution, paper DOI, source-native IDs, and source URLs.
+- [ ] **EVIDENCE-02**: User can inspect each evidence record with `sourceRecordId`, `evidenceType`, `rawValue`, `normalizedValue`, `valueHash`, extraction path, source URL, quality state, observed timestamp, and extractor version.
+- [ ] **EVIDENCE-03**: User can inspect evidence provenance and quality before the evidence participates in dedup candidate generation.
+- [ ] **DEDUP-01**: User can generate dedup candidates from exact and review-worthy evidence without automatically merging entities.
+- [ ] **DEDUP-02**: User can see machine-readable reasons for every dedup candidate, such as `orcid_exact`, `email_exact`, `github_exact`, `homepage_exact`, `dblp_link`, `paper_overlap`, or `name_institution`.
+- [ ] **DEDUP-03**: User can verify every dedup reason points to one or more evidence IDs instead of free-text-only reasoning.
+- [ ] **DEDUP-04**: User can see suggested strength (`strong`, `medium`, `weak`) without that strength becoming an approval decision.
 
 ### Human Review And Approved Entities
 
-- [ ] **REVIEW-01**: User can export or query a human review queue with candidate group ID, source records, names, institutions, signals, reasons, suggested strength, `human_label`, and notes.
+- [ ] **REVIEW-01**: User can export or query a human review queue with dedup candidate ID, source records, names, institutions, evidence, reasons, suggested strength, `human_label`, and notes.
 - [ ] **REVIEW-02**: User can ingest human labels: `same_person`, `not_same_person`, and `unsure`.
 - [ ] **REVIEW-03**: User can preserve negative and unsure labels so repeated pipeline runs do not keep re-surfacing the same already-reviewed candidates.
-- [ ] **APPROVE-01**: User can create approved entities only from human-labeled `same_person` candidate groups.
-- [ ] **APPROVE-02**: User can export approved entities separately from unresolved candidate groups.
+- [ ] **APPROVE-01**: User can create approved entities only from human-labeled `same_person` dedup candidates.
+- [ ] **APPROVE-02**: User can export approved entities separately from unresolved dedup candidates.
 
 ## Future Requirements
 
 - [ ] **CLOUDRUN-01**: User can run Python scraping workers as Cloud Run Jobs after the local-worker ingest contract is proven.
-- [ ] **UI-01**: User can review candidate groups in a dedicated reviewer UI after the API/CSV/JSONL workflow is stable.
+- [ ] **UI-01**: User can review dedup candidates in a dedicated reviewer UI after the API/CSV/JSONL workflow is stable.
 - [ ] **RANK-01**: User can rank AI/CS papers with explicit component scores for recency, citation signal, venue tier, and author influence.
 - [ ] **RANK-02**: User can choose between `latest`, `impact`, and `balanced` ranking modes.
 - [ ] **EXPORT-01**: User can export ranked AI/CS researchers with top-paper context and contact-quality context retained.
@@ -111,11 +113,13 @@
 | DOMAIN-03 | Phase 14 | Pending |
 | DOMAIN-04 | Phase 14 | Pending |
 | DOMAIN-05 | Phase 14 | Pending |
-| SIGNAL-01 | Phase 15 | Pending |
-| SIGNAL-02 | Phase 15 | Pending |
-| CAND-01 | Phase 15 | Pending |
-| CAND-02 | Phase 15 | Pending |
-| CAND-03 | Phase 15 | Pending |
+| EVIDENCE-01 | Phase 15 | Pending |
+| EVIDENCE-02 | Phase 15 | Pending |
+| EVIDENCE-03 | Phase 15 | Pending |
+| DEDUP-01 | Phase 15 | Pending |
+| DEDUP-02 | Phase 15 | Pending |
+| DEDUP-03 | Phase 15 | Pending |
+| DEDUP-04 | Phase 15 | Pending |
 | REVIEW-01 | Phase 16 | Pending |
 | REVIEW-02 | Phase 16 | Pending |
 | REVIEW-03 | Phase 16 | Pending |
@@ -124,7 +128,7 @@
 
 **Coverage:**
 - Foundation requirements validated: 8
-- Milestone v1.2 requirements: 26
+- Milestone v1.2 requirements: 28
 - Future requirements deferred: 6
 
 ---

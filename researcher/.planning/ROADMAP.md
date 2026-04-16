@@ -26,8 +26,8 @@ Firestore/Cloud Storage writes, task orchestration, review labels, and approved 
 - [ ] **Phase 12: Core Ingest API And Firebase Persistence** - Add source-run and source-record ingest endpoints in core-service and persist validated records to Firebase.
 - [ ] **Phase 13: Python Worker Upload Client And Replay Bridge** - Add a Python client in `wekruit-scraping` that uploads local source outputs to the core-service ingest API.
 - [ ] **Phase 14: Source Domain Adapter Integration** - Map researcher, Devpost, and GitHub outputs into the generic source-record contract.
-- [ ] **Phase 15: Signal Extraction And Candidate Reasoning** - Extract comparable signals and create candidate groups with explicit reasons.
-- [ ] **Phase 16: Human Review And Approved Entity Loop** - Export/query review queues, ingest human labels, suppress repeated reviews, and materialize approved entities.
+- [ ] **Phase 15: Evidence Extraction And Dedup Candidate Generation** - Create auditable evidence records and dedup candidates with explicit evidence-linked reasons.
+- [ ] **Phase 16: Human Review And Approved Entity Loop** - Export/query dedup review queues, ingest human labels, suppress repeated reviews, and materialize approved entities.
 
 ## Phase Details
 
@@ -37,7 +37,7 @@ Firestore/Cloud Storage writes, task orchestration, review labels, and approved 
 **Requirements**: [CORE-01, CORE-02, CORE-03, CORE-04, CORE-FOUNDATION-01]
 **Success Criteria** (what must be TRUE):
   1. User can see sourcing collection names added beside existing `matching` and `outbound` collections without changing those services.
-  2. User can see zod schemas for source runs, source records, extracted signals, candidate groups, review labels, and approved entities.
+  2. User can see zod schemas for source runs, source records, evidence records, dedup candidates, review labels, and approved entities.
   3. User can see how large raw payloads are represented through Cloud Storage pointers and content hashes.
   4. User can run emulator/typecheck tests proving valid fixtures pass and invalid fixtures fail.
 **Plans**: 2 plans
@@ -91,32 +91,32 @@ Plans:
 - [ ] 14-02: Map Devpost outputs to source records
 - [ ] 14-03: Map GitHub outputs to source records and document new-source adapter rules
 
-### Phase 15: Signal Extraction And Candidate Reasoning
-**Goal**: Users can see why source records may represent the same entity without approving the merge automatically.
+### Phase 15: Evidence Extraction And Dedup Candidate Generation
+**Goal**: Users can see auditable evidence for why source records may represent the same entity without approving the merge automatically.
 **Depends on**: Phase 14
-**Requirements**: [SIGNAL-01, SIGNAL-02, CAND-01, CAND-02, CAND-03]
+**Requirements**: [EVIDENCE-01, EVIDENCE-02, EVIDENCE-03, DEDUP-01, DEDUP-02, DEDUP-03, DEDUP-04]
 **Success Criteria** (what must be TRUE):
-  1. User can extract comparable signals with source provenance and quality state.
-  2. User can create candidate groups from exact and review-worthy signals.
-  3. User can inspect machine-readable reasons and suggested strength for each candidate group.
-  4. No approved entity is created by candidate strength alone.
+  1. User can create evidence records with source provenance, normalized value, value hash, quality state, and extractor version.
+  2. User can create dedup candidates from exact and review-worthy evidence.
+  3. User can inspect machine-readable reasons, referenced evidence IDs, and suggested strength for each dedup candidate.
+  4. No approved entity is created by dedup candidate strength alone.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: Implement signal extraction over stored source records
-- [ ] 15-02: Implement candidate grouping by signal evidence
-- [ ] 15-03: Emit candidate reasoning packets with strength labels
+- [ ] 15-01: Implement evidence extraction over stored source records
+- [ ] 15-02: Implement dedup candidate generation from evidence
+- [ ] 15-03: Emit dedup reasoning packets with evidence links and strength labels
 
 ### Phase 16: Human Review And Approved Entity Loop
-**Goal**: Users can review candidate groups manually and produce approved entities only after human labels.
+**Goal**: Users can review dedup candidates manually and produce approved entities only after human labels.
 **Depends on**: Phase 15
 **Requirements**: [REVIEW-01, REVIEW-02, REVIEW-03, APPROVE-01, APPROVE-02]
 **Success Criteria** (what must be TRUE):
-  1. User can export or query reviewer-ready candidate queues.
+  1. User can export or query reviewer-ready dedup candidate queues.
   2. User can ingest `same_person`, `not_same_person`, and `unsure` labels.
   3. Negative and unsure labels suppress repeated review spam unless materially new evidence appears.
   4. Only `same_person` labels can materialize approved entities.
-  5. User can export approved entities separately from unresolved candidates.
+  5. User can export approved entities separately from unresolved dedup candidates.
 **Plans**: 3 plans
 
 Plans:
@@ -142,5 +142,5 @@ Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16
 | 12. Core Ingest API And Firebase Persistence | 0/2 | Not started | - |
 | 13. Python Worker Upload Client And Replay Bridge | 0/2 | Not started | - |
 | 14. Source Domain Adapter Integration | 0/3 | Not started | - |
-| 15. Signal Extraction And Candidate Reasoning | 0/3 | Not started | - |
+| 15. Evidence Extraction And Dedup Candidate Generation | 0/3 | Not started | - |
 | 16. Human Review And Approved Entity Loop | 0/3 | Not started | - |
