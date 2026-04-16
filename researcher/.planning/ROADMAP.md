@@ -34,12 +34,13 @@ Firestore/Cloud Storage writes, task orchestration, review labels, and approved 
 ### Phase 11: Sourcing Firebase Schema And Collection Contract
 **Goal**: Users can review the core-service sourcing contract before any Python worker uploads production data.
 **Depends on**: Existing core-service Firebase stack
-**Requirements**: [CORE-01, CORE-02, CORE-03, CORE-04, CORE-FOUNDATION-01]
+**Requirements**: [CORE-01, CORE-02, CORE-03, CORE-04, CORE-05, CORE-FOUNDATION-01]
 **Success Criteria** (what must be TRUE):
   1. User can see sourcing collection names added beside existing `matching` and `outbound` collections without changing those services.
   2. User can see zod schemas for source runs, source records, evidence records, dedup candidates, review labels, and approved entities.
   3. User can see how large raw payloads are represented through Cloud Storage pointers and content hashes.
-  4. User can run emulator/typecheck tests proving valid fixtures pass and invalid fixtures fail.
+  4. User can see all sourcing-owned Firestore collections, Cloud Storage paths, task queues, and HTTP routes use explicit sourcing prefixes.
+  5. User can run emulator/typecheck tests proving valid fixtures pass and invalid fixtures fail.
 **Plans**: 2 plans
 
 Plans:
@@ -133,6 +134,7 @@ Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16
 - Phase 1 official-source researcher ingest foundation shipped on 2026-04-13.
 - Phase 6 AI/CS corpus gate shipped on 2026-04-14.
 - The prior researcher-only v1.2 Postgres direction is superseded by this Firebase/core-service sourcing plan.
+- Outbound integration is the next consumer after approved entities exist; unresolved dedup candidates must not be written to `outbound-candidates`.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|

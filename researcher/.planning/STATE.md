@@ -19,7 +19,7 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 Phase: 11 of 16 (Sourcing Firebase Schema And Collection Contract)
 Plan: —
 Status: Ready to plan
-Last activity: 2026-04-15 — v1.2 phase plan reframed around shared sourcing service, Firebase/core-service backend, and Python worker upload boundary
+Last activity: 2026-04-15 — v1.2 scraping-to-review-to-store flow documented with sourcing Firebase prefixes and outbound handoff boundary
 
 Progress: [████░░░░░░] 38%
 
@@ -58,6 +58,8 @@ Recent decisions affecting current work:
 - [Milestone v1.2]: Python workers must not write directly to Firestore.
 - [Milestone v1.2]: Evidence is a first-class Firestore document, not a hidden field on candidate reasoning.
 - [Milestone v1.2]: Dedup candidates are review proposals and never become approved entities without human labels.
+- [Milestone v1.2]: Sourcing-owned Firebase resources must use explicit `sourcing` prefixes.
+- [Milestone v1.2]: Outbound is a downstream consumer of approved entities only, not dedup candidates.
 - [Milestone v1.2]: Full reviewer UI is deferred until API/CSV/JSONL review flow is proven.
 - [Identity]: All dedup candidates require human review. The system provides evidence-linked reasoning, not automatic merges.
 
@@ -73,9 +75,10 @@ None yet.
 - OpenReview live-access reliability still needs validation before Phase 14 implementation.
 - Dedup candidate generation must preserve negative and unsure labels so the system does not repeatedly ask humans to review the same rejected profiles.
 - Phase 15 must ensure dedup candidate IDs are deterministic and evidence-linked.
+- Future outbound handoff must preserve lineage back to approved entity, review label, dedup candidate, evidence, and source records.
 
 ## Session Continuity
 
 Last session: 2026-04-15 10:20 PDT
-Stopped at: v1.2 phase plan updated; next step is `$gsd-plan-phase 11`.
+Stopped at: v1.2 scraping-to-review-to-store flow updated; next step is `$gsd-plan-phase 11`.
 Resume file: None

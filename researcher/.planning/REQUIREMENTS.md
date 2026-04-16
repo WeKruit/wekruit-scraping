@@ -23,6 +23,7 @@
 - [ ] **CORE-02**: User can validate source runs, source records, evidence records, dedup candidates, review labels, and approved entities through zod schemas before Firestore writes.
 - [ ] **CORE-03**: User can store large raw payloads through Cloud Storage pointers while Firestore stores queryable summaries, IDs, hashes, and review state.
 - [ ] **CORE-04**: User can query sourcing Firestore collections without disrupting existing `matching` and `outbound` services.
+- [ ] **CORE-05**: User can verify every sourcing-owned Firestore collection, Cloud Storage raw path, Cloud Tasks queue, and HTTP route uses explicit sourcing prefixes: `sourcing-*`, `sourcing/raw/...`, `sourcing-*`, and `/api/sourcing/...`.
 
 ### Core-Service Ingest API
 
@@ -71,6 +72,8 @@
 - [ ] **RANK-02**: User can choose between `latest`, `impact`, and `balanced` ranking modes.
 - [ ] **EXPORT-01**: User can export ranked AI/CS researchers with top-paper context and contact-quality context retained.
 - [ ] **GRAPH-01**: User can project approved entities into Neo4j or another graph read model if traversal becomes a measured product need.
+- [ ] **OUTBOUND-01**: User can convert a human-approved entity into an `outbound-candidates` record only after approved contact evidence satisfies the current outbound-required fields.
+- [ ] **OUTBOUND-02**: User can trace an outbound candidate back to the approved entity, review label, dedup candidate, evidence records, and source records that produced it.
 
 ## Out of Scope
 
@@ -101,6 +104,7 @@
 | CORE-02 | Phase 11 | Pending |
 | CORE-03 | Phase 11 | Pending |
 | CORE-04 | Phase 11 | Pending |
+| CORE-05 | Phase 11 | Pending |
 | API-01 | Phase 12 | Pending |
 | API-02 | Phase 12 | Pending |
 | API-03 | Phase 12 | Pending |
@@ -128,8 +132,8 @@
 
 **Coverage:**
 - Foundation requirements validated: 8
-- Milestone v1.2 requirements: 28
-- Future requirements deferred: 6
+- Milestone v1.2 requirements: 29
+- Future requirements deferred: 8
 
 ---
 *Last updated: 2026-04-15 after milestone v1.2 sourcing-service phase plan*

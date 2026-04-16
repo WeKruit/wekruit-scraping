@@ -43,6 +43,7 @@
 **Target scope:**
 - Core-service `sourcing` service following the existing `matching` / `outbound` file-management pattern
 - Firestore collections and zod schemas for source runs, source records, evidence records, dedup candidates, review labels, and approved entities
+- Explicit sourcing prefixes for Firestore collections, Cloud Storage raw paths, Cloud Tasks queues, and HTTP routes
 - Cloud Storage pointer contract for large raw payloads
 - HTTP ingest API in core-service
 - Python ingest client in `wekruit-scraping`
@@ -60,6 +61,7 @@
 - Automatic merge without human approval
 - Full reviewer UI before the API/CSV review loop is proven
 - Ranking or recruiter outreach exports before approved entities exist
+- Writing unresolved dedup candidates into `outbound-candidates`
 
 ---
 *Last updated: 2026-04-15 after reframing v1.2 as shared sourcing service*

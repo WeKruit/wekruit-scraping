@@ -34,6 +34,7 @@ Python scrapers into TypeScript.
 - Create first-class evidence records for every merge-relevant signal, including source record ID, raw value, normalized value, value hash, extraction path, source URL, quality, and observed timestamp.
 - Generate dedup candidates that reference evidence IDs and reason codes while requiring human review before any approved entity is created.
 - Keep dedup inside the `sourcing` service as a domain/application submodule instead of creating a separate top-level service before the first review loop is proven.
+- Reserve outbound as the downstream consumer of human-approved entities only; unresolved dedup candidates cannot become outbound candidates.
 
 ## Requirements
 
@@ -49,6 +50,7 @@ Python scrapers into TypeScript.
 
 - [ ] Define sourcing schemas in core-service using zod, not ad hoc Firestore documents.
 - [ ] Add Firestore collection names and indexes for sourcing records without disrupting existing `matching` and `outbound` services.
+- [ ] Enforce `sourcing-*` Firestore collection prefixes, `sourcing/raw/...` Cloud Storage prefixes, `sourcing-*` task queue prefixes, and `/api/sourcing/...` HTTP route prefixes.
 - [ ] Build HTTP ingest endpoints in core-service for source runs and source-record batch upserts.
 - [ ] Keep Python scraping execution local or worker-based; Python calls the core-service API and does not directly own Firebase writes.
 - [ ] Add a Python ingest client that validates/serializes source-record payloads and preserves local JSONL replay.
@@ -67,6 +69,7 @@ Python scrapers into TypeScript.
 - Full reviewer UI — API/CSV/JSONL review loop is enough before product UI.
 - Automatic merge without human approval — candidate strength is triage, not approval.
 - Ranking, outreach, or recruiter export based on unreviewed identities.
+- Writing unresolved dedup candidates into `outbound-candidates`.
 
 ## Context
 
@@ -111,6 +114,8 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 - **Dedup is not merge**: Dedup candidates are review proposals, not approved entities.
 - **Reasoning required**: Every dedup candidate must preserve reason codes such as `email_exact`, `orcid_exact`, `github_exact`, `homepage_exact`, `paper_overlap`, or `name_institution`.
 - **Ranking waits**: Ranking and outreach wait until approved entities exist.
+- **Outbound waits**: Outbound integration consumes only approved entities with approved contact evidence.
+- **Sourcing prefix required**: All sourcing-owned Firestore collections, task queues, and raw storage paths use explicit `sourcing` prefixes.
 
 ## Key Decisions
 
@@ -128,6 +133,7 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 | Evidence is first-class | Human review needs auditable proof objects, not hidden extraction output | ✓ Good |
 | Dedup candidates are separate from approved entities | The business requirement is explainable grouping, not automatic identity collapse | ✓ Good |
 | All merge candidates require human review | The system can suggest, but only human labels approve identity collapse | ✓ Good |
+| Outbound consumes approved entities only | Outreach should not act on unreviewed identity suggestions | ✓ Good |
 
 ## Evolution
 

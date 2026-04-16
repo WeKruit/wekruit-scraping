@@ -167,6 +167,34 @@ export const sourcingCollections = {
 These should be added beside existing `matchingCollections` and `outboundCollections`, not as a
 separate config mechanism.
 
+## Firebase Prefix Contract
+
+Sourcing-owned Firebase resources must be visually and operationally separated from existing
+`matching` and `outbound` resources.
+
+```ts
+export const sourcingQueueNames = {
+  extractEvidence: 'sourcing-extract-evidence',
+  generateDedupCandidates: 'sourcing-generate-dedup-candidates',
+  materializeApprovedEntity: 'sourcing-materialize-approved-entity',
+} as const;
+```
+
+Raw payloads use this Cloud Storage prefix:
+
+```text
+sourcing/raw/{domain}/{source}/{runId}/{sourceRecordId}.json
+```
+
+HTTP routes use this route prefix:
+
+```text
+/api/sourcing/...
+```
+
+No sourcing-owned Firestore collection should use an unprefixed collection name. No scraping worker
+should write directly to `outbound-*` collections.
+
 ## Evidence And Dedup Contract
 
 Evidence is the durable proof object used by review and dedup. It is not only an extracted string.
@@ -235,6 +263,15 @@ POST /api/sourcing/review-labels
 GET  /api/sourcing/approved-entities
 ```
 
+Future outbound handoff API:
+
+```text
+POST /api/sourcing/approved-entities/:approvedEntityId/outbound-candidate
+```
+
+This is intentionally deferred until approved entities exist. The handoff target is the existing
+`outbound-candidates` collection shape, not a direct write from scraping or dedup candidate records.
+
 ## Phase Strategy
 
 1. Define core-service schemas and Firestore collections.
@@ -243,6 +280,9 @@ GET  /api/sourcing/approved-entities
 4. Map researcher, Devpost, and GitHub outputs into the source-record contract.
 5. Add evidence extraction and dedup candidate generation.
 6. Add human review and approved entity materialization.
+
+The full end-to-end product loop is specified in
+`researcher/.planning/research/V1_2_SCRAPING_REVIEW_STORE_FLOW.md`.
 
 ## Final Call
 
