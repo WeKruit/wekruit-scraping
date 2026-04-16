@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--input-run", required=True, help="Run ID under data/runs/<run_id>")
     parser.add_argument("--output-root", default=DATA_ROOT, help="Local data root; default comes from config/settings.py or data")
     parser.add_argument("--domain", default="researcher")
-    parser.add_argument("--api-base-url", default="http://127.0.0.1:5101/api/sourcing")
+    parser.add_argument("--api-base-url", default="http://127.0.0.1:5100/api/sourcing")
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--dry-run", action="store_true", help="Write payload JSONL locally without network calls")
     return parser
@@ -68,4 +68,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

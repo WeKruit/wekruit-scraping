@@ -1,8 +1,8 @@
 ---
-phase: "Phase 11"
-name: "Sourcing Firebase Schema And Collection Contract"
+phase: "Phase 17"
+name: "Minimal Review Web And Firebase Hosting"
 created: 2026-04-15
-status: ready_to_plan
+status: complete
 ---
 
 # Project State
@@ -12,16 +12,16 @@ status: ready_to_plan
 See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** Turn heterogeneous scraping outputs into durable, reviewable, source-backed entities with explicit reasoning, without forcing all source-specific payloads into SQL columns or rewriting working Python scrapers into TypeScript.
-**Current focus:** Phase 11 — Sourcing Firebase Schema And Collection Contract
+**Current focus:** v1.2 Firebase sourcing review/store POC complete; next focus is production deploy/Cloud Run scheduling or outbound handoff.
 
 ## Current Position
 
-Phase: 11 of 16 (Sourcing Firebase Schema And Collection Contract)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-04-15 — v1.2 scraping-to-review-to-store flow documented with sourcing Firebase prefixes and outbound handoff boundary
+Phase: 17 of 17 (Minimal Review Web And Firebase Hosting)
+Plan: 17-02
+Status: Complete
+Last activity: 2026-04-15 — core-service sourcing API, Firebase persistence, evidence/dedup review loop, CSV/JSONL upload web, and Python upload bridge validated in local emulators
 
-Progress: [████░░░░░░] 38%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -60,7 +60,10 @@ Recent decisions affecting current work:
 - [Milestone v1.2]: Dedup candidates are review proposals and never become approved entities without human labels.
 - [Milestone v1.2]: Sourcing-owned Firebase resources must use explicit `sourcing` prefixes.
 - [Milestone v1.2]: Outbound is a downstream consumer of approved entities only, not dedup candidates.
-- [Milestone v1.2]: Full reviewer UI is deferred until API/CSV/JSONL review flow is proven.
+- [Milestone v1.2]: Minimal Firebase-hosted review web is now in scope for upload/review/approved inspection.
+- [Milestone v1.2]: Full product-grade reviewer UI is deferred; only minimal Firebase-hosted review web is in scope.
+- [Milestone v1.2]: The minimal loop is API-backed and Firebase-stored; Python scraping workers remain local uploaders.
+- [Milestone v1.2]: Devpost, GitHub, and manual CSV/JSON/JSONL imports use the same generic source-record uploader.
 - [Identity]: All dedup candidates require human review. The system provides evidence-linked reasoning, not automatic merges.
 
 ### Pending Todos
@@ -69,16 +72,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 11 must inspect core-service structure before defining concrete file paths; follow existing `matching` and `outbound` conventions.
-- Cross-repo execution means Phase 11 and Phase 12 must clearly separate core-service changes from scraping repo changes.
-- Core-service repository access and branch strategy must be confirmed before implementation starts.
+- Production deploy still needs a deliberate Firebase deploy decision for staging vs production.
+- Cloud Run or Mac mini scheduling for Python scraping workers is not implemented yet.
 - OpenReview live-access reliability still needs validation before Phase 14 implementation.
-- Dedup candidate generation must preserve negative and unsure labels so the system does not repeatedly ask humans to review the same rejected profiles.
-- Phase 15 must ensure dedup candidate IDs are deterministic and evidence-linked.
 - Future outbound handoff must preserve lineage back to approved entity, review label, dedup candidate, evidence, and source records.
 
 ## Session Continuity
 
-Last session: 2026-04-15 10:20 PDT
-Stopped at: v1.2 scraping-to-review-to-store flow updated; next step is `$gsd-plan-phase 11`.
+Last session: 2026-04-15 19:10 PDT
+Stopped at: v1.2 local Firebase sourcing loop validated; next step is production deploy decision or outbound handoff planning.
 Resume file: None

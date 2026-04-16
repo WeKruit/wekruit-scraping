@@ -26,7 +26,7 @@ Python scrapers into TypeScript.
 **Target features:**
 - Add a `sourcing` service to `wekruit-core-service-cloud-function` using the existing service layout: `domain`, `application`, `repositories`, `functions/http`, and `functions/tasks`.
 - Define zod schemas and Firestore collection contracts for source runs, source records, evidence records, dedup candidates, review labels, and approved entities.
-- Store large raw payloads through Cloud Storage pointers instead of forcing everything into Firestore documents.
+- Store queryable summaries, content hashes, and raw payload pointers in Firebase-owned sourcing records.
 - Expose core-service HTTP ingest endpoints that Python workers call instead of writing directly to Firebase.
 - Add a Python ingest client in `wekruit-scraping` that can upload local JSONL/replay output to core-service.
 - Integrate researcher sources (`OpenAlex`, `ORCID`, `DBLP`, `OpenReview`) as `domain=researcher` source records.
@@ -35,6 +35,7 @@ Python scrapers into TypeScript.
 - Generate dedup candidates that reference evidence IDs and reason codes while requiring human review before any approved entity is created.
 - Keep dedup inside the `sourcing` service as a domain/application submodule instead of creating a separate top-level service before the first review loop is proven.
 - Reserve outbound as the downstream consumer of human-approved entities only; unresolved dedup candidates cannot become outbound candidates.
+- Add a minimal Firebase-hosted review web for JSONL upload, dedup review, review-label submission, and approved-entity inspection.
 
 ## Requirements
 
@@ -45,19 +46,15 @@ Python scrapers into TypeScript.
 - OpenAlex is the working researcher ingest backbone and Crossref is the DOI backfill layer (Phase 1).
 - AI/CS paper corpus gating exists with venue-tier decisions and include/exclude reason logs (Phase 6).
 - Core-service already has Firebase Functions, Firestore, zod, repository patterns, task queues, emulator config, and centralized collection naming.
+- Core-service now has a `sourcing` service with zod schemas, prefixed Firestore collections, HTTP ingest/review APIs, evidence extraction, dedup candidates, review labels, and approved entities.
+- `wekruit-scraping` now has a researcher replay uploader plus a generic Devpost/GitHub/manual CSV/JSON/JSONL uploader.
+- Firebase Hosting now serves a minimal sourcing review web that creates source runs, uploads JSONL/CSV, fetches detailed dedup packets, submits review labels, and lists approved entities.
 
 ### Active
 
-- [ ] Define sourcing schemas in core-service using zod, not ad hoc Firestore documents.
-- [ ] Add Firestore collection names and indexes for sourcing records without disrupting existing `matching` and `outbound` services.
-- [ ] Enforce `sourcing-*` Firestore collection prefixes, `sourcing/raw/...` Cloud Storage prefixes, `sourcing-*` task queue prefixes, and `/api/sourcing/...` HTTP route prefixes.
-- [ ] Build HTTP ingest endpoints in core-service for source runs and source-record batch upserts.
-- [ ] Keep Python scraping execution local or worker-based; Python calls the core-service API and does not directly own Firebase writes.
-- [ ] Add a Python ingest client that validates/serializes source-record payloads and preserves local JSONL replay.
-- [ ] Map researcher OpenAlex/ORCID/DBLP/OpenReview outputs into generic source records.
-- [ ] Map existing `devpost` and `github` scraping outputs into the same generic source-record shape.
-- [ ] Extract comparable evidence records and create dedup candidates with machine-readable reasoning.
-- [ ] Require human review labels before creating approved entities.
+- [ ] Choose staging vs production Firebase deploy target for `sourcing-api` and static review web.
+- [ ] Decide whether Python scraping workers should run on Mac mini/thread first or Cloud Run Jobs next.
+- [ ] Plan outbound handoff from `sourcing-approved-entities` only after approved contact evidence satisfies outbound requirements.
 
 ### Out of Scope
 
@@ -66,7 +63,7 @@ Python scrapers into TypeScript.
 - Postgres for v1.2 — not aligned with the existing core-service Firebase stack or the schema-document requirement.
 - MongoDB or another new document database — Firebase is already present.
 - Neo4j as primary store — graph projection can be reconsidered later if traversal becomes a measured product need.
-- Full reviewer UI — API/CSV/JSONL review loop is enough before product UI.
+- Full product-grade reviewer/admin UI — v1.2 only includes the minimal Firebase-hosted upload/review page required for the sourcing loop.
 - Automatic merge without human approval — candidate strength is triage, not approval.
 - Ranking, outreach, or recruiter export based on unreviewed identities.
 - Writing unresolved dedup candidates into `outbound-candidates`.
@@ -105,7 +102,7 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 - **Core-service owns persistence**: All durable product writes go through core-service APIs or tasks.
 - **Python owns source execution**: Python workers keep fetching/parsing logic and local replay files.
 - **Schema-first Firestore**: Firestore documents are validated through zod schemas in core-service.
-- **Cloud Storage for large raw**: Large source payloads are stored by pointer, not forced into a single Firestore document.
+- **Raw payload pointer first**: Source records carry `rawStoragePath` and content hashes; large raw offload can be added when payload size requires it.
 - **No direct Firebase writes from Python**: Python should not carry Admin SDK credentials or bypass service validation.
 - **Existing file-management pattern**: New core-service code follows existing `src/services/{service}/domain|application|repositories|functions` conventions.
 - **Generic source record**: Do not hard-code the storage contract to researcher.
@@ -116,6 +113,7 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 - **Ranking waits**: Ranking and outreach wait until approved entities exist.
 - **Outbound waits**: Outbound integration consumes only approved entities with approved contact evidence.
 - **Sourcing prefix required**: All sourcing-owned Firestore collections, task queues, and raw storage paths use explicit `sourcing` prefixes.
+- **Web is API-only**: The review web calls core-service APIs and never writes directly to Firestore.
 
 ## Key Decisions
 
@@ -134,6 +132,7 @@ Devpost projects, GitHub developers/repos, and future source families as generic
 | Dedup candidates are separate from approved entities | The business requirement is explainable grouping, not automatic identity collapse | ✓ Good |
 | All merge candidates require human review | The system can suggest, but only human labels approve identity collapse | ✓ Good |
 | Outbound consumes approved entities only | Outreach should not act on unreviewed identity suggestions | ✓ Good |
+| Minimal review web is in v1.2 | User needs to see/upload/review data through Firebase Hosting before outbound integration | ✓ Good |
 
 ## Evolution
 

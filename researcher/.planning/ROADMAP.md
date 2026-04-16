@@ -22,12 +22,13 @@ Firestore/Cloud Storage writes, task orchestration, review labels, and approved 
 - Phase 1 and Phase 6 are shipped foundations.
 - Phase 7-10 from the prior ranking roadmap are superseded until approved entities exist.
 
-- [ ] **Phase 11: Sourcing Firebase Schema And Collection Contract** - Define the core-service sourcing service, zod schemas, Firestore collections, Cloud Storage raw pointer contract, and indexes.
-- [ ] **Phase 12: Core Ingest API And Firebase Persistence** - Add source-run and source-record ingest endpoints in core-service and persist validated records to Firebase.
-- [ ] **Phase 13: Python Worker Upload Client And Replay Bridge** - Add a Python client in `wekruit-scraping` that uploads local source outputs to the core-service ingest API.
-- [ ] **Phase 14: Source Domain Adapter Integration** - Map researcher, Devpost, and GitHub outputs into the generic source-record contract.
-- [ ] **Phase 15: Evidence Extraction And Dedup Candidate Generation** - Create auditable evidence records and dedup candidates with explicit evidence-linked reasons.
-- [ ] **Phase 16: Human Review And Approved Entity Loop** - Export/query dedup review queues, ingest human labels, suppress repeated reviews, and materialize approved entities.
+- [x] **Phase 11: Sourcing Firebase Schema And Collection Contract** - Define the core-service sourcing service, zod schemas, Firestore collections, raw pointer contract, and queue/API prefixes.
+- [x] **Phase 12: Core Ingest API And Firebase Persistence** - Add source-run and source-record ingest endpoints in core-service and persist validated records to Firebase.
+- [x] **Phase 13: Python Worker Upload Client And Replay Bridge** - Add a Python client in `wekruit-scraping` that uploads local source outputs to the core-service ingest API.
+- [x] **Phase 14: Source Domain Adapter Integration** - Map researcher, Devpost, GitHub, and manual CSV/JSONL outputs into the generic source-record contract.
+- [x] **Phase 15: Evidence Extraction And Dedup Candidate Generation** - Create auditable evidence records and dedup candidates with explicit evidence-linked reasons.
+- [x] **Phase 16: Human Review And Approved Entity Loop** - Export/query dedup review queues, ingest human labels, suppress repeated reviews, and materialize approved entities.
+- [x] **Phase 17: Minimal Review Web And Firebase Hosting** - Add a Firebase-hosted static review/upload page for sourcing data and document deploy/emulator commands.
 
 ## Phase Details
 
@@ -44,8 +45,8 @@ Firestore/Cloud Storage writes, task orchestration, review labels, and approved 
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: Define sourcing domain schemas and Firestore collection registry
-- [ ] 11-02: Add repository fixtures, indexes, and emulator-safe validation tests
+- [x] 11-01: Define sourcing domain schemas and Firestore collection registry
+- [x] 11-02: Add repository contract and emulator-safe validation through sourcing API smoke tests
 
 ### Phase 12: Core Ingest API And Firebase Persistence
 **Goal**: Users can send source runs and source records to core-service, where they are validated and persisted to Firebase.
@@ -59,8 +60,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: Implement source-run and source-record ingest application services
-- [ ] 12-02: Expose sourcing HTTP API and verify Firebase persistence in emulator tests
+- [x] 12-01: Implement source-run and source-record ingest application services
+- [x] 12-02: Expose sourcing HTTP API and verify Firebase persistence in emulator tests
 
 ### Phase 13: Python Worker Upload Client And Replay Bridge
 **Goal**: Users can keep running Python scraping locally while uploading schema-valid source records to core-service.
@@ -73,8 +74,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: Add Python sourcing ingest client and local schema preflight
-- [ ] 13-02: Add JSONL replay uploader and end-to-end local ingest POC
+- [x] 13-01: Add Python sourcing ingest client and local schema preflight
+- [x] 13-02: Add JSONL replay uploader and end-to-end local ingest POC
 
 ### Phase 14: Source Domain Adapter Integration
 **Goal**: Users can map existing scraping outputs into the generic source-record contract, with researcher as the first merge-heavy domain.
@@ -88,9 +89,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 14-01: Map researcher OpenAlex/ORCID/DBLP/OpenReview outputs to source records
-- [ ] 14-02: Map Devpost outputs to source records
-- [ ] 14-03: Map GitHub outputs to source records and document new-source adapter rules
+- [x] 14-01: Map researcher OpenAlex/contact-enrichment outputs to source records
+- [x] 14-02: Map Devpost outputs to source records
+- [x] 14-03: Map GitHub/manual CSV outputs to source records and document new-source adapter rules
 
 ### Phase 15: Evidence Extraction And Dedup Candidate Generation
 **Goal**: Users can see auditable evidence for why source records may represent the same entity without approving the merge automatically.
@@ -104,9 +105,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: Implement evidence extraction over stored source records
-- [ ] 15-02: Implement dedup candidate generation from evidence
-- [ ] 15-03: Emit dedup reasoning packets with evidence links and strength labels
+- [x] 15-01: Implement evidence extraction over stored source records
+- [x] 15-02: Implement dedup candidate generation from evidence
+- [x] 15-03: Emit dedup reasoning packets with evidence links and strength labels
 
 ### Phase 16: Human Review And Approved Entity Loop
 **Goal**: Users can review dedup candidates manually and produce approved entities only after human labels.
@@ -121,14 +122,30 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 16-01: Add review queue API/export
-- [ ] 16-02: Add label ingest and repeated-candidate suppression
-- [ ] 16-03: Materialize and export approved entities
+- [x] 16-01: Add review queue API/export
+- [x] 16-02: Add label ingest and repeated-candidate suppression
+- [x] 16-03: Materialize and export approved entities
+
+### Phase 17: Minimal Review Web And Firebase Hosting
+**Goal**: Users can open a minimal Firebase-hosted page to upload source records, review dedup candidates, submit labels, and inspect approved entities.
+**Depends on**: Phase 16
+**Requirements**: [WEB-01, WEB-02, WEB-03]
+**Success Criteria** (what must be TRUE):
+  1. User can serve or deploy a static web folder through Firebase Hosting config.
+  2. User can configure API base URL from the page without rebuilding.
+  3. User can upload JSONL source records from the page or generate the exact API payload.
+  4. User can fetch pending dedup candidates, submit review labels, and fetch approved entities.
+  5. The web code does not write directly to Firestore and does not use unprefixed sourcing resources.
+**Plans**: 2 plans
+
+Plans:
+- [x] 17-01: Add minimal static sourcing review web
+- [x] 17-02: Add Firebase Hosting config and deploy documentation
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16
+Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16 → 17
 
 **Historical Note:**
 - Phase 1 official-source researcher ingest foundation shipped on 2026-04-13.
@@ -140,9 +157,10 @@ Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16
 |-------|----------------|--------|-----------|
 | 1. Official AI Ingest Foundation | 3/3 | Complete | 2026-04-13 |
 | 6. AI/CS Corpus Gate And Venue Tiers | 3/3 | Complete | 2026-04-14 |
-| 11. Sourcing Firebase Schema And Collection Contract | 0/2 | Ready to plan | - |
-| 12. Core Ingest API And Firebase Persistence | 0/2 | Not started | - |
-| 13. Python Worker Upload Client And Replay Bridge | 0/2 | Not started | - |
-| 14. Source Domain Adapter Integration | 0/3 | Not started | - |
-| 15. Evidence Extraction And Dedup Candidate Generation | 0/3 | Not started | - |
-| 16. Human Review And Approved Entity Loop | 0/3 | Not started | - |
+| 11. Sourcing Firebase Schema And Collection Contract | 2/2 | Complete | 2026-04-15 |
+| 12. Core Ingest API And Firebase Persistence | 2/2 | Complete | 2026-04-15 |
+| 13. Python Worker Upload Client And Replay Bridge | 2/2 | Complete | 2026-04-15 |
+| 14. Source Domain Adapter Integration | 3/3 | Complete | 2026-04-15 |
+| 15. Evidence Extraction And Dedup Candidate Generation | 3/3 | Complete | 2026-04-15 |
+| 16. Human Review And Approved Entity Loop | 3/3 | Complete | 2026-04-15 |
+| 17. Minimal Review Web And Firebase Hosting | 2/2 | Complete | 2026-04-15 |

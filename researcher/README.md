@@ -39,7 +39,7 @@ or uploads through the core-service sourcing API.
 python scripts/s3_upload_source_records.py \
   --input-run poc-openalex-ai-2024 \
   --output-root data \
-  --api-base-url http://127.0.0.1:5101/api/sourcing \
+  --api-base-url http://127.0.0.1:5100/api/sourcing \
   --dry-run
 ```
 
@@ -58,3 +58,32 @@ POST /api/sourcing/source-runs
 POST /api/sourcing/source-records:batchUpsert
 POST /api/sourcing/source-runs/:runId/complete
 ```
+
+For local non-dry-run testing, start the core-service Hosting/Functions/Firestore
+emulators together and use the Hosting rewrite URL:
+
+```text
+http://127.0.0.1:5100/api/sourcing
+```
+
+For Devpost, GitHub, or manual CSV/JSON/JSONL files, use the repo-level generic
+uploader from the `wekruit-scraping` root:
+
+```bash
+python scripts/sourcing_upload_file.py \
+  --input devpost/output/treehacks_complete.csv \
+  --run-id devpost-treehacks-2026 \
+  --domain hackathon \
+  --source devpost \
+  --api-base-url http://127.0.0.1:5100/api/sourcing
+
+python scripts/sourcing_upload_file.py \
+  --input github/output/candidates.json \
+  --run-id github-ai-candidates-2026-04-15 \
+  --domain developer \
+  --source github \
+  --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+Use `--dry-run` first to produce replayable local artifacts under
+`data/runs/<run_id>/sourcing/`.

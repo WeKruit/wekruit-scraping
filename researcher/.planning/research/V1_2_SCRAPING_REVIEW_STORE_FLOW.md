@@ -35,17 +35,17 @@ flowchart LR
   A["Python scraping worker"] --> B["Local JSONL replay artifacts"]
   A --> C["Core-service /api/sourcing ingest"]
   B --> C
-  C --> D["Firestore sourcing-source-runs"]
-  C --> E["Firestore sourcing-source-records"]
-  C --> F["Cloud Storage sourcing/raw/..."]
-  E --> G["Task sourcing-extract-evidence"]
-  G --> H["Firestore sourcing-evidence"]
-  H --> I["Task sourcing-generate-dedup-candidates"]
-  I --> J["Firestore sourcing-dedup-candidates"]
-  J --> K["Review API / CSV export"]
-  K --> L["Firestore sourcing-review-labels"]
-  L --> M["Task sourcing-materialize-approved-entity"]
-  M --> N["Firestore sourcing-approved-entities"]
+C --> D["Firestore sourcing-source-runs"]
+C --> E["Firestore sourcing-source-records"]
+C --> F["rawStoragePath sourcing/raw/..."]
+E --> G["synchronous evidence extraction"]
+G --> H["Firestore sourcing-evidence"]
+H --> I["synchronous dedup candidate generation"]
+I --> J["Firestore sourcing-dedup-candidates"]
+J --> K["Review API / CSV export"]
+K --> L["Firestore sourcing-review-labels"]
+L --> M["same_person materialization"]
+M --> N["Firestore sourcing-approved-entities"]
   N --> O["Future outbound handoff"]
   O --> P["Firestore outbound-candidates"]
 ```
@@ -75,7 +75,7 @@ export const sourcingQueueNames = {
 } as const;
 ```
 
-Cloud Storage raw payload prefix:
+Raw payload pointer prefix:
 
 ```text
 sourcing/raw/{domain}/{source}/{runId}/{sourceRecordId}.json
@@ -182,7 +182,7 @@ sourcing-source-runs
 sourcing-source-records
 ```
 
-Cloud Storage stores large raw payloads:
+Source records carry raw payload pointer paths:
 
 ```text
 sourcing/raw/researcher/openalex/{runId}/{sourceRecordId}.json
@@ -198,7 +198,7 @@ This is the first storage layer. It is not the approved identity store.
 
 ## Step 4: Evidence Extraction
 
-After a source run is completed, core-service enqueues:
+In the local POC, evidence extraction runs synchronously during batch upsert. The reserved queue name is:
 
 ```text
 sourcing-extract-evidence
@@ -223,7 +223,7 @@ record reference. Evidence without provenance is invalid.
 
 ## Step 5: Dedup Candidate Generation
 
-After evidence exists, core-service enqueues:
+In the local POC, dedup candidate generation runs synchronously after evidence extraction. The reserved queue name is:
 
 ```text
 sourcing-generate-dedup-candidates
@@ -249,7 +249,7 @@ Review reads pending dedup candidates:
 
 ```text
 GET /api/sourcing/dedup-candidates?status=pending_review
-GET /api/sourcing/review-queue
+GET /api/sourcing/dedup-candidates?status=pending_review&include=details
 ```
 
 The reviewer must see:

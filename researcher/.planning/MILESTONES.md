@@ -36,7 +36,7 @@
 
 ## v1.2 Sourcing Service And Human Review Foundation
 
-**Status:** Current
+**Status:** Local POC shipped; production deploy pending
 
 **Goal:** Turn `wekruit-scraping` outputs into a shared schema-first sourcing service backed by the existing Firebase/Core Functions stack.
 
@@ -51,6 +51,8 @@
 - Researcher four-source integration: OpenAlex, ORCID, DBLP, OpenReview
 - Existing scraping domains can emit the same `sourceRecord` contract: `devpost`, `github`, and future sources
 - Evidence extraction and dedup candidate generation with explicit reasoning, evidence links, and mandatory human review
+- Minimal Firebase-hosted review/upload web for sourcing data
+- Local emulator validation of `scraping -> API -> Firestore -> evidence -> dedup -> human review -> approved entity`
 
 **Explicitly not in scope:**
 - Rewriting Python scrapers into TypeScript
@@ -59,7 +61,7 @@
 - MongoDB or another new document database
 - Neo4j or graph database as primary store
 - Automatic merge without human approval
-- Full reviewer UI before the API/CSV review loop is proven
+- Full product-grade reviewer/admin UI beyond the minimal Firebase-hosted sourcing loop
 - Ranking or recruiter outreach exports before approved entities exist
 - Writing unresolved dedup candidates into `outbound-candidates`
 
