@@ -28,3 +28,33 @@ review. Two assumptions need correction before implementation work starts:
 The backbone for this pipeline is official scholarly APIs and dumps first. Generic web crawling is
 allowed only as a secondary enrichment step after identity has already been resolved from trusted
 sources.
+
+## Local Sourcing Upload Bridge
+
+The local Python worker remains the scraping/replay layer. It converts staged JSONL under
+`data/runs/<run_id>/...` into generic `sourceRecord` payloads, then either writes a dry-run artifact
+or uploads through the core-service sourcing API.
+
+```bash
+python scripts/s3_upload_source_records.py \
+  --input-run poc-openalex-ai-2024 \
+  --output-root data \
+  --api-base-url http://127.0.0.1:5101/api/sourcing \
+  --dry-run
+```
+
+Dry-run writes:
+
+```text
+data/runs/<run_id>/sourcing/source_run.json
+data/runs/<run_id>/sourcing/source_records.jsonl
+data/runs/<run_id>/sourcing/upload_summary.json
+```
+
+The bridge does not write Firestore directly. Non-dry-run mode calls:
+
+```text
+POST /api/sourcing/source-runs
+POST /api/sourcing/source-records:batchUpsert
+POST /api/sourcing/source-runs/:runId/complete
+```
