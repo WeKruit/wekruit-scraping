@@ -1,6 +1,6 @@
 ---
 phase: "Phase 11"
-name: "Storage And Source Profile Contract"
+name: "Sourcing Firebase Schema And Collection Contract"
 created: 2026-04-15
 status: ready_to_plan
 ---
@@ -11,17 +11,17 @@ status: ready_to_plan
 
 See: .planning/PROJECT.md (updated 2026-04-15)
 
-**Core value:** Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and outreach can trust who the researcher is, what they worked on, how the contact signal was found, and why multiple source records were or were not merged.
-**Current focus:** Phase 11 — Storage And Source Profile Contract
+**Core value:** Turn heterogeneous scraping outputs into durable, reviewable, source-backed entities with explicit reasoning, without forcing all source-specific payloads into SQL columns or rewriting working Python scrapers into TypeScript.
+**Current focus:** Phase 11 — Sourcing Firebase Schema And Collection Contract
 
 ## Current Position
 
-Phase: 11 of 15 (Storage And Source Profile Contract)
+Phase: 11 of 16 (Sourcing Firebase Schema And Collection Contract)
 Plan: —
 Status: Ready to plan
-Last activity: 2026-04-15 — Milestone v1.2 started for four-source human-reviewed merge and durable storage
+Last activity: 2026-04-15 — v1.2 phase plan reframed around shared sourcing service, Firebase/core-service backend, and Python worker upload boundary
 
-Progress: [████░░░░░░] 40%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
@@ -50,13 +50,13 @@ Progress: [████░░░░░░] 40%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Phase 1]: OpenAlex ingest plus Crossref backfill remains the foundation for paper and author discovery.
+- [Phase 1]: OpenAlex ingest plus Crossref backfill remains the foundation for researcher paper and author discovery.
 - [Phase 6]: AI/CS corpus membership is determined only by explicit venue-tier rows keyed by exact OpenAlex source IDs.
-- [Milestone v1.2]: Ranking pauses until human-reviewed researcher groups exist.
-- [Milestone v1.2]: Four profile sources are OpenAlex, ORCID, DBLP, and OpenReview.
-- [Milestone v1.2]: Homepage, GitHub, and email extraction are derived signal stages, not separate canonical source systems.
-- [Storage]: Postgres is the durable store for source profiles, signals, candidate groups, review labels, and approved people.
-- [Storage]: NoSQL and Neo4j are not primary stores for this milestone; Neo4j can be reconsidered later as a projection if graph traversal becomes a measured need.
+- [Milestone v1.2]: The platform direction is shared `sourcing`, not researcher-only storage.
+- [Milestone v1.2]: Local Python workers execute fetching/parsing and upload through core-service APIs.
+- [Milestone v1.2]: Core-service owns Firebase persistence, schema validation, review labels, and approved entities.
+- [Milestone v1.2]: Python workers must not write directly to Firestore.
+- [Milestone v1.2]: Full reviewer UI is deferred until API/CSV/JSONL review flow is proven.
 - [Identity]: All candidate groups require human review. The system provides reasoning, not automatic merges.
 
 ### Pending Todos
@@ -65,13 +65,14 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 11 must lock the Postgres schema before any source pipeline writes durable data.
+- Phase 11 must inspect core-service structure before defining concrete file paths; follow existing `matching` and `outbound` conventions.
+- Cross-repo execution means Phase 11 and Phase 12 must clearly separate core-service changes from scraping repo changes.
+- Core-service repository access and branch strategy must be confirmed before implementation starts.
+- OpenReview live-access reliability still needs validation before Phase 14 implementation.
 - Candidate grouping must preserve negative and unsure labels so the system does not repeatedly ask humans to review the same rejected profiles.
-- OpenReview live-access reliability still needs validation before Phase 12 implementation.
-- Contact quality must remain evidence attached to source profiles and review groups, not a direct merge decision.
 
 ## Session Continuity
 
-Last session: 2026-04-15 09:20 PDT
-Stopped at: Milestone v1.2 planning created; next step is Phase 11 planning.
+Last session: 2026-04-15 10:20 PDT
+Stopped at: v1.2 phase plan updated; next step is `$gsd-plan-phase 11`.
 Resume file: None

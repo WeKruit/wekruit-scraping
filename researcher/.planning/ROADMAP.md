@@ -1,119 +1,146 @@
-# Roadmap: Researcher Pipeline
+# Roadmap: Sourcing Pipeline
 
 ## Overview
 
-This roadmap is milestone-specific for v1.2 Four-Source Human Review Merge Foundation. It pauses
-the previous ranking-first path after the completed AI/CS corpus gate and moves the critical path
-to durable source-profile storage, four independently triggerable profile pipelines, evidence-based
-candidate grouping, human review, and approved researcher-group export.
+This roadmap is milestone-specific for v1.2 Sourcing Service And Human Review Foundation. It
+reframes the work from a researcher-only merge pipeline into a shared sourcing service across
+`wekruit-scraping` and `wekruit-core-service-cloud-function`.
 
-Ranking, recruiter outreach, and graph-database projection are intentionally out of scope until
-human-reviewed people exist.
+The key architectural decision is:
+
+```text
+Python scraping workers -> core-service sourcing ingest API -> Firebase storage/review workflow
+```
+
+Python workers keep source execution and local JSONL replay. Core-service owns schema validation,
+Firestore/Cloud Storage writes, task orchestration, review labels, and approved entities.
 
 ## Phases
 
 **Phase Numbering:**
 - Integer phases continue from prior researcher work.
 - Phase 1 and Phase 6 are shipped foundations.
-- Phase 7-10 from the prior ranking roadmap are superseded by this milestone and not executed.
+- Phase 7-10 from the prior ranking roadmap are superseded until approved entities exist.
 
-- [ ] **Phase 11: Storage And Source Profile Contract** - Define and implement the durable Postgres storage contract for source profiles, signals, candidate groups, review labels, and approved people.
-- [ ] **Phase 12: Four Source Profile Pipelines** - Trigger OpenAlex, ORCID, DBLP, and OpenReview profile pipelines independently and persist their outputs.
-- [ ] **Phase 13: Signal Extraction And Candidate Reasoning** - Extract comparable identity/contact signals and generate candidate groups with explicit reasons, without auto-merge.
-- [ ] **Phase 14: Human Review Queue And Label Ingest** - Export review queues and ingest human labels for same/not-same/unsure decisions.
-- [ ] **Phase 15: Approved People Export And Incremental Hygiene** - Export approved people and suppress repeated already-reviewed candidates in future runs.
+- [ ] **Phase 11: Sourcing Firebase Schema And Collection Contract** - Define the core-service sourcing service, zod schemas, Firestore collections, Cloud Storage raw pointer contract, and indexes.
+- [ ] **Phase 12: Core Ingest API And Firebase Persistence** - Add source-run and source-record ingest endpoints in core-service and persist validated records to Firebase.
+- [ ] **Phase 13: Python Worker Upload Client And Replay Bridge** - Add a Python client in `wekruit-scraping` that uploads local source outputs to the core-service ingest API.
+- [ ] **Phase 14: Source Domain Adapter Integration** - Map researcher, Devpost, and GitHub outputs into the generic source-record contract.
+- [ ] **Phase 15: Signal Extraction And Candidate Reasoning** - Extract comparable signals and create candidate groups with explicit reasons.
+- [ ] **Phase 16: Human Review And Approved Entity Loop** - Export/query review queues, ingest human labels, suppress repeated reviews, and materialize approved entities.
 
 ## Phase Details
 
-### Phase 11: Storage And Source Profile Contract
-**Goal**: Users can persist source runs, source profiles, extracted signals, candidate groups, review labels, and approved people in Postgres with provenance intact.
-**Depends on**: Phase 1, Phase 6
-**Requirements**: [STORE-01, STORE-02, STORE-03]
+### Phase 11: Sourcing Firebase Schema And Collection Contract
+**Goal**: Users can review the core-service sourcing contract before any Python worker uploads production data.
+**Depends on**: Existing core-service Firebase stack
+**Requirements**: [CORE-01, CORE-02, CORE-03, CORE-04, CORE-FOUNDATION-01]
 **Success Criteria** (what must be TRUE):
-  1. User can apply a Postgres schema for source runs, source profiles, signals, candidate groups, group reasons, review labels, and approved people.
-  2. User can store raw source payloads as JSONB while querying normalized identifiers and review state through relational columns.
-  3. User can trace every stored record back to source system, source record ID, run ID, and observed timestamp.
+  1. User can see sourcing collection names added beside existing `matching` and `outbound` collections without changing those services.
+  2. User can see zod schemas for source runs, source records, extracted signals, candidate groups, review labels, and approved entities.
+  3. User can see how large raw payloads are represented through Cloud Storage pointers and content hashes.
+  4. User can run emulator/typecheck tests proving valid fixtures pass and invalid fixtures fail.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: Define Postgres schema and migration contract
-- [ ] 11-02: Implement storage adapter and loader fixtures
+- [ ] 11-01: Define sourcing domain schemas and Firestore collection registry
+- [ ] 11-02: Add repository fixtures, indexes, and emulator-safe validation tests
 
-### Phase 12: Four Source Profile Pipelines
-**Goal**: Users can trigger OpenAlex, ORCID, DBLP, and OpenReview profile pipelines independently and persist source-profile outputs.
+### Phase 12: Core Ingest API And Firebase Persistence
+**Goal**: Users can send source runs and source records to core-service, where they are validated and persisted to Firebase.
 **Depends on**: Phase 11
-**Requirements**: [PIPE-01, PIPE-02, PIPE-03, PIPE-04, PIPE-05]
+**Requirements**: [API-01, API-02, API-03, API-04]
 **Success Criteria** (what must be TRUE):
-  1. User can run each of the four source pipelines independently.
-  2. User can run the four pipelines for the same researcher search batch.
-  3. Each pipeline writes source-native raw payload and a normalized source-profile envelope into durable storage.
-**Plans**: 3 plans
+  1. User can create a source run through a core-service HTTP endpoint.
+  2. User can batch upsert source records through a core-service HTTP endpoint.
+  3. User can complete a source run and inspect stored/skipped/failed counts.
+  4. Invalid payloads are rejected before Firestore writes.
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: Persist OpenAlex and ORCID profile pipeline outputs
-- [ ] 12-02: Persist DBLP and OpenReview profile pipeline outputs
-- [ ] 12-03: Add four-source batch trigger and run summary counts
+- [ ] 12-01: Implement source-run and source-record ingest application services
+- [ ] 12-02: Expose sourcing HTTP API and verify Firebase persistence in emulator tests
 
-### Phase 13: Signal Extraction And Candidate Reasoning
-**Goal**: Users can extract comparable signals and generate human-review candidate groups with explicit reasons.
+### Phase 13: Python Worker Upload Client And Replay Bridge
+**Goal**: Users can keep running Python scraping locally while uploading schema-valid source records to core-service.
 **Depends on**: Phase 12
-**Requirements**: [SIGNAL-01, SIGNAL-02, SIGNAL-03, CAND-01, CAND-02, CAND-03]
+**Requirements**: [PY-01, PY-02, PY-03]
 **Success Criteria** (what must be TRUE):
-  1. User can extract ORCID, email, homepage, GitHub, DBLP PID, OpenReview ID, Google Scholar ID, LinkedIn, institution, paper DOI, OpenAlex author ID, and OpenAlex work ID signals.
-  2. User can see candidate groups produced from exact and review-worthy signals.
-  3. User can inspect why each group exists and see suggested strength without any automatic approval.
+  1. User can upload a local JSONL replay run to the core-service ingest API.
+  2. User can run a Python worker and have it create/complete a source run through core-service.
+  3. User can keep local JSONL artifacts for replay/debug without treating local files as product storage.
+**Plans**: 2 plans
+
+Plans:
+- [ ] 13-01: Add Python sourcing ingest client and local schema preflight
+- [ ] 13-02: Add JSONL replay uploader and end-to-end local ingest POC
+
+### Phase 14: Source Domain Adapter Integration
+**Goal**: Users can map existing scraping outputs into the generic source-record contract, with researcher as the first merge-heavy domain.
+**Depends on**: Phase 13
+**Requirements**: [DOMAIN-01, DOMAIN-02, DOMAIN-03, DOMAIN-04, DOMAIN-05]
+**Success Criteria** (what must be TRUE):
+  1. User can upload researcher OpenAlex records as `domain=researcher` source records.
+  2. User can upload researcher ORCID, DBLP, and OpenReview records as `domain=researcher` source records.
+  3. User can upload Devpost and GitHub records through the same generic source-record contract.
+  4. Adding a new source only requires a source adapter and does not require a new Firestore collection.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 13-01: Implement signal extraction with provenance and quality states
-- [ ] 13-02: Implement candidate grouping from evidence signals
-- [ ] 13-03: Emit candidate reasoning packets and strength labels
+- [ ] 14-01: Map researcher OpenAlex/ORCID/DBLP/OpenReview outputs to source records
+- [ ] 14-02: Map Devpost outputs to source records
+- [ ] 14-03: Map GitHub outputs to source records and document new-source adapter rules
 
-### Phase 14: Human Review Queue And Label Ingest
-**Goal**: Users can review candidate groups manually and ingest labels without losing reasoning or provenance.
-**Depends on**: Phase 13
-**Requirements**: [REVIEW-01, REVIEW-02, REVIEW-03]
-**Success Criteria** (what must be TRUE):
-  1. User can export review queues as CSV and JSONL.
-  2. User can label candidate groups as `same_person`, `not_same_person`, or `unsure`.
-  3. User can ingest labels and preserve negative/unsure decisions for future suppression.
-**Plans**: 2 plans
-
-Plans:
-- [ ] 14-01: Export reviewer-ready candidate queue files
-- [ ] 14-02: Ingest human labels and persist reviewed state
-
-### Phase 15: Approved People Export And Incremental Hygiene
-**Goal**: Users can export approved researcher groups and avoid repeated review spam as new source-profile runs arrive.
+### Phase 15: Signal Extraction And Candidate Reasoning
+**Goal**: Users can see why source records may represent the same entity without approving the merge automatically.
 **Depends on**: Phase 14
-**Requirements**: [APPROVE-01, APPROVE-02, INCR-01, INCR-02]
+**Requirements**: [SIGNAL-01, SIGNAL-02, CAND-01, CAND-02, CAND-03]
 **Success Criteria** (what must be TRUE):
-  1. User can export `approved_people.jsonl` only from human-labeled `same_person` groups.
-  2. User can export unresolved candidates separately from approved people.
-  3. User can run new batches and see only new or materially changed candidate groups return to review.
-  4. User can inspect counts for profiles stored, signals extracted, candidates created, labels ingested, approved groups exported, and repeats suppressed.
-**Plans**: 2 plans
+  1. User can extract comparable signals with source provenance and quality state.
+  2. User can create candidate groups from exact and review-worthy signals.
+  3. User can inspect machine-readable reasons and suggested strength for each candidate group.
+  4. No approved entity is created by candidate strength alone.
+**Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: Export approved people and unresolved candidates
-- [ ] 15-02: Add incremental review suppression and run-level metrics
+- [ ] 15-01: Implement signal extraction over stored source records
+- [ ] 15-02: Implement candidate grouping by signal evidence
+- [ ] 15-03: Emit candidate reasoning packets with strength labels
+
+### Phase 16: Human Review And Approved Entity Loop
+**Goal**: Users can review candidate groups manually and produce approved entities only after human labels.
+**Depends on**: Phase 15
+**Requirements**: [REVIEW-01, REVIEW-02, REVIEW-03, APPROVE-01, APPROVE-02]
+**Success Criteria** (what must be TRUE):
+  1. User can export or query reviewer-ready candidate queues.
+  2. User can ingest `same_person`, `not_same_person`, and `unsure` labels.
+  3. Negative and unsure labels suppress repeated review spam unless materially new evidence appears.
+  4. Only `same_person` labels can materialize approved entities.
+  5. User can export approved entities separately from unresolved candidates.
+**Plans**: 3 plans
+
+Plans:
+- [ ] 16-01: Add review queue API/export
+- [ ] 16-02: Add label ingest and repeated-candidate suppression
+- [ ] 16-03: Materialize and export approved entities
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 11 → 12 → 13 → 14 → 15
+Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16
 
 **Historical Note:**
-- Phase 1 official-source ingest foundation shipped on 2026-04-13.
+- Phase 1 official-source researcher ingest foundation shipped on 2026-04-13.
 - Phase 6 AI/CS corpus gate shipped on 2026-04-14.
-- Prior v1.1 ranking phases 7-10 are superseded until human-reviewed identity groups exist.
+- The prior researcher-only v1.2 Postgres direction is superseded by this Firebase/core-service sourcing plan.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Official AI Ingest Foundation | 3/3 | Complete | 2026-04-13 |
 | 6. AI/CS Corpus Gate And Venue Tiers | 3/3 | Complete | 2026-04-14 |
-| 11. Storage And Source Profile Contract | 0/2 | Ready to plan | - |
-| 12. Four Source Profile Pipelines | 0/3 | Not started | - |
-| 13. Signal Extraction And Candidate Reasoning | 0/3 | Not started | - |
-| 14. Human Review Queue And Label Ingest | 0/2 | Not started | - |
-| 15. Approved People Export And Incremental Hygiene | 0/2 | Not started | - |
+| 11. Sourcing Firebase Schema And Collection Contract | 0/2 | Ready to plan | - |
+| 12. Core Ingest API And Firebase Persistence | 0/2 | Not started | - |
+| 13. Python Worker Upload Client And Replay Bridge | 0/2 | Not started | - |
+| 14. Source Domain Adapter Integration | 0/3 | Not started | - |
+| 15. Signal Extraction And Candidate Reasoning | 0/3 | Not started | - |
+| 16. Human Review And Approved Entity Loop | 0/3 | Not started | - |
