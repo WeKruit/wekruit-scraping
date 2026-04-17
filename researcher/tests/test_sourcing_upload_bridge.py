@@ -108,6 +108,10 @@ def test_adapter_supports_contact_style_records_and_generic_fallback(tmp_path):
     assert contact["rawSummary"]["homepageCount"] == 1
     assert contact["rawSummary"]["openreviewId"] == "~Shan_Wang1"
     assert contact["rawSummary"]["dblpPid"] == "62/3650"
+    assert contact["raw"]["emails"] == [{"value": "shan@example.edu", "source": "orcid"}]
+    assert contact["raw"]["homepages"] == [{"value": "https://shan.example.edu", "source": "openreview"}]
+    assert contact["raw"]["openreview"] == {"openreview_id": "~Shan_Wang1"}
+    assert contact["raw"]["dblp"] == {"dblp_pid": "62/3650"}
 
     generic = [record for record in records if record["source"] == "manual"][0]
     assert generic["entityType"] == "generic_record"

@@ -213,6 +213,19 @@ def _person_summary(raw: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _person_raw(raw: dict[str, Any]) -> dict[str, Any]:
+    return _compact_dict(
+        {
+            "orcid": raw.get("orcid"),
+            "emails": raw.get("emails"),
+            "homepages": raw.get("homepages"),
+            "profile_urls": raw.get("profile_urls"),
+            "openreview": raw.get("openreview"),
+            "dblp": raw.get("dblp"),
+        }
+    )
+
+
 def _generic_display(raw: dict[str, Any]) -> dict[str, Any]:
     return _compact_dict(
         {
@@ -287,15 +300,18 @@ def to_source_record(
     if source == "openalex" and entity_type == "research_work":
         display = _openalex_work_display(raw)
         raw_summary = _openalex_work_summary(raw)
+        raw_payload = {}
     elif entity_type == "person_profile":
         display = _person_display(raw)
         raw_summary = _person_summary(raw)
+        raw_payload = _person_raw(raw)
     else:
         display = _generic_display(raw)
         raw_summary = _generic_summary(raw)
+        raw_payload = {}
 
     created_at, updated_at = _timestamps(record, fallback_timestamp)
-    return {
+    source_record = {
         "sourceRecordId": source_record_id,
         "runId": run_id,
         "domain": domain,
@@ -315,6 +331,9 @@ def to_source_record(
         "createdAt": created_at,
         "updatedAt": updated_at,
     }
+    if raw_payload:
+        source_record["raw"] = raw_payload
+    return source_record
 
 
 def collect_source_records(
@@ -328,4 +347,3 @@ def collect_source_records(
         to_source_record(staged, run_id=run_id, domain=domain, fallback_timestamp=fallback_timestamp)
         for staged in iter_staged_jsonl(data_root, run_id)
     ]
-
