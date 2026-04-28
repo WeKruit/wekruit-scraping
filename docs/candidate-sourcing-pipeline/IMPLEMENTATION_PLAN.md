@@ -36,7 +36,7 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-04-27.
+Last updated: 2026-04-28.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
 - [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
@@ -45,13 +45,13 @@ Last updated: 2026-04-27.
 - [x] GitHub, Devpost, and research remain the only v1 source families.
 - [x] Enrichment should include industry/domain interests in addition to role/track, specialization, skills, and contactability.
 - [x] Local `.env` files are ignored by git and must not be committed.
-- [ ] Feature implementation has not started yet.
-- [ ] Create implementation branch from `main` when implementation begins.
-- [ ] Re-check the current state of the sourcing prototype branch before porting or productizing code.
-- [ ] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
+- [x] Phase 1 feature implementation has started.
+- [x] Create implementation branch from `main` when implementation begins.
+- [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
+- [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
 - [x] Confirm available LLM provider/model environment variables from local `.env` without exposing values.
 - [x] Validate whether local LLM keys are active before implementing Phase 5 behavior that depends on live model calls.
-- [ ] Create or collect small GitHub, Devpost, and research sample outputs for repeatable tests.
+- [x] Create or collect small GitHub, Devpost, and research sample outputs for repeatable tests.
 
 ## Phase Execution Protocol
 
@@ -109,26 +109,62 @@ The preferred path is to productize the existing prototype rather than rebuild i
 
 ### Tasks
 
-- [ ] Confirm the latest state of `origin/codex/sourcing-e2e-firebase` in `wekruit-scraping`.
-- [ ] Confirm the latest state of the corresponding sourcing branch in the Firebase/core-service repo.
-- [ ] Identify whether the deployed dashboard is currently sourced from that branch.
-- [ ] Decide the working branch strategy for implementation.
+- [x] Confirm the latest state of `origin/codex/sourcing-e2e-firebase` in `wekruit-scraping`.
+- [x] Confirm the latest state of the corresponding sourcing branch in the Firebase/core-service repo.
+- [x] Identify whether the deployed dashboard is currently sourced from that branch.
+- [x] Decide the working branch strategy for implementation.
 - [ ] Confirm Firebase project/environment ownership for staging.
 - [ ] Confirm who owns dashboard deployment.
 - [ ] Confirm who owns core-service deployment.
 - [ ] Confirm reviewer access/auth expectations for v1.
 
+### Phase 0 Findings
+
+Last updated: 2026-04-28.
+
+- Working branch created from current `main`: `codex/candidate-sourcing-phase-0`.
+- `wekruit-scraping` `origin/codex/sourcing-e2e-firebase` is still present and diverges from current `main`.
+- The scraping prototype branch adds a useful source-record contract, deterministic IDs, dry-run upload output, a core-service ingest client, a generic JSON/JSONL/CSV uploader, and focused tests.
+- The scraping prototype branch should be selectively ported/productized into the new implementation branch rather than used as the working branch directly, because current `main` contains newer planning docs and secret-safety work.
+- `wekruit-core-service-cloud-function` `origin/codex/sourcing-e2e-firebase` is still present and diverges from current `main`.
+- The core-service prototype branch adds the sourcing backend, Firestore collection names, task queue names, `/api/sourcing` routes, static dashboard, and Firebase hosting/emulator config.
+- The core-service prototype branch should be selectively ported or rebased onto current `main`; do not switch wholesale because current `main` contains newer matching-service code not present in the sourcing branch.
+- The deployed dashboard at `https://wekruit-dev-env.web.app/#review` responds with the sourcing review UI and the deployed `/api/sourcing/health` endpoint returns healthy.
+- Deployed dashboard data currently appears researcher-only: four source runs, all with `sourceDomain=researcher`; no GitHub or Devpost source runs are present yet.
+- Deployed dashboard/API currently has 23 dedup candidates and 3 approved entities.
+- The deployed dashboard currently supports Jobs, Review, and Approved views, with review actions mapped to `same_person`, `not_same_person`, and `unsure`.
+- The deployed dashboard does not yet implement the desired expanded relevance decisions, structured signal confirmation, GitHub/Devpost review coverage, enrichment workflow, enrichment review, or final enriched profiles.
+- Browser automation initially failed because the local `agent-browser` helper command was missing, even though Codex app config already had `sandbox_mode = "danger-full-access"` and both `computer-use` and `browser-use` plugins enabled.
+- Browser automation was restored by installing the expected `agent-browser` CLI globally through npm.
+- Browser probe passes: `browser_open`, `browser_eval`, `browser_get_url`, and `browser_screenshot` all work against `https://wekruit-dev-env.web.app/#review`.
+- Core-service dependencies installed locally with `npm ci`.
+- Local Node is `v22.22.1`, while the core-service package declares Node `20`; `npm ci` warns about the engine mismatch.
+- Core-service `npm run build` passes on current `main`.
+- Core-service `npm test` currently fails 2 of 30 tests due to existing date-sensitive matching recency expectations, not sourcing changes.
+- Firebase CLI is available through `npx firebase-tools` at version `15.15.0`.
+- Java 21 is installed through Homebrew `openjdk@21`, with `JAVA_HOME`/`PATH` configured in `.zprofile` and `.zshrc`.
+- Firestore emulator smoke test passes with `npx firebase-tools emulators:exec --only firestore 'echo firestore-emulator-started'`.
+- Full functions/dashboard emulator verification should be run after the sourcing backend/dashboard code is ported onto current `main`.
+- The core-service repo has `.firebaserc.example` for staging/production project aliases but no checked-in `.firebaserc`; actual dev/staging project ownership still needs confirmation.
+- The scraping repo currently cannot run pytest with the system Python because `pytest` is not installed.
+
+### Phase 0 Decision
+
+Implementation should proceed from a new branch created off current `main`. Reuse the existing sourcing prototype as the main source of implementation material, but port it carefully into the current mainline rather than replacing the mainline with the old prototype branch.
+
+Before mutating deployed review data, prefer local Firebase emulators. Java is now available for Firestore emulator startup; remaining local verification depends on porting the sourcing backend/dashboard code onto current `main`.
+
 ### Deliverables
 
-- [ ] Written team decision on branch strategy.
+- [x] Written team decision on branch strategy.
 - [ ] Confirmed environment/deploy path.
 - [ ] Clear owner list for scraping, core-service, dashboard, and review workflow.
 
 ### Acceptance Criteria
 
-- [ ] Team agrees not to rebuild the sourcing prototype from scratch.
-- [ ] Team knows which branch/repo contains the source of the existing dashboard/backend.
-- [ ] Team knows where implementation work will begin.
+- [x] Team agrees not to rebuild the sourcing prototype from scratch.
+- [x] Team knows which branch/repo contains the source of the existing dashboard/backend.
+- [x] Team knows where implementation work will begin.
 
 ## Phase 1: Stabilize Existing Sourcing Prototype
 
@@ -142,35 +178,81 @@ This phase does not add enrichment. It stabilizes the review foundation.
 
 ### Tasks
 
-- [ ] Verify source-run creation works end-to-end.
-- [ ] Verify source-record batch upload works end-to-end.
-- [ ] Verify evidence extraction runs for uploaded records.
-- [ ] Verify dedup candidate generation runs for evidence matches.
-- [ ] Verify singleton review candidates are created for person-like records with no duplicates.
-- [ ] Verify review labels are persisted.
-- [ ] Verify approved entities are materialized only after human approval.
-- [ ] Verify negative/unsure review labels suppress repeated review spam.
-- [ ] Verify the dashboard can load source runs, review candidates, and approved entities.
-- [ ] Verify evidence links render and open correctly where available.
-- [ ] Add or update tests around source-record validation and review materialization.
-- [ ] Add or update seed/sample data for local verification.
+- [x] Verify source-run creation works end-to-end.
+- [x] Verify source-record batch upload works end-to-end.
+- [x] Verify evidence extraction runs for uploaded records.
+- [x] Verify dedup candidate generation runs for evidence matches.
+- [x] Verify singleton review candidates are created for person-like records with no duplicates.
+- [x] Verify review labels are persisted.
+- [x] Verify approved entities are materialized only after human approval.
+- [x] Verify negative/unsure review labels suppress repeated review spam.
+- [x] Verify the dashboard can load source runs, review candidates, and approved entities.
+- [x] Verify evidence links render and open correctly where available.
+- [x] Add or update tests around source-record validation and review materialization.
+- [x] Add or update seed/sample data for local verification.
 
 ### Data Model Checks
 
-- [ ] Source records are deterministic/idempotent.
-- [ ] Evidence records are deterministic/idempotent.
-- [ ] Dedup candidate IDs are deterministic/idempotent.
-- [ ] Approved candidate/global entity IDs are opaque and stable.
-- [ ] Every approval stores reviewer, timestamp, decision, and note.
-- [ ] Every approved entity has source record lineage.
-- [ ] Every approved entity has evidence lineage.
+- [x] Source records are deterministic/idempotent.
+- [x] Evidence records are deterministic/idempotent.
+- [x] Dedup candidate IDs are deterministic/idempotent.
+- [x] Approved candidate/global entity IDs are opaque and stable.
+- [x] Every approval stores reviewer, timestamp, decision, and note.
+- [x] Every approved entity has source record lineage.
+- [x] Every approved entity has evidence lineage.
+
+### Phase 1 Findings
+
+Last updated: 2026-04-28.
+
+- Working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-phase-1`, created from current `main`.
+- Working branch in `wekruit-scraping`: `codex/candidate-sourcing-phase-0`, continuing to hold the scraping-side source-record upload bridge and durable plan docs.
+- Core-service sourcing backend, static dashboard, sourcing Firestore collection names, sourcing queue names, and sourcing-only Firebase config were selectively ported from the previous sourcing prototype branch onto current `main`.
+- Scraping-side source-record contract, deterministic source-record conversion, generic file uploader, researcher upload bridge, and tests were selectively ported from the previous sourcing prototype branch onto current `main`.
+- `firebase.sourcing.json` now runs the sourcing-only functions bundle with hosting, functions, and Firestore emulators, avoiding unrelated outbound/matching environment prompts during local sourcing verification.
+- Local sourcing stack verified through Firebase emulators:
+  - Hosting: `http://127.0.0.1:5100`
+  - Functions: `http://127.0.0.1:5101`
+  - Firestore: `http://127.0.0.1:8180`
+- Source upload verified through the hosting rewrite at `http://127.0.0.1:5100/api/sourcing`.
+- Repeatable local smoke fixtures were created outside the repo under `/tmp` for:
+  - GitHub: Alex Rivera duplicate candidate plus Mira Patel singleton.
+  - Devpost: Vision Assist project plus Alex Rivera member with shared GitHub/homepage evidence.
+  - Research/OpenAlex-style generic record: Taylor Chen singleton with ORCID, homepage, DOI, institution, and name evidence.
+- End-to-end smoke verification produced:
+  - 3 completed source runs.
+  - 5 source records.
+  - 38 evidence records.
+  - 1 strong GitHub/Devpost duplicate candidate for Alex Rivera.
+  - 2 singleton candidates for Taylor Chen and Mira Patel, which were initially pending review and later verified with `unsure` and `not_same_person` labels.
+  - 1 suppressed stale singleton for Alex Rivera after the duplicate was detected.
+  - 1 approved entity after manual `same_person` review of the Alex Rivera GitHub/Devpost duplicate.
+- Negative and unsure review verification passed:
+  - `not_same_person` persisted for Mira Patel and did not create an approved entity.
+  - `unsure` persisted for Taylor Chen and did not create an approved entity.
+  - Approved entity count remained `1`, only Alex Rivera.
+- Dashboard browser verification passed locally:
+  - Review view showed `Jobs 3`, `Review 2`, `Approved 1`.
+  - Taylor Chen singleton review showed ORCID, homepage, source ID, institution, name, source URL, and DOI evidence.
+  - Approved view showed Alex Rivera as one approved entity with two surviving source records, one email, one GitHub URL, and source/evidence lineage.
+- Dashboard screenshot captured at `/tmp/wekruit-phase1-local-dashboard.png`.
+- A payload contract issue was found and fixed in the generic uploader: optional empty fields must be omitted, not sent as `null`, because the core-service schema treats them as optional but non-nullable.
+- A dedup logic issue was found and fixed in core-service: project records can contain member GitHub/homepage URLs, but person dedup candidates must only include person-like source records. Project records remain source context and are no longer grouped into person review candidates.
+
+### Phase 1 Verification
+
+- `wekruit-core-service-cloud-function`: `npm run build` passes.
+- `wekruit-core-service-cloud-function`: `node --test lib/services/sourcing/**/*.test.js` passes, 7 tests.
+- `wekruit-scraping`: `/tmp/wekruit-scraping-phase1-venv/bin/python -m pytest researcher/tests/test_generic_sourcing_file_upload.py researcher/tests/test_sourcing_upload_bridge.py` passes, 7 tests.
+- `wekruit-scraping`: `/tmp/wekruit-scraping-phase1-venv/bin/python -m pytest researcher/tests` passes, 38 tests.
+- Known unrelated baseline remains: full `npm test` in core-service still has the pre-existing date-sensitive matching recency failures from Phase 0; sourcing build and sourcing tests pass.
 
 ### Acceptance Criteria
 
-- [ ] A two-record exact match can be uploaded, reviewed as same person, and materialized as one approved entity.
-- [ ] A singleton person-like source record can be uploaded and appears in review.
-- [ ] A rejected/unsure review decision does not create an approved entity.
-- [ ] The dashboard displays enough evidence for a reviewer to make a decision.
+- [x] A two-record exact match can be uploaded, reviewed as same person, and materialized as one approved entity.
+- [x] A singleton person-like source record can be uploaded and appears in review.
+- [x] A rejected/unsure review decision does not create an approved entity.
+- [x] The dashboard displays enough evidence for a reviewer to make a decision.
 
 ## Phase 2: Unify GitHub, Devpost, And Research Ingestion
 
