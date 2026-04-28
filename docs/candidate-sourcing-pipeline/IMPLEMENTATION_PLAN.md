@@ -34,6 +34,63 @@ Use a conservative productization path:
 - Do not implement full job/company matching in this phase.
 - Do not create a separate top-level dedup service.
 
+## Current Execution State
+
+Last updated: 2026-04-27.
+
+- [x] PRD, architecture, and implementation plan documents are drafted.
+- [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
+- [x] Firebase/Firestore remains the v1 operational source of truth.
+- [x] Existing dashboard should be extended rather than rebuilt.
+- [x] GitHub, Devpost, and research remain the only v1 source families.
+- [x] Enrichment should include industry/domain interests in addition to role/track, specialization, skills, and contactability.
+- [x] Local `.env` files are ignored by git and must not be committed.
+- [ ] Feature implementation has not started yet.
+- [ ] Create implementation branch from `main` when implementation begins.
+- [ ] Re-check the current state of the sourcing prototype branch before porting or productizing code.
+- [ ] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
+- [x] Confirm available LLM provider/model environment variables from local `.env` without exposing values.
+- [x] Validate whether local LLM keys are active before implementing Phase 5 behavior that depends on live model calls.
+- [ ] Create or collect small GitHub, Devpost, and research sample outputs for repeatable tests.
+
+## Phase Execution Protocol
+
+Every phase should be executed as a self-contained loop:
+
+1. Plan the exact code path and expected behavior for the phase.
+2. Implement only the scope required for that phase.
+3. Run automated tests or add focused tests when existing coverage is missing.
+4. Verify behavior manually when the dashboard or review workflow is affected.
+5. Debug failures before moving to the next phase.
+6. Update this document with completed work, remaining blockers, and verification notes.
+7. Stop and report status before starting the next phase.
+
+The implementation agent should treat this document as durable working memory. If conversation context is compacted, resume from the latest checked items, progress notes, and blockers recorded here rather than restarting the plan from scratch.
+
+## Setup Clarifications
+
+These clarify the implementation questions that should be resolved before coding:
+
+- Branching: create a new implementation branch from `main` before feature work starts. The branch should contain the pipeline implementation and can be merged back after end-to-end verification.
+- Existing sourcing prototype: the preferred path is to reuse/productize the existing Firebase sourcing prototype where it is correct, not to rewrite it blindly. This does not mean Firebase itself is optional; Firebase remains the v1 data/runtime foundation.
+- Local Firebase/dev dashboard setup: this means running the backend, dashboard, and Firebase emulators or configured dev Firebase project locally enough to test source ingestion, review actions, queue processing, and profile materialization without relying only on deployed behavior.
+- LLM keys: local `.env` may contain provider keys, but implementation should only read expected environment variable names and must never print or commit secret values.
+- LLM key validity: local keys should be treated as present-but-unverified until a safe connectivity check confirms the configured provider/model works. A dead key blocks live enrichment testing, but it should not block ingestion, evidence extraction, dedup, merge review, singleton review, or approved candidate materialization.
+- Sample data: if real fixture data is missing, create small synthetic-but-realistic fixtures for GitHub, Devpost, and research so each phase can be tested repeatedly.
+- Deployed dashboard verification: if allowed during implementation, browser/computer-use can open the deployed or local dashboard to verify the actual review experience visually. This is for UI verification only; source-of-truth behavior should still be tested through code and data checks.
+
+## Environment Check Notes
+
+Safe key connectivity check completed on 2026-04-27. Secret values were not printed, committed, or written to disk.
+
+- `OPENAI_API_KEY`: active/auth accepted.
+- `ANTHROPIC_API_KEY`: active/auth accepted.
+- `GH_ANTHROPIC_API_KEY`: active/auth accepted against the Anthropic API; rejected as a GitHub token, so treat it as an Anthropic key despite the prefix.
+- `GOOGLE_API_KEY`: active/auth accepted against the Gemini model-list endpoint.
+- `SILLICON_FLOW_KEY`: rejected/unauthorized against the SiliconFlow model-list endpoint. Do not rely on this key unless it is replaced or revalidated.
+
+Dashboard inspection permission: browser/computer-use may be used to inspect the deployed dashboard during implementation. Prefer local/dev environments for mutating review actions unless the team explicitly confirms deployed dev mutations are safe.
+
 ## Phase 0: Alignment And Branch/Productization Decision
 
 ### Goal
@@ -330,12 +387,14 @@ Turn approved candidate evidence into structured, matching-ready profile fields 
 - [ ] Define v1 track list.
 - [ ] Define v1 specialization list.
 - [ ] Define v1 skill/domain normalization strategy.
+- [ ] Define v1 industry/domain interest taxonomy.
 - [ ] Define career stage values.
 - [ ] Define contactability values.
 - [ ] Enforce controlled taxonomy first.
 - [ ] Separate proposed open-ended tags from controlled fields.
 - [ ] Store proposed tags for human review.
 - [ ] Allow approved proposed tags to be analyzed for future taxonomy promotion.
+- [ ] Keep industry/domain interests separate from skills. Example: `python` is a skill, while `healthcare_ai` is an industry/domain interest.
 
 ### Draft V1 Tracks
 
@@ -356,7 +415,7 @@ Turn approved candidate evidence into structured, matching-ready profile fields 
 - [ ] Generate scored tracks.
 - [ ] Generate specializations.
 - [ ] Generate skills.
-- [ ] Generate domains/interests.
+- [ ] Generate industry/domain interests.
 - [ ] Generate career stage.
 - [ ] Generate contactability.
 - [ ] Generate matching summary.
@@ -369,10 +428,12 @@ Turn approved candidate evidence into structured, matching-ready profile fields 
 - [ ] Add enrichment review queue/dashboard view.
 - [ ] Show evidence pack summary.
 - [ ] Show suggested primary track.
+- [ ] Show suggested industry/domain interests.
 - [ ] Allow reviewer to change primary track.
 - [ ] Allow reviewer to add/remove tracks.
 - [ ] Allow reviewer to add/remove specializations.
-- [ ] Allow reviewer to add/remove skills/domains.
+- [ ] Allow reviewer to add/remove skills.
+- [ ] Allow reviewer to add/remove industry/domain interests.
 - [ ] Allow reviewer to approve/reject proposed open-ended tags.
 - [ ] Show verifier warnings.
 - [ ] Store reviewer edits as structured enrichment review.
@@ -396,6 +457,7 @@ Turn approved candidate evidence into structured, matching-ready profile fields 
 - [ ] Every inferred label has evidence IDs.
 - [ ] Invalid taxonomy values fail validation.
 - [ ] Reviewer can edit main labels without editing confidence scores.
+- [ ] Reviewer can correct industry/domain interests separately from skills.
 - [ ] Final candidate profile is created only after enrichment review.
 - [ ] Re-enrichment review is created only for important profile changes.
 
@@ -415,6 +477,7 @@ Expose clean, reviewed candidate profiles with lineage and matching-ready fields
 - [ ] Store lineage pointers to enrichment run/review.
 - [ ] Store current profile status.
 - [ ] Store source domains.
+- [ ] Store reviewed industry/domain interests.
 - [ ] Store contactability fields.
 - [ ] Store matching summary.
 - [ ] Avoid duplicating large raw payloads.
@@ -425,7 +488,7 @@ Expose clean, reviewed candidate profiles with lineage and matching-ready fields
 - [ ] Show clean profile fields.
 - [ ] Show source domains.
 - [ ] Show evidence links.
-- [ ] Show confirmed tracks/specializations/skills/domains.
+- [ ] Show confirmed tracks, specializations, skills, and industry/domain interests.
 - [ ] Show contactability.
 - [ ] Show review history.
 - [ ] Show enrichment version.
