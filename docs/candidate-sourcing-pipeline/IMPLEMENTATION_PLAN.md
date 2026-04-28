@@ -364,6 +364,44 @@ Last updated: 2026-04-28.
 - Local dashboard browser verification showed Nora Kim as a Devpost singleton with person-name evidence correctly showing `nora kim`, not the project name.
 - No deployed dashboard data was mutated during Phase 2; manual browser verification was performed against the local emulator dashboard.
 
+### Phase 2 Local Demo
+
+Use this when the team wants to see the Phase 2 progress in the dashboard.
+
+From `wekruit-core-service-cloud-function`, start the local sourcing dashboard/API/emulator stack:
+
+```bash
+npm run serve:web:full
+```
+
+Then open the local dashboard:
+
+```text
+http://127.0.0.1:5100/#review
+```
+
+From `wekruit-scraping`, upload the sample fixtures to the local dashboard API:
+
+```bash
+/tmp/wekruit-scraping-phase1-venv/bin/python scripts/sourcing_upload_file.py --input researcher/tests/fixtures/sourcing/github_candidates.json --run-id demo-github --domain developer --source github --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+```bash
+/tmp/wekruit-scraping-phase1-venv/bin/python scripts/sourcing_upload_file.py --input researcher/tests/fixtures/sourcing/devpost_projects.json --run-id demo-devpost --domain hackathon --source devpost --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+```bash
+/tmp/wekruit-scraping-phase1-venv/bin/python scripts/sourcing_upload_file.py --input researcher/tests/fixtures/sourcing/research_records.json --run-id demo-research --domain researcher --source openalex --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+Expected visible result:
+
+- GitHub, Devpost, and research source runs appear in the dashboard.
+- Alex Rivera appears as a GitHub/Devpost duplicate candidate through shared GitHub/homepage evidence.
+- Nora Kim, Mira Patel, Priya Natarajan, and Taylor Chen appear as singleton or research review cases.
+- Evidence includes source-specific links/fields such as GitHub URL, Devpost URL, homepage, ORCID, DOI, institution, and source URL.
+- Approving the Alex Rivera merge creates one approved entity with GitHub and Devpost source-record lineage.
+
 ## Phase 3: Expand Review Workflow
 
 ### Goal
