@@ -1,0 +1,33 @@
+[
+  {
+    "id": "openalex:A1",
+    "entityType": "person",
+    "name": "Taylor Chen",
+    "institution": "Open Systems Institute",
+    "orcid": "0000-0002-1825-0097",
+    "doi": "10.1234/example.2026.001",
+    "paper_title": "Scaling Candidate Graph Construction",
+    "venue": "NeurIPS",
+    "website": "https://taylorchen.example.org"
+  },
+  {
+    "id": "contact:A1",
+    "entityType": "person",
+    "name": "Taylor Chen",
+    "affiliation": "Open Systems Institute",
+    "orcid": "0000-0002-1825-0097",
+    "homepage": "https://taylorchen.example.org",
+    "email": "taylor.chen@example.org"
+  },
+  {
+    "id": "openalex:A2",
+    "entityType": "person",
+    "name": "Priya Natarajan",
+    "institution": "Materials AI Lab",
+    "orcid": "0000-0003-1111-2222",
+    "doi": "10.1234/example.2026.002",
+    "paper_title": "Learning Material Properties from Simulations",
+    "venue": "ICLR",
+    "website": "https://priyan.example.edu"
+  }
+]

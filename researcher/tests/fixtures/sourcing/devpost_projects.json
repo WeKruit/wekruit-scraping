@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Vision Assist",
+    "tagline": "Real-time scene guidance for low-vision users.",
+    "description": "A hackathon project that combines computer vision, speech, and mobile UX.",
+    "project_url": "https://devpost.com/software/vision-assist",
+    "hackathon": "Demo Hack 2026",
+    "winner": true,
+    "prizes": ["Accessibility Winner"],
+    "likes": 52,
+    "github_links": ["https://github.com/alex-rivera-ai/vision-assist"],
+    "demo_links": ["https://vision-assist.example.com"],
+    "all_links": [
+      "https://github.com/alex-rivera-ai/vision-assist",
+      "https://vision-assist.example.com"
+    ],
+    "tech_tags": ["python", "computer-vision", "accessibility"],
+    "members": [
+      {
+        "name": "Alex Rivera",
+        "devpost_username": "alexrivera",
+        "devpost_profile": "https://devpost.com/alexrivera",
+        "github_url": "https://github.com/alex-rivera-ai",
+        "website": "https://alexrivera.dev"
+      }
+    ]
+  },
+  {
+    "name": "Mech Planner",
+    "tagline": "CAD planning helper for robotics teams.",
+    "project_url": "https://devpost.com/software/mech-planner",
+    "hackathon": "Demo Hack 2026",
+    "winner": false,
+    "tech_tags": ["cad", "robotics"],
+    "members": [
+      {
+        "name": "Nora Kim",
+        "devpost_username": "norakim",
+        "devpost_profile": "https://devpost.com/norakim",
+        "website": "https://nora.example.com"
+      }
+    ]
+  }
+]

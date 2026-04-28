@@ -45,7 +45,9 @@ Last updated: 2026-04-28.
 - [x] GitHub, Devpost, and research remain the only v1 source families.
 - [x] Enrichment should include industry/domain interests in addition to role/track, specialization, skills, and contactability.
 - [x] Local `.env` files are ignored by git and must not be committed.
-- [x] Phase 1 feature implementation has started.
+- [x] Phase 1 stabilized the source-run/source-record/evidence/dedup/review/approved-entity loop.
+- [x] Phase 2 unified GitHub, Devpost, and research fixture ingestion through the same source-record upload path.
+- [x] Working branches renamed to `codex/candidate-sourcing-pipeline` in both active implementation repos.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
 - [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
@@ -122,7 +124,7 @@ The preferred path is to productize the existing prototype rather than rebuild i
 
 Last updated: 2026-04-28.
 
-- Working branch created from current `main`: `codex/candidate-sourcing-phase-0`.
+- Working branch created from current `main` and later renamed for the full effort: `codex/candidate-sourcing-pipeline`.
 - `wekruit-scraping` `origin/codex/sourcing-e2e-firebase` is still present and diverges from current `main`.
 - The scraping prototype branch adds a useful source-record contract, deterministic IDs, dry-run upload output, a core-service ingest client, a generic JSON/JSONL/CSV uploader, and focused tests.
 - The scraping prototype branch should be selectively ported/productized into the new implementation branch rather than used as the working branch directly, because current `main` contains newer planning docs and secret-safety work.
@@ -205,8 +207,8 @@ This phase does not add enrichment. It stabilizes the review foundation.
 
 Last updated: 2026-04-28.
 
-- Working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-phase-1`, created from current `main`.
-- Working branch in `wekruit-scraping`: `codex/candidate-sourcing-phase-0`, continuing to hold the scraping-side source-record upload bridge and durable plan docs.
+- Working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-pipeline`, created from current `main`.
+- Working branch in `wekruit-scraping`: `codex/candidate-sourcing-pipeline`, created from current `main`, continuing to hold the scraping-side source-record upload bridge and durable plan docs.
 - Core-service sourcing backend, static dashboard, sourcing Firestore collection names, sourcing queue names, and sourcing-only Firebase config were selectively ported from the previous sourcing prototype branch onto current `main`.
 - Scraping-side source-record contract, deterministic source-record conversion, generic file uploader, researcher upload bridge, and tests were selectively ported from the previous sourcing prototype branch onto current `main`.
 - `firebase.sourcing.json` now runs the sourcing-only functions bundle with hosting, functions, and Firestore emulators, avoiding unrelated outbound/matching environment prompts during local sourcing verification.
@@ -273,67 +275,94 @@ Each source adapter should emit:
 
 ### GitHub Tasks
 
-- [ ] Map GitHub candidates to `domain=developer`.
-- [ ] Map GitHub profiles to person source records.
-- [ ] Preserve GitHub username and profile URL.
-- [ ] Preserve public email when available.
-- [ ] Preserve homepage/blog when available.
-- [ ] Preserve company/institution field when available.
-- [ ] Preserve location when available.
-- [ ] Preserve repository/language/activity summary fields.
-- [ ] Emit evidence for GitHub URL/login.
-- [ ] Emit evidence for public email.
-- [ ] Emit evidence for homepage.
-- [ ] Emit relevance signals such as `open_source_contribution` and `technical_project`.
-- [ ] Create fixture data for a GitHub singleton.
-- [ ] Create fixture data for a GitHub/Devpost same-person match through shared GitHub URL.
+- [x] Map GitHub candidates to `domain=developer`.
+- [x] Map GitHub profiles to person source records.
+- [x] Preserve GitHub username and profile URL.
+- [x] Preserve public email when available.
+- [x] Preserve homepage/blog when available.
+- [x] Preserve company/institution field when available.
+- [x] Preserve location when available.
+- [x] Preserve repository/activity summary fields.
+- [x] Emit evidence for GitHub URL/login.
+- [x] Emit evidence for public email.
+- [x] Emit evidence for homepage.
+- [x] Emit relevance signals such as `open_source_contribution` and `technical_project`.
+- [x] Create fixture data for a GitHub singleton.
+- [x] Create fixture data for a GitHub/Devpost same-person match through shared GitHub URL.
 
 ### Devpost Tasks
 
-- [ ] Map Devpost projects to `domain=hackathon`.
-- [ ] Emit project source records.
-- [ ] Emit person/team member source records.
-- [ ] Preserve project URL.
-- [ ] Preserve member Devpost profile URL when available.
-- [ ] Preserve GitHub/demo links.
-- [ ] Preserve tech tags.
-- [ ] Preserve hackathon and prize/winner fields.
-- [ ] Emit evidence for Devpost URLs.
-- [ ] Emit evidence for GitHub links.
-- [ ] Emit relevance signals such as `technical_project`, `founder_or_builder_signal`, and `award_or_recognition`.
-- [ ] Create fixture data for a Devpost singleton.
-- [ ] Create fixture data for a Devpost/GitHub same-person match.
+- [x] Map Devpost projects to `domain=hackathon`.
+- [x] Emit project source records.
+- [x] Emit person/team member source records.
+- [x] Preserve project URL.
+- [x] Preserve member Devpost profile URL when available.
+- [x] Preserve GitHub/demo links.
+- [x] Preserve tech tags.
+- [x] Preserve hackathon and prize/winner fields.
+- [x] Emit evidence for Devpost URLs.
+- [x] Emit evidence for GitHub links.
+- [x] Emit relevance signals such as `technical_project`, `founder_or_builder_signal`, and `award_or_recognition`.
+- [x] Create fixture data for a Devpost singleton.
+- [x] Create fixture data for a Devpost/GitHub same-person match.
 
 ### Research Tasks
 
-- [ ] Map OpenAlex/Crossref paper outputs to research source records.
-- [ ] Map author/contact enrichment outputs to person source records.
-- [ ] Preserve ORCID, OpenAlex author ID, DOI, institution, venue, and publication metadata.
-- [ ] Preserve DBLP/OpenReview/Google Scholar/homepage fields when available.
-- [ ] Emit evidence for ORCID.
-- [ ] Emit evidence for DOI/paper.
-- [ ] Emit evidence for institution.
-- [ ] Emit evidence for DBLP/OpenReview/Google Scholar.
-- [ ] Emit relevance signals such as `research_publication` and `education_affiliation`.
-- [ ] Create fixture data for a research singleton.
-- [ ] Create fixture data for exact ORCID match across two research records.
+- [x] Map OpenAlex and generic DOI-based paper outputs to research source records.
+- [x] Map author/contact enrichment outputs to person source records.
+- [x] Preserve ORCID, OpenAlex author ID, DOI, institution, venue, and publication metadata.
+- [x] Preserve DBLP/OpenReview/homepage fields when available through contact enrichment.
+- [ ] Add a dedicated real Crossref output fixture if the team depends on Crossref-specific ingestion shape.
+- [ ] Preserve Google Scholar profile fields once they are emitted by research enrichment.
+- [x] Emit evidence for ORCID.
+- [x] Emit evidence for DOI/paper.
+- [x] Emit evidence for institution.
+- [x] Emit evidence for DBLP/OpenReview/homepage where present.
+- [x] Emit relevance signals such as `research_publication` and `education_affiliation`.
+- [x] Create fixture data for a research singleton.
+- [x] Create fixture data for exact ORCID match across two research records.
 
 ### Cross-Source Tasks
 
-- [ ] Confirm all three sources can upload through the same ingest path.
-- [ ] Confirm source records preserve source-specific raw summaries without forcing every field into top-level columns.
-- [ ] Confirm evidence extraction normalizes shared identifiers consistently.
-- [ ] Confirm dedup can compare records across domains.
-- [ ] Confirm dashboard can display source-specific details without breaking generic review UI.
+- [x] Confirm all three sources can upload through the same ingest path.
+- [x] Confirm source records preserve source-specific raw summaries without forcing every field into top-level columns.
+- [x] Confirm evidence extraction normalizes shared identifiers consistently.
+- [x] Confirm dedup can compare records across domains.
+- [x] Confirm dashboard can display source-specific details without breaking generic review UI.
 
 ### Acceptance Criteria
 
-- [ ] GitHub source run appears in dashboard.
-- [ ] Devpost source run appears in dashboard.
-- [ ] Research source run appears in dashboard.
-- [ ] GitHub, Devpost, and research records can all produce singleton review items.
-- [ ] At least one cross-source dedup case can be reviewed and approved.
-- [ ] Each source type provides at least one inspectable evidence link per approvable record.
+- [x] GitHub source run appears in dashboard.
+- [x] Devpost source run appears in dashboard.
+- [x] Research source run appears in dashboard.
+- [x] GitHub, Devpost, and research records can all produce singleton review items.
+- [x] At least one cross-source dedup case can be reviewed and approved.
+- [x] Each source type provides at least one inspectable evidence link per approvable record.
+
+### Phase 2 Findings
+
+Last updated: 2026-04-28.
+
+- The generic file upload adapter now preserves meaningful source-specific summaries for GitHub, Devpost, and research records while still sending the same source-record contract to core-service.
+- GitHub fixture ingestion covers one GitHub/Devpost duplicate candidate and one GitHub singleton. GitHub summaries preserve username/profile URL, public email, homepage/blog, company/institution, location, commit/PR/repo activity, project stars, source repos, score, and suggested relevance signals.
+- Devpost fixture ingestion covers one project/team member that matches GitHub and one Devpost singleton. Devpost summaries preserve project URL, member profile URL, GitHub/demo/all links, tech tags, hackathon, prize/winner fields, and suggested relevance signals.
+- Research fixture ingestion covers one exact ORCID/homepage match across two research records and one research singleton. Research summaries preserve ORCID, DOI, venue, institution, homepage/source URL, and suggested relevance signals.
+- Existing researcher source-record bridge coverage still verifies staged OpenAlex work/author records and contact enrichment records, including OpenReview and DBLP fields.
+- Crossref-specific and Google Scholar-specific fixture hardening remains deferred until those exact output shapes are required in v1 ingestion. The current generic research adapter covers normalized DOI/paper fields but should not be treated as proof that every raw Crossref payload shape is production-ready.
+- A `suggestedSignals` adapter bug was found and fixed: generated signal lists must be flattened/deduplicated as strings, not accidentally nested as a tuple/list payload.
+- A Devpost identity-evidence bug was found and fixed: project context now uses `projectName`/`projectUrl` in member raw payloads so project names do not pollute person-name evidence.
+
+### Phase 2 Verification
+
+- `wekruit-scraping`: `/tmp/wekruit-scraping-phase1-venv/bin/python -m pytest researcher/tests/test_generic_sourcing_file_upload.py researcher/tests/test_sourcing_upload_bridge.py` passes, 8 tests.
+- `wekruit-scraping`: `/tmp/wekruit-scraping-phase1-venv/bin/python -m pytest researcher/tests` passes, 39 tests.
+- `wekruit-core-service-cloud-function`: `npm run build` passes.
+- `wekruit-core-service-cloud-function`: `node --test lib/services/sourcing/**/*.test.js` passes, 7 tests.
+- Local sourcing emulator E2E upload through `http://127.0.0.1:5100/api/sourcing` produced 3 completed source runs, 9 source records, 64 evidence records, 4 pending review candidates, 1 approved entity, and 1 stale singleton suppressed after duplicate detection.
+- Local dashboard browser verification showed `Jobs 3`, `Review 4`, and `Approved 1` after uploading GitHub, Devpost, and research fixtures.
+- Local dashboard browser verification showed Alex Rivera approved as one entity from GitHub and Devpost source records, with email, GitHub URL, homepage/source URLs, source lineage, and evidence lineage visible.
+- Local dashboard browser verification showed Nora Kim as a Devpost singleton with person-name evidence correctly showing `nora kim`, not the project name.
+- No deployed dashboard data was mutated during Phase 2; manual browser verification was performed against the local emulator dashboard.
 
 ## Phase 3: Expand Review Workflow
 

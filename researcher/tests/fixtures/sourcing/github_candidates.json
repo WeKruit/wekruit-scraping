@@ -1,0 +1,59 @@
+[
+  {
+    "username": "alex-rivera-ai",
+    "emails": ["alex.rivera@example.edu"],
+    "total_commits": 128,
+    "merged_prs": 24,
+    "repos": [
+      {
+        "full_name": "vision/assist",
+        "stars": 1200,
+        "commits": 80
+      },
+      {
+        "full_name": "robotics/perception-kit",
+        "stars": 340,
+        "commits": 48
+      }
+    ],
+    "profile": {
+      "name": "Alex Rivera",
+      "bio": "Computer vision engineer building assistive AI tools.",
+      "company": "Example University",
+      "location": "Los Angeles, CA",
+      "blog": "https://alexrivera.dev",
+      "html_url": "https://github.com/alex-rivera-ai",
+      "followers": 150,
+      "public_repos": 21
+    },
+    "score": {
+      "total": 82.5,
+      "activity": 35.0,
+      "influence": 27.5,
+      "reachability": 10.0,
+      "profile": 10.0
+    }
+  },
+  {
+    "username": "mira-mech",
+    "emails": [],
+    "total_commits": 17,
+    "merged_prs": 1,
+    "repos": [
+      {
+        "full_name": "robotics/arm-calibration",
+        "stars": 42,
+        "commits": 17
+      }
+    ],
+    "profile": {
+      "name": "Mira Patel",
+      "company": "Robotics Lab",
+      "location": "Pittsburgh, PA",
+      "blog": "",
+      "html_url": "https://github.com/mira-mech",
+      "followers": 9,
+      "public_repos": 5
+    }
+  }
+]

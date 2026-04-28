@@ -30,8 +30,77 @@ def first_non_empty(*values: Any) -> str:
     return ""
 
 
+def list_values(value: Any) -> list[str]:
+    if isinstance(value, list):
+        output: list[str] = []
+        for item in value:
+            output.extend(list_values(item))
+        return output
+    if value in (None, "", [], {}):
+        return []
+    text = str(value).strip()
+    return [text] if text else []
+
+
+def unique_values(*values: Any) -> list[str]:
+    seen: set[str] = set()
+    output: list[str] = []
+    for value in values:
+        for text in list_values(value):
+            if text not in seen:
+                seen.add(text)
+                output.append(text)
+    return output
+
+
 def compact(payload: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in payload.items() if value not in (None, "", [], {})}
+
+
+def safe_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def suggested_signals(*signals: str) -> list[str]:
+    return unique_values(*signals)
+
+
+def github_suggested_signals(candidate: dict[str, Any]) -> list[str]:
+    profile = candidate.get("profile") if isinstance(candidate.get("profile"), dict) else {}
+    repos = candidate.get("repos") if isinstance(candidate.get("repos"), list) else []
+    total_commits = safe_int(candidate.get("total_commits"))
+    merged_prs = safe_int(candidate.get("merged_prs"))
+    followers = safe_int(profile.get("followers"))
+    signals = ["open_source_contribution", "technical_project"]
+    if total_commits >= 25 or merged_prs >= 5 or len(repos) >= 2:
+        signals.append("high_activity")
+    if merged_prs >= 10 or followers >= 100:
+        signals.append("maintainer_or_influence_signal")
+    return suggested_signals(*signals)
+
+
+def devpost_project_signals(project: dict[str, Any]) -> list[str]:
+    signals = ["technical_project", "hackathon_participation"]
+    if project.get("winner") or project.get("prizes"):
+        signals.append("award_or_recognition")
+    if project.get("github_links") or project.get("github_repos"):
+        signals.append("builder_signal")
+    return suggested_signals(*signals)
+
+
+def research_suggested_signals(record: dict[str, Any]) -> list[str]:
+    entity_type = str(record.get("entityType") or record.get("entity_type") or record.get("type") or "").lower()
+    signals: list[str] = []
+    if entity_type in {"paper", "research_work", "work", "works"} or record.get("doi") or record.get("paper_title"):
+        signals.append("research_publication")
+    if record.get("institution") or record.get("affiliation") or record.get("company"):
+        signals.append("education_affiliation")
+    if record.get("orcid") or record.get("openalex_author_id"):
+        signals.append("academic_research_signal")
+    return suggested_signals(*signals)
 
 
 def load_input_records(path: Path) -> list[dict[str, Any]]:
@@ -67,21 +136,28 @@ def iter_domain_records(source: str, records: Iterable[dict[str, Any]]) -> Itera
 def devpost_records(project: dict[str, Any]) -> Iterable[dict[str, Any]]:
     project_name = first_non_empty(project.get("name"), project.get("project_name"))
     project_url = first_non_empty(project.get("project_url"), project.get("url"))
+    project_signals = devpost_project_signals(project)
     yield {
         "entityType": "project",
         "sourceNativeId": first_non_empty(project_url, project_name),
         "sourceUrl": project_url,
         "display": compact({
             "title": project_name,
+            "tagline": project.get("tagline"),
             "hackathon": project.get("hackathon"),
             "homepage": project_url,
+            "github": project.get("github_links") or project.get("github_repos"),
         }),
         "rawSummary": compact({
             "winner": project.get("winner"),
             "likes": project.get("likes"),
             "github": project.get("github_links") or project.get("github_repos"),
             "demo": project.get("demo_links"),
+            "allLinks": project.get("all_links"),
+            "video": project.get("video_url"),
             "tech": project.get("tech_tags") or project.get("tech_stack"),
+            "prizes": project.get("prizes"),
+            "suggestedSignals": project_signals,
         }),
         "raw": project,
     }
@@ -107,15 +183,24 @@ def devpost_records(project: dict[str, Any]) -> Iterable[dict[str, Any]]:
                 "github": member.get("github_url"),
                 "linkedin": member.get("linkedin_url"),
                 "twitter": member.get("twitter_url"),
+                "homepage": member.get("website"),
                 "projectUrl": project_url,
                 "projectName": project_name,
+                "hackathon": project.get("hackathon"),
+                "tech": project.get("tech_tags") or project.get("tech_stack"),
+                "prizes": project.get("prizes"),
+                "winner": project.get("winner"),
+                "suggestedSignals": suggested_signals(*project_signals, "founder_or_builder_signal"),
             }),
             "raw": {
                 "member": member,
                 "project": compact({
-                    "name": project_name,
-                    "url": project_url,
+                    "projectName": project_name,
+                    "projectUrl": project_url,
                     "hackathon": project.get("hackathon"),
+                    "tech": project.get("tech_tags") or project.get("tech_stack"),
+                    "prizes": project.get("prizes"),
+                    "winner": project.get("winner"),
                 }),
             },
         }
@@ -123,8 +208,11 @@ def devpost_records(project: dict[str, Any]) -> Iterable[dict[str, Any]]:
 
 def github_record(candidate: dict[str, Any]) -> dict[str, Any]:
     profile = candidate.get("profile") if isinstance(candidate.get("profile"), dict) else {}
+    repos = candidate.get("repos") if isinstance(candidate.get("repos"), list) else []
     username = first_non_empty(candidate.get("username"), profile.get("login"))
     html_url = first_non_empty(profile.get("html_url"), f"https://github.com/{username}" if username else "")
+    repo_names = unique_values([repo.get("full_name") for repo in repos if isinstance(repo, dict)])
+    project_stars = sum(safe_int(repo.get("stars")) for repo in repos if isinstance(repo, dict))
     return {
         "entityType": "person",
         "sourceNativeId": username or html_url,
@@ -140,11 +228,18 @@ def github_record(candidate: dict[str, Any]) -> dict[str, Any]:
         "rawSummary": compact({
             "email": first_non_empty(candidate.get("emails"), profile.get("email")),
             "github": html_url,
+            "blog": profile.get("blog"),
+            "bio": profile.get("bio"),
             "location": profile.get("location"),
             "followers": profile.get("followers"),
             "publicRepos": profile.get("public_repos"),
+            "mergedPrs": candidate.get("merged_prs"),
             "totalCommits": candidate.get("total_commits"),
+            "repoCount": len(repos),
+            "projectStars": project_stars,
+            "sourceRepos": repo_names,
             "score": candidate.get("score"),
+            "suggestedSignals": github_suggested_signals(candidate),
         }),
         "raw": candidate,
     }
@@ -163,6 +258,8 @@ def generic_record(record: dict[str, Any]) -> dict[str, Any]:
         record.get("github_url"),
         record.get("member_github"),
         record.get("html_url"),
+        record.get("homepage"),
+        record.get("url"),
         record.get("blog"),
         record.get("website"),
         record.get("member_website"),
@@ -181,6 +278,8 @@ def generic_record(record: dict[str, Any]) -> dict[str, Any]:
             record.get("member_github"),
             record.get("project_url"),
             record.get("email"),
+            record.get("orcid"),
+            record.get("doi"),
         ),
         "sourceUrl": source_url,
         "displayName": name,
@@ -195,10 +294,14 @@ def generic_record(record: dict[str, Any]) -> dict[str, Any]:
         }),
         "rawSummary": compact({
             "email": first_non_empty(record.get("email"), record.get("emails"), record.get("member_email")),
+            "orcid": first_non_empty(record.get("orcid"), record.get("member_orcid")),
             "github": first_non_empty(record.get("github_url"), record.get("member_github"), record.get("html_url")),
             "linkedin": first_non_empty(record.get("linkedin_url"), record.get("member_linkedin")),
             "devpost": first_non_empty(record.get("member_devpost"), record.get("project_url")),
+            "doi": first_non_empty(record.get("doi"), record.get("paper_doi")),
+            "venue": first_non_empty(record.get("venue"), record.get("journal")),
             "score": first_non_empty(record.get("score"), record.get("score_total")),
+            "suggestedSignals": research_suggested_signals(record),
         }),
         "raw": record,
     }
