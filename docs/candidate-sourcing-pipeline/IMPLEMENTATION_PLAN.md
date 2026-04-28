@@ -48,6 +48,7 @@ Last updated: 2026-04-28.
 - [x] Phase 1 stabilized the source-run/source-record/evidence/dedup/review/approved-entity loop.
 - [x] Phase 2 unified GitHub, Devpost, and research fixture ingestion through the same source-record upload path.
 - [x] Phase 3 expanded review into structured identity/relevance decisions with confirmed signals.
+- [ ] Phase 3.5 should validate the Phase 1-3 workflow against a real Firebase staging/dev project before Phase 4.
 - [x] Working branches renamed to `codex/candidate-sourcing-pipeline` in both active implementation repos.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
@@ -501,6 +502,116 @@ Last updated: 2026-04-28.
   - Approved tab shows the approved Alex Rivera entity with confirmed signals and source-record lineage.
   - Reviewer can reject a singleton as bad record from the dashboard.
   - All statuses view can inspect reviewed rows and keeps action buttons disabled for non-pending records.
+
+## Phase 3.5: Firebase Staging Smoke Test
+
+### Goal
+
+Validate that the completed Phase 1-3 sourcing workflow works against a real Firebase environment before building the Phase 4 global candidate entity model on top of it.
+
+This phase should use a staging/dev Firebase project, not production. The purpose is to prove deployed Firebase Hosting, Firebase Functions, Firestore config, indexes, CORS, rewrites, and dashboard behavior outside the local emulator.
+
+### Why This Phase Exists
+
+Local emulator testing has proven the vertical slice:
+
+- GitHub, Devpost, and research fixture uploads reach the sourcing API.
+- Source records produce evidence and review candidates.
+- Duplicate and singleton candidates appear in the dashboard.
+- Human review actions persist structured identity/relevance decisions.
+- Approved candidates materialize only from approved review decisions.
+- The dashboard supports run/status/source/signal/search filtering and full-row selection.
+
+However, the team has not yet proven that the same workflow is safe and correct in a deployed Firebase project. The current repo evidence is not enough to confirm a safe staging database:
+
+- `wekruit-core-service-cloud-function` has `.firebaserc.example` with `staging=wekruit-core-service-staging` and `production=wekruit-core-service-production`.
+- No checked-in `.firebaserc` was found in the core-service repo during Phase 3.5 planning.
+- `firebase.sourcing.json` defines the sourcing-only hosting/functions/firestore config and hosting site `wekruit-sourcing`.
+- The previously inspected deployed dashboard at `https://wekruit-dev-env.web.app/#review` exists, but it must not be assumed safe for mutating test data until the team confirms ownership and reset expectations.
+
+### Required Team Confirmation
+
+Before running this phase, confirm:
+
+- [ ] Which Firebase project is the safe staging/dev target.
+- [ ] Whether `wekruit-core-service-staging` exists and is accessible to the implementation owner.
+- [ ] Whether `wekruit-dev-env` is a disposable dev environment, a shared team environment, or something closer to production.
+- [ ] Whether the staging Firestore data can be deleted/reset if a test upload pollutes review data.
+- [ ] Who owns Firebase Hosting deployment for the sourcing dashboard.
+- [ ] Who owns Firebase Functions deployment for the sourcing API.
+- [ ] Whether staging dashboard access/auth is acceptable for the current v1 review workflow.
+- [ ] Whether the staging project has required Firestore indexes/rules deployed or should receive them as part of this smoke test.
+
+### Safety Rules
+
+- [ ] Do not point fixture upload scripts at production.
+- [ ] Do not run large real scrapes in staging before fixture smoke tests pass.
+- [ ] Use clearly prefixed run IDs for every staging test.
+- [ ] Keep test data small and reversible.
+- [ ] Record exact project ID, deployed URL, run IDs, and cleanup steps in this document.
+- [ ] If staging ownership is unclear, stop and ask the team before deploying or uploading.
+
+Recommended run ID prefix:
+
+```text
+smoke-YYYY-MM-DD-source
+```
+
+Example:
+
+```text
+smoke-2026-04-28-github
+smoke-2026-04-28-devpost
+smoke-2026-04-28-research
+```
+
+### Planned Test Path
+
+1. Confirm the safe Firebase staging/dev project.
+2. Create or verify local `.firebaserc` project aliases without committing it.
+3. Deploy only the sourcing dashboard/API stack to staging.
+4. Open the staging dashboard and verify `/api/sourcing/health`.
+5. Upload only the small GitHub, Devpost, and research fixture files.
+6. Confirm the dashboard shows the expected source runs and review candidates.
+7. Manually perform a controlled review script:
+   - approve the Alex Rivera GitHub/Devpost merge
+   - reject one singleton as bad record
+   - reject one singleton as not relevant
+   - hold one candidate
+8. Confirm approved entities, review labels, source-record lineage, evidence lineage, suggested signals, and confirmed signals in Firestore.
+9. Confirm reviewed rows remain inspectable and action buttons are disabled for non-pending rows.
+10. Clean up test data if the staging project is intended to stay tidy.
+11. Only after fixture smoke passes, optionally run a tiny real-source batch with 3-10 records per source.
+
+### Expected Fixture Result
+
+- [ ] Three source runs exist: GitHub, Devpost, and research.
+- [ ] Nine fixture source records upload successfully.
+- [ ] Evidence records are created with source-specific provenance.
+- [ ] Alex Rivera appears as a GitHub/Devpost duplicate review candidate.
+- [ ] Nora Kim, Mira Patel, Priya Natarajan, and Taylor Chen appear as singleton or research review cases.
+- [ ] Approving Alex Rivera creates one approved entity with GitHub and Devpost lineage.
+- [ ] Rejecting bad/not-relevant/held candidates creates no approved entity.
+- [ ] Dashboard filters work on deployed staging data.
+- [ ] Firestore documents are queryable by run ID/status/source enough for review/debug workflows.
+
+### Exit Criteria
+
+- [ ] The team has identified the correct staging/dev Firebase project.
+- [ ] The staging dashboard loads the Phase 3 UI.
+- [ ] The staging sourcing API accepts fixture uploads.
+- [ ] The staging review workflow behaves the same as local emulator verification.
+- [ ] The team understands how to clean up staging smoke-test data.
+- [ ] Any staging-only deployment/config/index/auth issues are documented before Phase 4 starts.
+
+### Phase 3.5 Current Status
+
+Last updated: 2026-04-28.
+
+- Phase 3.5 is planned but not executed.
+- Do not mutate deployed Firebase data until the team confirms the safe staging/dev project.
+- The current best guess from checked-in config is that `wekruit-core-service-staging` may be the intended staging alias, but this is not confirmed.
+- `wekruit-dev-env.web.app` has been inspected before and serves a deployed review dashboard, but it should not be treated as disposable until a teammate confirms it is safe.
 
 ## Phase 4: Global Candidate Entity Model
 
