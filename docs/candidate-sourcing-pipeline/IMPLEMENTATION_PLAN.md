@@ -47,6 +47,7 @@ Last updated: 2026-04-28.
 - [x] Local `.env` files are ignored by git and must not be committed.
 - [x] Phase 1 stabilized the source-run/source-record/evidence/dedup/review/approved-entity loop.
 - [x] Phase 2 unified GitHub, Devpost, and research fixture ingestion through the same source-record upload path.
+- [x] Phase 3 expanded review into structured identity/relevance decisions with confirmed signals.
 - [x] Working branches renamed to `codex/candidate-sourcing-pipeline` in both active implementation repos.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
@@ -410,58 +411,96 @@ Make human review support both identity merge decisions and candidate relevance 
 
 ### Merge Review Tasks
 
-- [ ] Preserve existing approve merge / keep separate / hold workflow.
-- [ ] Store identity label separately from candidate relevance decision.
-- [ ] Clarify that materialization requires `identityLabel=same_person` and `candidateDecision=approve_candidate`.
-- [ ] Display source records side by side.
-- [ ] Display matched evidence.
-- [ ] Display reason codes and strength.
-- [ ] Display source-specific evidence links.
-- [ ] Display suggested relevance signals.
-- [ ] Allow reviewer to confirm/remove/add relevance signals.
-- [ ] Store confirmed relevance signals with review label.
-- [ ] Support rejecting a merged proposal as bad record or not relevant without creating a candidate.
-- [ ] Store review note.
+- [x] Preserve existing approve merge / keep separate / hold workflow.
+- [x] Store identity label separately from candidate relevance decision.
+- [x] Clarify that materialization requires `identityLabel=same_person` and `candidateDecision=approve_candidate`.
+- [x] Display source records side by side.
+- [x] Display matched evidence.
+- [x] Display reason codes and strength.
+- [x] Display source-specific evidence links.
+- [x] Display suggested relevance signals.
+- [x] Allow reviewer to confirm/remove/add relevance signals.
+- [x] Store confirmed relevance signals with review label.
+- [x] Support rejecting a merged proposal as bad record or not relevant without creating a candidate.
+- [x] Store review note.
 
 ### Singleton Review Tasks
 
-- [ ] Add singleton review queue or filter.
-- [ ] Display person-like records with no current duplicate proposal.
-- [ ] Display inspectable evidence links.
-- [ ] Display source-specific summary fields.
-- [ ] Display suggested relevance signals.
-- [ ] Allow reviewer to confirm/remove/add relevance signals.
-- [ ] Add decisions: `approve_candidate`, `reject_bad_record`, `reject_not_relevant`, `unsure`.
-- [ ] Store decision, reviewer, timestamp, confirmed signals, suggested signals, and note.
-- [ ] Ensure rejected/unsure singletons do not create approved candidates.
+- [x] Add singleton review queue or filter.
+- [x] Display person-like records with no current duplicate proposal.
+- [x] Display inspectable evidence links.
+- [x] Display source-specific summary fields.
+- [x] Display suggested relevance signals.
+- [x] Allow reviewer to confirm/remove/add relevance signals.
+- [x] Add decisions: `approve_candidate`, `reject_bad_record`, `reject_not_relevant`, `unsure`.
+- [x] Store decision, reviewer, timestamp, confirmed signals, suggested signals, and note.
+- [x] Ensure rejected/unsure singletons do not create approved candidates.
 
 ### Review Data Tasks
 
-- [ ] Store suggested relevance signals separately from confirmed relevance signals.
-- [ ] Ensure review labels have stable lineage to source records/dedup candidates.
-- [ ] Ensure `reject_bad_record` and `reject_not_relevant` are distinguishable.
-- [ ] Ensure review actions are auditable.
-- [ ] Ensure dashboard filters can separate pending, approved, rejected, and held records.
+- [x] Store suggested relevance signals separately from confirmed relevance signals.
+- [x] Ensure review labels have stable lineage to source records/dedup candidates.
+- [x] Ensure `reject_bad_record` and `reject_not_relevant` are distinguishable.
+- [x] Ensure review actions are auditable.
+- [x] Ensure dashboard filters can separate pending, approved, rejected, and held records.
 
 ### Dashboard UX Tasks
 
-- [ ] Add source filter.
-- [ ] Add run filter.
-- [ ] Add status filter.
-- [ ] Add signal filter.
-- [ ] Add evidence/strength display.
-- [ ] Add final candidate profile navigation from approved items.
-- [ ] Keep existing review note behavior.
-- [ ] Add structured signal controls without making review too slow.
+- [x] Add source filter.
+- [x] Add run filter.
+- [x] Add status filter.
+- [x] Add signal filter.
+- [x] Add evidence/strength display.
+- [x] Add final candidate profile navigation from approved items.
+- [x] Keep existing review note behavior.
+- [x] Add structured signal controls without making review too slow.
 
 ### Acceptance Criteria
 
-- [ ] Reviewer can approve a singleton candidate with confirmed relevance signals.
-- [ ] Reviewer can reject a singleton as bad record.
-- [ ] Reviewer can reject a singleton as real but not relevant.
-- [ ] Reviewer can hold/mark unsure without approving.
-- [ ] Reviewer can approve a merge only when identity and relevance are both approved.
-- [ ] Review decisions are persisted with enough structure for metrics.
+- [x] Reviewer can approve a singleton candidate with confirmed relevance signals.
+- [x] Reviewer can reject a singleton as bad record.
+- [x] Reviewer can reject a singleton as real but not relevant.
+- [x] Reviewer can hold/mark unsure without approving.
+- [x] Reviewer can approve a merge only when identity and relevance are both approved.
+- [x] Review decisions are persisted with enough structure for metrics.
+
+### Phase 3 Findings
+
+Last updated: 2026-04-28.
+
+- Review labels now store `identityLabel`, `candidateDecision`, `suggestedSignals`, `confirmedSignals`, `sourceRecordIds`, and `evidenceIds`.
+- The old `label` field remains accepted as an API alias so the existing review endpoint contract does not break, but new stored records preserve the Phase 3 identity/relevance split.
+- Merge candidates only materialize approved entities when `identityLabel=same_person` and `candidateDecision=approve_candidate`.
+- Singleton candidates only materialize approved entities when `candidateDecision=approve_candidate`.
+- Rejected and held decisions are now distinguishable through candidate statuses: `not_same_person`, `rejected_bad_record`, `rejected_not_relevant`, and `unsure`.
+- Approved entities now carry `suggestedSignals` and `confirmedSignals` so later enrichment and matching can use human-confirmed review data.
+- Dashboard review controls now support fast v1 actions: approve candidate, keep separate, bad record, not relevant, and hold.
+- Dashboard relevance signal controls now allow reviewers to confirm, remove, and add normalized review signals before saving a decision.
+- Dashboard filters now include run, status, source, signal, and search.
+- Reviewed rows can be inspected through the All statuses filter, but their action buttons are disabled so they cannot be accidentally reviewed again.
+- Browser verification caught and fixed two UI bugs:
+  - Approved detail originally displayed suggested plus confirmed signals; it now displays confirmed signals when present.
+  - Run selection originally auto-jumped away from a run with zero pending items even when viewing All statuses; it now only auto-falls back in the pending queue.
+
+### Phase 3 Verification
+
+- `wekruit-core-service-cloud-function`: `node --check web/app.js` passes.
+- `wekruit-core-service-cloud-function`: `npm run build` passes.
+- `wekruit-core-service-cloud-function`: `node --test lib/services/sourcing/**/*.test.js` passes, 10 tests.
+- Local emulator E2E uploaded GitHub, Devpost, and research fixtures through `http://127.0.0.1:5100/api/sourcing`, producing 3 source runs, 9 source records, 64 evidence records, and 5 review candidates.
+- API smoke verification covered:
+  - GitHub/Devpost merge approved with `same_person + approve_candidate`, creating one approved entity.
+  - GitHub singleton approved with `approve_candidate`, creating one approved entity.
+  - Devpost singleton rejected as `reject_bad_record`, creating no approved entity.
+  - Research singleton rejected as `reject_not_relevant`, creating no approved entity.
+  - Research merge held with `unsure`, creating no approved entity.
+- Browser verification against `http://127.0.0.1:5100/#review` covered:
+  - Review page loads the new status/source/signal filters.
+  - Merge review shows suggested relevance signals as editable checked controls.
+  - Reviewer can remove a suggested signal, add `assistive_ai`, write a note, and approve a GitHub/Devpost merge.
+  - Approved tab shows the approved Alex Rivera entity with confirmed signals and source-record lineage.
+  - Reviewer can reject a singleton as bad record from the dashboard.
+  - All statuses view can inspect reviewed rows and keeps action buttons disabled for non-pending records.
 
 ## Phase 4: Global Candidate Entity Model
 
