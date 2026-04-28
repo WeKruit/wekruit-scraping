@@ -4,3 +4,8 @@ github/output/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Local secrets / environment
+.env
+.env.*
+!.env.example
