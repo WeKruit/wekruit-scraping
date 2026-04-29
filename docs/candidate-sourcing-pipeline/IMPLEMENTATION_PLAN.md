@@ -827,38 +827,55 @@ Expose clean, reviewed candidate profiles with lineage and matching-ready fields
 
 ### Profile Data Tasks
 
-- [ ] Define final candidate profile schema.
-- [ ] Store clean fields only.
-- [ ] Store lineage pointers to source records.
-- [ ] Store lineage pointers to evidence records.
-- [ ] Store lineage pointers to identity/relevance reviews.
-- [ ] Store lineage pointers to enrichment run/review.
-- [ ] Store current profile status.
-- [ ] Store source domains.
-- [ ] Store reviewed industry/domain interests.
-- [ ] Store contactability fields.
-- [ ] Store matching summary.
-- [ ] Avoid duplicating large raw payloads.
+- [x] Define final candidate profile schema.
+- [x] Store clean fields only.
+- [x] Store lineage pointers to source records.
+- [x] Store lineage pointers to evidence records.
+- [x] Store lineage pointers to identity/relevance reviews.
+- [x] Store lineage pointers to enrichment run/review.
+- [x] Store current profile status.
+- [x] Store source domains.
+- [x] Store reviewed industry/domain interests.
+- [x] Store contactability fields.
+- [x] Store matching summary.
+- [x] Avoid duplicating large raw payloads.
 
 ### Dashboard Tasks
 
-- [ ] Add final candidate profile view.
-- [ ] Show clean profile fields.
-- [ ] Show source domains.
-- [ ] Show evidence links.
-- [ ] Show confirmed tracks, specializations, skills, and industry/domain interests.
-- [ ] Show contactability.
-- [ ] Show review history.
-- [ ] Show enrichment version.
-- [ ] Show lineage references.
-- [ ] Add filters/search for approved profiles.
+- [x] Add final candidate profile view.
+- [x] Show clean profile fields.
+- [x] Show source domains.
+- [x] Show evidence links.
+- [x] Show confirmed tracks, specializations, skills, and industry/domain interests.
+- [x] Show contactability.
+- [x] Show review history.
+- [x] Show enrichment version.
+- [x] Show lineage references.
+- [x] Add filters/search for approved profiles.
 
 ### Acceptance Criteria
 
-- [ ] Reviewer can inspect a final candidate profile after enrichment approval.
-- [ ] Profile displays clean fields and evidence links.
-- [ ] Profile lineage is traceable back to original source records.
-- [ ] Profile can be used later by a matching system without reading raw source payloads.
+- [x] Reviewer can inspect a final candidate profile after enrichment approval.
+- [x] Profile displays clean fields and evidence links.
+- [x] Profile lineage is traceable back to original source records.
+- [x] Profile can be used later by a matching system without reading raw source payloads.
+
+### Phase 6 Findings
+
+Last updated: 2026-04-29.
+
+- Core-service now exposes read APIs for final candidate profiles:
+  - `GET /api/sourcing/candidate-profiles`
+  - `GET /api/sourcing/candidate-profiles/:profileId`
+- The profile list supports matching-oriented filters for track, industry/domain interest, source, contactability, and search text.
+- The profile detail API returns the clean `candidate-profile-v1` document plus resolved evidence, source summaries, identity/relevance review summaries, enrichment review summary, and lineage IDs.
+- Source records in the profile detail response are intentionally summarized and do not include large raw scraped payloads.
+- The dashboard now has a dedicated `Profiles` tab for final matching-ready profiles, separate from the operational `Approved` entity view and the `Enrichment` review queue.
+- The Profiles tab shows clean summary, primary track, scored tracks, specializations, skills, industry/domain interests, contactability, career stage, evidence by field, source lineage, review lineage, and lineage IDs.
+- Local browser verification confirmed the Profiles tab renders Alex Rivera, profile search and filters work, evidence/source/review lineage sections appear, and no browser console errors were reported.
+- Local API verification confirmed profile detail source summaries omit raw payloads while preserving source/evidence/review/enrichment lineage.
+- Full real Firebase E2E remains blocked on Phase 3.5 permissions/staging decisions; Phase 6 was verified against the local Firebase emulator.
+- During local seeding, a live OpenAI enrichment attempt was rejected because the draft attached an unsupported/no-evidence skill; this confirms the Phase 5 evidence validation is enforcing the intended rule. A local reviewed profile seed was used for Phase 6 dashboard verification so Phase 6 could be validated independently of that nondeterministic LLM draft.
 
 ## Phase 7: Metrics And Evaluation
 
