@@ -711,82 +711,82 @@ In v1, enrichment is manually triggered from the Approved detail panel with a `G
 
 ### Workflow Tasks
 
-- [ ] Build evidence pack generator.
-- [ ] Include only approved source records and approved evidence.
-- [ ] Include confirmed relevance signals.
-- [ ] Include source-specific facts from GitHub.
-- [ ] Include source-specific facts from Devpost.
-- [ ] Include source-specific facts from research records.
-- [ ] Exclude pending/rejected/unsure records.
-- [ ] Add deterministic feature extraction before LLM call.
-- [ ] Add LLM classifier/inference step.
-- [ ] Add deterministic schema/taxonomy/evidence validation.
+- [x] Build evidence pack generator.
+- [x] Include only approved source records and approved evidence.
+- [x] Include confirmed relevance signals.
+- [x] Include source-specific facts from GitHub.
+- [x] Include source-specific facts from Devpost.
+- [x] Include source-specific facts from research records.
+- [x] Exclude pending/rejected/unsure records.
+- [x] Add deterministic feature extraction before LLM call.
+- [x] Add LLM classifier/inference step.
+- [x] Add deterministic schema/taxonomy/evidence validation.
 - [ ] Add optional skeptical LLM verifier for risky inference.
-- [ ] Add manual `Generate enrichment` action from the Approved detail panel.
-- [ ] Create enrichment review item after generation.
-- [ ] Persist reviewed enriched profile data only after human enrichment review.
+- [x] Add manual `Generate enrichment` action from the Approved detail panel.
+- [x] Create enrichment review item after generation.
+- [x] Persist reviewed enriched profile data only after human enrichment review.
 
 ### Controlled Taxonomy Tasks
 
-- [ ] Define v1 track list.
-- [ ] Define v1 specialization list.
-- [ ] Define v1 skill/domain normalization strategy.
-- [ ] Define v1 industry/domain interest taxonomy.
-- [ ] Define career stage values.
-- [ ] Define contactability values.
-- [ ] Enforce controlled taxonomy first.
-- [ ] Separate proposed open-ended tags from controlled fields.
-- [ ] Store proposed tags for human review.
+- [x] Define v1 track list.
+- [x] Define v1 specialization list.
+- [x] Define v1 skill/domain normalization strategy.
+- [x] Define v1 industry/domain interest taxonomy.
+- [x] Define career stage values.
+- [x] Define contactability values.
+- [x] Enforce controlled taxonomy first.
+- [x] Separate proposed open-ended tags from controlled fields.
+- [x] Store proposed tags for human review.
 - [ ] Allow approved proposed tags to be analyzed for future taxonomy promotion.
-- [ ] Keep industry/domain interests separate from skills. Example: `python` is a skill, while `healthcare_ai` is an industry/domain interest.
+- [x] Keep industry/domain interests separate from skills. Example: `python` is a skill, while `healthcare_ai` is an industry/domain interest.
 
 ### Draft V1 Tracks
 
-- [ ] `software_engineering`
-- [ ] `ai_research`
-- [ ] `data_science`
-- [ ] `product_design`
-- [ ] `product_management`
-- [ ] `marketing_growth`
-- [ ] `business_founder`
-- [ ] `hardware_mechanical`
-- [ ] `academic_research`
-- [ ] `unknown_other`
+- [x] `software_engineering`
+- [x] `ai_research`
+- [x] `data_science`
+- [x] `product_design`
+- [x] `product_management`
+- [x] `marketing_growth`
+- [x] `business_founder`
+- [x] `hardware_mechanical`
+- [x] `academic_research`
+- [x] `unknown_other`
 
 ### Enrichment Output Tasks
 
-- [ ] Generate primary track.
-- [ ] Generate scored tracks.
-- [ ] Generate specializations.
-- [ ] Generate skills.
-- [ ] Generate industry/domain interests.
-- [ ] Generate career stage.
-- [ ] Generate contactability.
-- [ ] Generate matching summary.
-- [ ] Generate field-to-evidence map.
-- [ ] Generate proposed open-ended tags when needed.
-- [ ] Store system confidence separately from human confirmation.
+- [x] Generate primary track.
+- [x] Generate scored tracks.
+- [x] Generate specializations.
+- [x] Generate skills.
+- [x] Generate industry/domain interests.
+- [x] Generate career stage.
+- [x] Generate contactability.
+- [x] Generate matching summary.
+- [x] Generate field-to-evidence map.
+- [x] Generate proposed open-ended tags when needed.
+- [x] Store system confidence separately from human confirmation.
 
 ### Enrichment Review Tasks
 
-- [ ] Add enrichment review queue/dashboard view.
-- [ ] Show evidence pack summary.
-- [ ] Show suggested primary track.
-- [ ] Show suggested industry/domain interests.
-- [ ] Allow reviewer to change primary track.
-- [ ] Allow reviewer to add/remove tracks.
-- [ ] Allow reviewer to add/remove specializations.
-- [ ] Allow reviewer to add/remove skills.
-- [ ] Allow reviewer to add/remove industry/domain interests.
-- [ ] Allow reviewer to approve/reject proposed open-ended tags.
-- [ ] Show verifier warnings.
-- [ ] Store reviewer edits as structured enrichment review.
-- [ ] Store review note.
-- [ ] Materialize final candidate profile after approval/edit.
+- [x] Add enrichment review queue/dashboard view.
+- [x] Show evidence pack summary.
+- [x] Show suggested primary track.
+- [x] Show suggested industry/domain interests.
+- [x] Allow reviewer to change primary track.
+- [x] Allow reviewer to add/remove tracks.
+- [x] Allow reviewer to add/remove specializations.
+- [x] Allow reviewer to add/remove skills.
+- [x] Allow reviewer to add/remove industry/domain interests.
+- [x] Allow reviewer to approve/reject proposed open-ended tags.
+- [x] Show verifier warnings.
+- [x] Store reviewer edits as structured enrichment review.
+- [x] Store review note.
+- [x] Materialize final candidate profile after approval/edit.
 
 ### Re-Enrichment Tasks
 
-- [ ] Detect new approved evidence attached to existing candidate.
+- [x] Detect new approved evidence attached to existing candidate.
 - [ ] Compare enrichment-relevant fields before and after re-enrichment.
 - [ ] Define important field changes.
 - [ ] Create enrichment review only when important fields change.
@@ -795,16 +795,29 @@ In v1, enrichment is manually triggered from the Approved detail panel with a `G
 
 ### Acceptance Criteria
 
-- [ ] First-time approved candidate becomes eligible for manual enrichment generation.
-- [ ] Manual enrichment generation creates an enrichment review item.
-- [ ] Enrichment uses only approved evidence.
-- [ ] LLM must choose controlled taxonomy values before open-ended tags.
-- [ ] Every inferred label has evidence IDs.
-- [ ] Invalid taxonomy values fail validation.
-- [ ] Reviewer can edit main labels without editing confidence scores.
-- [ ] Reviewer can correct industry/domain interests separately from skills.
-- [ ] Reviewed enriched profile data is persisted only after enrichment review.
+- [x] First-time approved candidate becomes eligible for manual enrichment generation.
+- [x] Manual enrichment generation creates an enrichment review item.
+- [x] Enrichment uses only approved evidence.
+- [x] LLM must choose controlled taxonomy values before open-ended tags.
+- [x] Every inferred label has evidence IDs.
+- [x] Invalid taxonomy values fail validation.
+- [x] Reviewer can edit main labels without editing confidence scores.
+- [x] Reviewer can correct industry/domain interests separately from skills.
+- [x] Reviewed enriched profile data is persisted only after enrichment review.
 - [ ] Re-enrichment review is created only for important profile changes.
+
+### Phase 5 Findings
+
+Last updated: 2026-04-29.
+
+- OpenAI connectivity check passed locally with `OPENAI_API_KEY` and `gpt-4o-mini`.
+- Core-service now stores enrichment runs, enrichment review items, and reviewed candidate profiles.
+- Enrichment generation is manual from the Approved detail panel; no queue-backed automatic LLM call is used in v1.
+- The LLM output schema is constrained by the controlled taxonomy and by the approved candidate's exact evidence IDs.
+- Field-to-evidence maps are derived deterministically from each label's evidence IDs before validation, rather than trusting the LLM to assemble that map.
+- Local API smoke uploaded GitHub, Devpost, and research fixtures, approved Alex Rivera, generated a live OpenAI enrichment draft, approved the enrichment review, and confirmed the approved entity moved to `enriched`.
+- Browser verification against `http://127.0.0.1:5100/#enrichment` showed the new Enrichment tab, the reviewed Alex Rivera enrichment item, suggested labels, editable enrichment form, and approved/enriched status.
+- Remaining Phase 5-adjacent hardening: optional skeptical verifier, proposed-tag taxonomy promotion analytics, and important-change-only re-enrichment gating.
 
 ## Phase 6: Final Candidate Profile And Dashboard
 
