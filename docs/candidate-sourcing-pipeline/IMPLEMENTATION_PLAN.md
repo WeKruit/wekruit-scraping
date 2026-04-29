@@ -703,6 +703,12 @@ Last updated: 2026-04-29.
 
 Turn approved candidate evidence into structured, matching-ready profile fields through a multi-step, evidence-grounded workflow.
 
+### Phase Boundary
+
+Phase 5 owns enrichment generation, validation, enrichment HITL, and persistence of the reviewed enriched profile data. Phase 6 owns the fuller final-candidate product surface: polished profile view, search/filtering, lineage browsing, and matching-system readiness UX.
+
+In v1, enrichment is manually triggered from the Approved detail panel with a `Generate enrichment` action. Approved candidates should still be marked as needing enrichment automatically, but the LLM call should not run silently until the team intentionally adds queue-backed automation later.
+
 ### Workflow Tasks
 
 - [ ] Build evidence pack generator.
@@ -716,8 +722,9 @@ Turn approved candidate evidence into structured, matching-ready profile fields 
 - [ ] Add LLM classifier/inference step.
 - [ ] Add deterministic schema/taxonomy/evidence validation.
 - [ ] Add optional skeptical LLM verifier for risky inference.
-- [ ] Create enrichment review item.
-- [ ] Materialize final candidate profile only after human enrichment review.
+- [ ] Add manual `Generate enrichment` action from the Approved detail panel.
+- [ ] Create enrichment review item after generation.
+- [ ] Persist reviewed enriched profile data only after human enrichment review.
 
 ### Controlled Taxonomy Tasks
 
@@ -788,14 +795,15 @@ Turn approved candidate evidence into structured, matching-ready profile fields 
 
 ### Acceptance Criteria
 
-- [ ] First-time approved candidate triggers enrichment.
+- [ ] First-time approved candidate becomes eligible for manual enrichment generation.
+- [ ] Manual enrichment generation creates an enrichment review item.
 - [ ] Enrichment uses only approved evidence.
 - [ ] LLM must choose controlled taxonomy values before open-ended tags.
 - [ ] Every inferred label has evidence IDs.
 - [ ] Invalid taxonomy values fail validation.
 - [ ] Reviewer can edit main labels without editing confidence scores.
 - [ ] Reviewer can correct industry/domain interests separately from skills.
-- [ ] Final candidate profile is created only after enrichment review.
+- [ ] Reviewed enriched profile data is persisted only after enrichment review.
 - [ ] Re-enrichment review is created only for important profile changes.
 
 ## Phase 6: Final Candidate Profile And Dashboard
