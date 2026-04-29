@@ -881,6 +881,116 @@ Last updated: 2026-04-29.
   - when the model selects a valid primary track but omits the matching `scoredTracks` entry, the service adds the primary track entry with approved evidence and records a validation warning
 - Local live OpenAI verification after that hardening generated a pending enrichment review for Priya Natarajan, repaired the missing `academic_research` scored-track entry, surfaced the warning in the Enrichment tab, and preserved the local row-click behavior in both Approved and Enrichment views.
 
+### Local Walkthrough Example For Team Demo
+
+Last verified: 2026-04-29 against the local Firebase emulator.
+
+This is the concrete end-to-end walkthrough that demonstrates the intended v1 pipeline behavior without touching real Firebase data.
+
+1. Start the local full web emulator from `wekruit-core-service-cloud-function`:
+
+```bash
+npm run serve:web:full
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5100/#review
+```
+
+2. Upload GitHub first from `wekruit-scraping`:
+
+```bash
+/tmp/wekruit-scraping-phase1-venv/bin/python scripts/sourcing_upload_file.py --input researcher/tests/fixtures/sourcing/github_candidates.json --run-id walkthrough-github-001 --domain developer --source github --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+Expected dashboard state:
+
+- Jobs: `1`
+- Review: `2`
+- Approved: `0`
+- Enrichment: `0`
+- Profiles: `0`
+- Review queue shows Alex Rivera and Mira Patel as GitHub singleton review candidates.
+
+Reviewer action: approve Alex Rivera. This creates one approved global candidate from GitHub only.
+
+3. Upload Devpost second:
+
+```bash
+/tmp/wekruit-scraping-phase1-venv/bin/python scripts/sourcing_upload_file.py --input researcher/tests/fixtures/sourcing/devpost_projects.json --run-id walkthrough-devpost-001 --domain hackathon --source devpost --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+Expected dashboard state:
+
+- Jobs: `2`
+- Review: `3`
+- Approved: `1`
+- Enrichment: `0`
+- Profiles: `0`
+- Devpost run shows Nora Kim as a Devpost singleton.
+- Devpost run shows Alex Rivera as a strong `Devpost + Github` review candidate because the new Devpost evidence matches the already approved GitHub identity.
+
+Reviewer action: approve the Alex Rivera Devpost/GitHub merge. This should not create a duplicate global candidate. It updates the existing Alex candidate to `devpost + github`, with 2 source records and 2 review decisions.
+
+4. Upload research/OpenAlex third:
+
+```bash
+/tmp/wekruit-scraping-phase1-venv/bin/python scripts/sourcing_upload_file.py --input researcher/tests/fixtures/sourcing/research_records.json --run-id walkthrough-research-001 --domain researcher --source openalex --api-base-url http://127.0.0.1:5100/api/sourcing
+```
+
+Expected dashboard state:
+
+- Jobs: `3`
+- Review: `4`
+- Approved: `1`
+- Enrichment: `0`
+- Profiles: `0`
+- Research run shows Taylor Chen as a strong grouped research candidate.
+- Research run shows Priya Natarajan as a research singleton/manual review case.
+
+Reviewer action: approve Taylor Chen. The button may use merge wording because Taylor is represented by two research records (`openalex:A1` and `contact:A1`) that share ORCID/homepage/name/institution evidence. This is expected: "merge" means multiple records are being grouped into one global candidate, not only cross-source merging.
+
+Expected approved state after this step:
+
+- Approved: `2`
+- Alex Rivera: `devpost + github`, 2 source records, 2 review decisions, `needsEnrichment=yes`
+- Taylor Chen: `openalex`, 2 source records, 1 review decision, `needsEnrichment=yes`
+
+5. Generate enrichment from the Approved tab for Taylor Chen and Alex Rivera.
+
+Expected enrichment behavior:
+
+- Enrichment generation uses `gpt-4o-mini` with the local `OPENAI_API_KEY`.
+- Each generated draft must use controlled taxonomy values and approved evidence IDs.
+- If the LLM makes repairable shape mistakes, such as omitting the primary track from `scoredTracks`, the service repairs the draft and surfaces validation warnings for human review.
+- Taylor's draft should be academic/research oriented.
+- Alex's draft should be software/building oriented.
+
+6. Approve the enrichment review items from the Enrichment tab.
+
+Expected final state:
+
+- Approved: `2`
+- Enrichment: `2`
+- Profiles: `2`
+- Alex Rivera approved entity is `enriched`, `needsEnrichment=false`, and has a final profile with primary track `software_engineering`.
+- Taylor Chen approved entity is `enriched`, `needsEnrichment=false`, and has a final profile with primary track `academic_research`.
+- Profiles tab shows both final matching-ready profiles with clean fields, source/evidence/review/enrichment lineage, and no raw payload dependency.
+
+Final local API verification from this walkthrough:
+
+- Approved entities:
+  - Taylor Chen: `openalex`, 2 source records, 1 review decision, `enriched`, `needsEnrichment=false`
+  - Alex Rivera: `devpost+github`, 2 source records, 2 review decisions, `enriched`, `needsEnrichment=false`
+- Enrichment review items:
+  - Taylor Chen: `approved`, primary track `academic_research`
+  - Alex Rivera: `approved`, primary track `software_engineering`
+- Final profiles:
+  - Taylor Chen: `academic_research`, source `openalex`
+  - Alex Rivera: `software_engineering`, sources `devpost+github`
+
 ## Phase 7: Metrics And Evaluation
 
 ### Goal
