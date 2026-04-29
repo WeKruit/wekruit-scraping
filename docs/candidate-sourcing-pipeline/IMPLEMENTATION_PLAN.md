@@ -875,7 +875,11 @@ Last updated: 2026-04-29.
 - Local browser verification confirmed the Profiles tab renders Alex Rivera, profile search and filters work, evidence/source/review lineage sections appear, and no browser console errors were reported.
 - Local API verification confirmed profile detail source summaries omit raw payloads while preserving source/evidence/review/enrichment lineage.
 - Full real Firebase E2E remains blocked on Phase 3.5 permissions/staging decisions; Phase 6 was verified against the local Firebase emulator.
-- During local seeding, a live OpenAI enrichment attempt was rejected because the draft attached an unsupported/no-evidence skill; this confirms the Phase 5 evidence validation is enforcing the intended rule. A local reviewed profile seed was used for Phase 6 dashboard verification so Phase 6 could be validated independently of that nondeterministic LLM draft.
+- Post-Phase 6 hardening made enrichment validation tolerant of repairable LLM shape mistakes while keeping the important evidence rules strict:
+  - optional skills, specializations, domains, scored tracks, and proposed tags without approved evidence are dropped with validation warnings
+  - career stage/contactability suggestions without evidence are downgraded to `unknown`
+  - when the model selects a valid primary track but omits the matching `scoredTracks` entry, the service adds the primary track entry with approved evidence and records a validation warning
+- Local live OpenAI verification after that hardening generated a pending enrichment review for Priya Natarajan, repaired the missing `academic_research` scored-track entry, surfaced the warning in the Enrichment tab, and preserved the local row-click behavior in both Approved and Enrichment views.
 
 ## Phase 7: Metrics And Evaluation
 
