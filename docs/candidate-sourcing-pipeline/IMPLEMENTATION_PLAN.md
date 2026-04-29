@@ -36,7 +36,7 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-04-28.
+Last updated: 2026-04-29.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
 - [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
@@ -48,7 +48,8 @@ Last updated: 2026-04-28.
 - [x] Phase 1 stabilized the source-run/source-record/evidence/dedup/review/approved-entity loop.
 - [x] Phase 2 unified GitHub, Devpost, and research fixture ingestion through the same source-record upload path.
 - [x] Phase 3 expanded review into structured identity/relevance decisions with confirmed signals.
-- [ ] Phase 3.5 should validate the Phase 1-3 workflow against a real Firebase staging/dev project before Phase 4.
+- [x] Phase 4 created the global candidate entity model and verified approved candidate growth across GitHub/Devpost while research remains in the review queue.
+- [ ] Phase 3.5 remains blocked on Firebase deploy permissions and should validate the completed local workflow against a real Firebase staging/dev project before any shared deployed testing.
 - [x] Working branches renamed to `codex/candidate-sourcing-pipeline` in both active implementation repos.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
@@ -507,7 +508,7 @@ Last updated: 2026-04-28.
 
 ### Goal
 
-Validate that the completed Phase 1-3 sourcing workflow works against a real Firebase environment before building the Phase 4 global candidate entity model on top of it.
+Validate that the completed local sourcing workflow works against a real Firebase environment before shared deployed testing and before Phase 5 enrichment depends on deployed candidate data.
 
 This phase should use a staging/dev Firebase project, not production. The purpose is to prove deployed Firebase Hosting, Firebase Functions, Firestore config, indexes, CORS, rewrites, and dashboard behavior outside the local emulator.
 
@@ -520,6 +521,7 @@ Local emulator testing has proven the vertical slice:
 - Duplicate and singleton candidates appear in the dashboard.
 - Human review actions persist structured identity/relevance decisions.
 - Approved candidates materialize only from approved review decisions.
+- Approved GitHub/Devpost evidence can grow one active global candidate instead of creating duplicate approved candidates.
 - The dashboard supports run/status/source/signal/search filtering and full-row selection.
 
 However, the team has not yet proven that the same workflow is safe and correct in a deployed Firebase project. The current repo evidence is not enough to confirm a safe staging database:
@@ -602,7 +604,7 @@ smoke-2026-04-28-research
 - [ ] The staging sourcing API accepts fixture uploads.
 - [ ] The staging review workflow behaves the same as local emulator verification.
 - [ ] The team understands how to clean up staging smoke-test data.
-- [ ] Any staging-only deployment/config/index/auth issues are documented before Phase 4 starts.
+- [ ] Any staging-only deployment/config/index/auth issues are documented before shared deployed testing or Phase 5 work depends on deployed data.
 
 ### Phase 3.5 Current Status
 
@@ -631,16 +633,16 @@ Create a clean global identity layer where one real-world person becomes one glo
 
 ### Tasks
 
-- [ ] Define global candidate/approved entity schema.
-- [ ] Use opaque stable candidate IDs.
-- [ ] Attach approved source records to candidate ID.
-- [ ] Attach evidence IDs to candidate ID through lineage.
-- [ ] Attach identity/relevance review labels to candidate ID.
-- [ ] Store source domains present on candidate.
-- [ ] Store candidate status.
-- [ ] Add status support for future `merged` or `merged_into` states.
-- [ ] Ensure new approved source evidence can attach to an existing candidate.
-- [ ] Ensure candidate entity can be re-enrichment eligible when new evidence arrives.
+- [x] Define global candidate/approved entity schema.
+- [x] Use opaque stable candidate IDs.
+- [x] Attach approved source records to candidate ID.
+- [x] Attach evidence IDs to candidate ID through lineage.
+- [x] Attach identity/relevance review labels to candidate ID.
+- [x] Store source domains present on candidate.
+- [x] Store candidate status.
+- [x] Add status support for future `merged` or `merged_into` states.
+- [x] Ensure new approved source evidence can attach to an existing candidate.
+- [x] Ensure candidate entity can be re-enrichment eligible when new evidence arrives.
 
 ### Candidate Statuses
 
@@ -655,19 +657,45 @@ Recommended statuses:
 
 Post-approval merge can be Phase 2/P1, but the schema should support:
 
-- [ ] `mergedIntoCandidateId`
-- [ ] `mergedByReviewId`
-- [ ] `mergedAt`
-- [ ] surviving candidate lineage
+- [x] `mergedIntoCandidateId`
+- [x] `mergedByReviewId`
+- [x] `mergedAt`
+- [x] surviving candidate lineage
 - [ ] old candidate redirect behavior in dashboard
 
 ### Acceptance Criteria
 
-- [ ] Approving a singleton creates one global candidate entity.
-- [ ] Approving a merge creates or updates one global candidate entity.
-- [ ] Candidate entity stores source domains and source record IDs.
-- [ ] Candidate entity stores review lineage.
-- [ ] Candidate entity can later accept additional approved source records.
+- [x] Approving a singleton creates one global candidate entity.
+- [x] Approving a merge creates or updates one global candidate entity.
+- [x] Candidate entity stores source domains and source record IDs.
+- [x] Candidate entity stores review lineage.
+- [x] Candidate entity can later accept additional approved source records.
+
+### Phase 4 Findings
+
+Last updated: 2026-04-29.
+
+- The existing `sourcing-approved-entities` collection now acts as the v1 global candidate collection, avoiding a second candidate store while preserving dashboard/API compatibility.
+- New global candidate records use opaque IDs prefixed with `cand_`.
+- New global candidate records use `status=active`; legacy `status=approved` remains readable for compatibility.
+- Global candidate records now store `schemaVersion`, `sourceNames`, `sourceDomains`, `reviewLabelIds`, `identityEvidenceHashes`, `needsEnrichment`, `enrichmentStatus`, and future merge fields.
+- Candidate materialization now resolves an existing active candidate by overlapping approved source record IDs or strong identity evidence hashes before creating a new candidate.
+- Strong identity evidence hashes are built from high-confidence identity evidence such as email, ORCID, homepage, GitHub, DBLP, OpenReview, Google Scholar, source URL, and source-native ID. Name/institution alone is not used to resolve a global candidate.
+- If multiple active global candidates match the same approved evidence, materialization fails before marking the review candidate approved. This avoids silently merging post-approval candidates before a dedicated merge-review workflow exists.
+- Approved dashboard rows now show global candidate status, sources, review count, confirmed signals, updated time, enrichment state, review lineage, source-record lineage, and identity evidence hashes.
+- Post-approval redirect behavior for old merged candidates remains future work because Phase 4 added merge-readiness fields but did not implement the full post-approval merge workflow.
+
+### Phase 4 Verification
+
+- `wekruit-core-service-cloud-function`: `node --check web/app.js` passes.
+- `wekruit-core-service-cloud-function`: `npm run build` passes.
+- `wekruit-core-service-cloud-function`: `node --test lib/services/sourcing/**/*.test.js` passes, 11 tests.
+- Local emulator E2E used GitHub, Devpost, and research fixtures through `http://127.0.0.1:5100/api/sourcing`.
+- Local API smoke approved Alex Rivera as a GitHub singleton first, creating one active global candidate.
+- Local API smoke then uploaded Devpost and approved the GitHub/Devpost merge. The approved candidate count stayed at 1, the candidate ID stayed the same, and the candidate accumulated GitHub plus Devpost source records, source names, source domains, review labels, confirmed signals, and identity evidence hashes.
+- Local API smoke uploaded research fixtures afterward and confirmed the research queue still appears alongside the existing approved global candidate.
+- Browser verification against `http://127.0.0.1:5100/#approved` confirmed the Approved tab shows Alex Rivera as one active global candidate with `devpost + github`, 2 review decisions, confirmed signals, source lineage, review lineage, identity evidence hashes, and `needsEnrichment=yes`.
+- Browser verification against `http://127.0.0.1:5100/#review` confirmed the pending review queue still loads for the research run after Phase 4 changes.
 
 ## Phase 5: Enrichment Workflow
 
