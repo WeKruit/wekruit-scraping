@@ -606,12 +606,22 @@ smoke-2026-04-28-research
 
 ### Phase 3.5 Current Status
 
-Last updated: 2026-04-28.
+Last updated: 2026-04-29.
 
-- Phase 3.5 is planned but not executed.
-- Do not mutate deployed Firebase data until the team confirms the safe staging/dev project.
-- The current best guess from checked-in config is that `wekruit-core-service-staging` may be the intended staging alias, but this is not confirmed.
-- `wekruit-dev-env.web.app` has been inspected before and serves a deployed review dashboard, but it should not be treated as disposable until a teammate confirms it is safe.
+- Phase 3.5 started against Firebase project `wekruit-core-service`.
+- Firebase CLI auth now works locally as `spencerycwang@gmail.com`.
+- `wekruit-core-service` is visible through `firebase projects:list`.
+- Firestore database `projects/wekruit-core-service/databases/(default)` is visible.
+- Firebase Hosting has one site: `wekruit-core-service`, available at `https://wekruit-core-service.web.app`.
+- `https://wekruit-core-service.web.app` currently returns Firebase's default Site Not Found page, so no active dashboard appeared to be hosted there before this smoke test.
+- `firebase.sourcing.json` still points to hosting site `wekruit-sourcing`, but that site does not exist in the `wekruit-core-service` project.
+- `firebase.json` hosting dry-run succeeds against the default `wekruit-core-service` site and can be used for staging dashboard hosting without creating a new site.
+- `functions:list` initially failed because Cloud Functions API was disabled.
+- A functions deploy dry-run enabled the required Google APIs for functions deployment; no function was deployed during the dry run.
+- Actual `firebase deploy --config firebase.sourcing.json --project wekruit-core-service --only functions` failed before deployment because the account lacks `cloudfunctions.functions.setIamPolicy`, required to deploy the new HTTPS `sourcing-api` function.
+- `firebase functions:list --project wekruit-core-service` still reports no functions after the failed deploy.
+- No fixture uploads were run and no sourcing Firestore data was created.
+- Phase 3.5 is blocked until the Firebase account receives Cloud Functions deploy permissions, likely the Cloud Functions Admin role or an equivalent custom role including `cloudfunctions.functions.setIamPolicy`.
 
 ## Phase 4: Global Candidate Entity Model
 
