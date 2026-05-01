@@ -608,14 +608,17 @@ smoke-2026-04-28-research
 
 ### Phase 3.5 Current Status
 
-Last updated: 2026-04-29.
+Last updated: 2026-05-01.
 
 - Phase 3.5 started against Firebase project `wekruit-core-service`.
 - Firebase CLI auth now works locally as `spencerycwang@gmail.com`.
 - `wekruit-core-service` is visible through `firebase projects:list`.
 - Firestore database `projects/wekruit-core-service/databases/(default)` is visible.
 - Firebase Hosting has one site: `wekruit-core-service`, available at `https://wekruit-core-service.web.app`.
-- `https://wekruit-core-service.web.app` currently returns Firebase's default Site Not Found page, so no active dashboard appeared to be hosted there before this smoke test.
+- `firebase hosting:sites:list --project wekruit-core-service` shows the default Hosting site only.
+- `firebase functions:list --project wekruit-core-service` currently reports no deployed functions.
+- The active dashboard previously inspected by the team is `https://wekruit-dev-env.web.app/#review`, not the default `wekruit-core-service.web.app` site. That dashboard has existing researcher-oriented source runs such as `poc-openalex-ai-2026-04-19-replay`, `real-openalex-ai-2026-04-16-table`, `real-crossref-ai-2024-04-16`, and `real-openalex-ai-2024-04-16`.
+- The `wekruit-dev-env` dashboard appears to already contain Firestore-backed sourcing data, but it should not be assumed to point at the same Firebase project/database as `wekruit-core-service` until the deployed app config and Firebase project ownership are traced.
 - `firebase.sourcing.json` still points to hosting site `wekruit-sourcing`, but that site does not exist in the `wekruit-core-service` project.
 - `firebase.json` hosting dry-run succeeds against the default `wekruit-core-service` site and can be used for staging dashboard hosting without creating a new site.
 - `functions:list` initially failed because Cloud Functions API was disabled.
@@ -624,6 +627,24 @@ Last updated: 2026-04-29.
 - `firebase functions:list --project wekruit-core-service` still reports no functions after the failed deploy.
 - No fixture uploads were run and no sourcing Firestore data was created.
 - Phase 3.5 is blocked until the Firebase account receives Cloud Functions deploy permissions, likely the Cloud Functions Admin role or an equivalent custom role including `cloudfunctions.functions.setIamPolicy`.
+
+### Phase 3.5 Data-Flow Clarification
+
+The source exports provided on 2026-05-01 are raw scraper/discovery outputs. They should not be uploaded to Firestore directly.
+
+- Devpost export: `devpost-20260501T061334Z-3-001.zip` contains 53 `.xlsx` files and about 23,653 flat project/member rows. Each row has project fields plus member fields such as `member_devpost`, `member_github`, `member_linkedin`, `member_twitter`, and `member_website`. This is close to ingestion-ready, but the current upload bridge only accepts CSV/JSON/JSONL and the current `--source devpost` adapter expects nested `members`. A flat Devpost XLSX/CSV adapter is required before using this data.
+- GitHub export: `github-20260501T061335Z-3-001.zip` contains `github/repos.xlsx` with about 23,290 repository discovery rows. These rows describe repositories (`full_name`, `stars`, `language`, `topics`, `html_url`) and are upstream of candidate extraction. They are not person/candidate rows. The GitHub contributor extraction/scoring output should be generated first, or a deliberate repo-owner/contributor adapter must be designed.
+- LinkedIn/social fields: Devpost exports include LinkedIn/Twitter/member website URLs, but current core-service evidence extraction only treats GitHub/homepage/source URLs as first-class URL evidence. LinkedIn/Twitter are preserved in raw summaries if mapped, but they are not yet dedicated identity evidence types.
+
+Recommended Phase 3.5 sequence:
+
+1. Trace the deployed `wekruit-dev-env.web.app` app config and confirm which Firebase project/database it reads from.
+2. Confirm whether that environment is disposable, shared dev, or production-like before mutating any data.
+3. Deploy the current sourcing dashboard/API only to an approved dev/staging Firebase target.
+4. Upload tiny fixture data first, not the large Devpost/GitHub exports.
+5. Verify source-run, dedup review, approval, enrichment, enrichment review, and final profile behavior against real Firestore.
+6. Add a Devpost flat-row adapter and test a tiny slice of real Devpost rows.
+7. Produce proper GitHub candidate output from contributor extraction/scoring before feeding GitHub data into the review dashboard.
 
 ## Phase 4: Global Candidate Entity Model
 
@@ -725,6 +746,7 @@ In v1, enrichment is manually triggered from the Approved detail panel with a `G
 - [x] Add manual `Generate enrichment` action from the Approved detail panel.
 - [x] Create enrichment review item after generation.
 - [x] Persist reviewed enriched profile data only after human enrichment review.
+- [x] Block enrichment when the approved candidate still has overlapping pending merge review candidates.
 
 ### Controlled Taxonomy Tasks
 
@@ -798,6 +820,7 @@ In v1, enrichment is manually triggered from the Approved detail panel with a `G
 - [x] First-time approved candidate becomes eligible for manual enrichment generation.
 - [x] Manual enrichment generation creates an enrichment review item.
 - [x] Enrichment uses only approved evidence.
+- [x] Enrichment cannot be generated while a pending merge review overlaps the approved candidate by source record or identity evidence.
 - [x] LLM must choose controlled taxonomy values before open-ended tags.
 - [x] Every inferred label has evidence IDs.
 - [x] Invalid taxonomy values fail validation.
@@ -818,6 +841,36 @@ Last updated: 2026-04-29.
 - Local API smoke uploaded GitHub, Devpost, and research fixtures, approved Alex Rivera, generated a live OpenAI enrichment draft, approved the enrichment review, and confirmed the approved entity moved to `enriched`.
 - Browser verification against `http://127.0.0.1:5100/#enrichment` showed the new Enrichment tab, the reviewed Alex Rivera enrichment item, suggested labels, editable enrichment form, and approved/enriched status.
 - Remaining Phase 5-adjacent hardening: optional skeptical verifier, proposed-tag taxonomy promotion analytics, and important-change-only re-enrichment gating.
+
+### Merge-Before-Enrichment Guard
+
+Added after Phase 6 demo feedback. Implemented and locally verified on 2026-05-01.
+
+Purpose: the approved candidate profile should not be enriched while identity review is still unstable. If a reviewer has approved a GitHub singleton first and a later Devpost/research/GitHub evidence bundle creates a pending merge candidate for the same person, the system should require the reviewer to resolve that merge before generating or regenerating enrichment.
+
+Required behavior:
+
+- Backend must be the source of truth. `Generate enrichment` must refuse to run if the approved entity overlaps a pending multi-record dedup candidate by approved source record ID or strong identity evidence hash.
+- UI should surface the block in the Approved detail panel with a visible pending-merge signal.
+- UI should disable the `Generate enrichment` button while blocked.
+- Once the pending merge review is approved, kept separate, rejected, or otherwise resolved, enrichment can be generated again.
+- The guard should not block enrichment for unrelated pending review items.
+- The guard should not replace human identity review; it only enforces ordering so enrichment uses the most complete approved identity/evidence set.
+
+Implementation summary:
+
+- Approved entities now include computed pending-merge blocker metadata: blocker count, blocker IDs, and blocker summaries.
+- The enrichment generation endpoint rejects blocked requests before building the enrichment evidence pack or calling the LLM.
+- Blocked requests return HTTP 409 with code `PENDING_MERGE_REVIEW` and the overlapping pending merge candidates.
+- The Approved detail panel shows a `pending merge` pill, a short explanation, the blocking candidate names, and a disabled `Generate enrichment` button.
+
+Local verification:
+
+- Loaded GitHub first, approved Alex Rivera as a singleton candidate, then loaded Devpost second.
+- The later Devpost/GitHub duplicate created a pending merge review for the same Alex Rivera candidate.
+- The Approved detail panel showed `1 pending merge` and disabled enrichment generation for Alex.
+- Direct API call to generate enrichment returned HTTP 409 with `PENDING_MERGE_REVIEW`, proving the backend is the source of truth.
+- Focused sourcing test suite passed after adding guard coverage.
 
 ## Phase 6: Final Candidate Profile And Dashboard
 
