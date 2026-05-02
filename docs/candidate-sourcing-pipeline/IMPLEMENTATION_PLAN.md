@@ -84,9 +84,10 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - Taylor Chen: `academic_research`, source `openalex`.
 - A legacy/live researcher candidate, Jakob Uszkoreit, was also enriched successfully, which gives useful evidence that the enrichment/profile path can operate on existing researcher approved data.
 - Remaining primary implementation work is now the real-source adapter path:
-  - Devpost flat XLSX/CSV rows to normalized source records.
-  - GitHub repository discovery output to candidate/person records through contributor extraction/scoring or an explicit owner/contributor adapter.
-  - Optional first-class LinkedIn/Twitter evidence if the team wants those links used for identity or enrichment.
+  - Devpost flat XLSX/CSV rows to normalized person source records.
+  - GitHub repository discovery output to candidate/person records through contributor extraction and scoring.
+  - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
+  - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
 
 ## Phase Execution Protocol
 
@@ -737,6 +738,11 @@ The source exports provided on 2026-05-01 are raw scraper/discovery outputs. The
 - Devpost export: `devpost-20260501T061334Z-3-001.zip` contains 53 `.xlsx` files and about 23,653 flat project/member rows. Each row has project fields plus member fields such as `member_devpost`, `member_github`, `member_linkedin`, `member_twitter`, and `member_website`. This is close to ingestion-ready, but the current upload bridge only accepts CSV/JSON/JSONL and the current `--source devpost` adapter expects nested `members`. A flat Devpost XLSX/CSV adapter is required before using this data.
 - GitHub export: `github-20260501T061335Z-3-001.zip` contains `github/repos.xlsx` with about 23,290 repository discovery rows. These rows describe repositories (`full_name`, `stars`, `language`, `topics`, `html_url`) and are upstream of candidate extraction. They are not person/candidate rows. The GitHub contributor extraction/scoring output should be generated first, or a deliberate repo-owner/contributor adapter must be designed.
 - LinkedIn/social fields: Devpost exports include LinkedIn/Twitter/member website URLs, but current core-service evidence extraction only treats GitHub/homepage/source URLs as first-class URL evidence. LinkedIn/Twitter are preserved in raw summaries if mapped, but they are not yet dedicated identity evidence types.
+- Confirmed adapter decisions as of 2026-05-02:
+  - GitHub should use contributor extraction and scoring as the official v1 path. Do not upload repository rows directly as people.
+  - A `GITHUB_TOKEN` should be used for the GitHub contributor extraction path. It is used only to call GitHub public-data APIs with a practical authenticated rate limit; it should stay in local environment/Firebase secrets as needed and must not be stored in Firestore source records.
+  - LinkedIn/Twitter/social URLs remain supporting context in v1. They can be shown to reviewers and included in enrichment packs, but they should not drive strong identity merges until the team explicitly decides the compliance/product policy.
+  - Devpost project entities are not candidate entities in v1. The adapter should aggregate Devpost member rows into person records and include project participation, tech stack, prizes, project URLs, demo links, and related GitHub repos as source context.
 
 Recommended Phase 3.5 execution sequence after user greenlight:
 
@@ -770,6 +776,192 @@ Execution ownership:
 - The implementation agent can perform steps 1-7 after explicit user greenlight.
 - Step 8 should be interactive with the user in the browser so the reviewer workflow is validated by the person who will demo/share it.
 - Step 9 is not part of Phase 3.5 execution; it begins only after the live tiny-fixture workflow is accepted.
+
+### Real Source Adapter Implementation Plan
+
+Purpose: convert real Google Drive source exports into the normalized sourcing source-record contract already proven locally and against `wekruit-dev-env`.
+
+The implementation should copy the researcher pipeline invariant:
+
+```mermaid
+flowchart LR
+  Raw["Raw source export"]
+  Normalize["Source-specific adapter"]
+  SourceRecord["Normalized source records"]
+  DryRun["Dry-run JSONL"]
+  Local["Local emulator smoke"]
+  Live["Small live dev smoke"]
+
+  Raw --> Normalize
+  Normalize --> SourceRecord
+  SourceRecord --> DryRun
+  DryRun --> Local
+  Local --> Live
+```
+
+Do not write scraper output directly to Firestore. Every source should pass through the same normalized source-record shape first.
+
+#### Adapter Phase 1: Devpost Flat Export Adapter
+
+Goal: convert the real Devpost `.xlsx` zip/folder export into one `person` source record per unique Devpost member.
+
+Input:
+
+- `devpost-20260501T061334Z-3-001.zip`
+- Folder of `.xlsx` files
+- Single `.xlsx` file
+- Optional later support for `.csv` with the same columns
+
+Observed real export shape:
+
+- 53 workbook files.
+- 23,653 flat rows.
+- 23,525 rows contain member-like data.
+- 9,176 unique project keys.
+- 21,441 unique member identity keys.
+- 1,688 member identities appear in multiple project rows.
+- Columns are consistent across files: `hackathon`, `project_name`, `tagline`, `description`, `project_url`, `video_url`, `winner`, `likes`, `github_repos`, `demo_links`, `all_links`, `member_name`, `member_username`, `member_devpost`, `member_github`, `member_linkedin`, `member_twitter`, `member_website`, `tech_stack`, `prizes`, `image_count`.
+
+Adapter behavior:
+
+- Read all rows from the zip/folder/workbook.
+- Skip rows with no member identity fields.
+- Group rows by stable member identity:
+  - prefer `member_devpost`
+  - then `member_github`
+  - then `member_linkedin`
+  - then `member_username`
+  - then a content hash fallback only for non-empty rows
+- Emit one `person` source record per grouped member.
+- Do not emit separate `project` source records for v1.
+- Use `displayName` from `member_name` when present; otherwise derive from `member_username` or the Devpost/GitHub URL segment.
+- Use `sourceNativeId` from the stable member identity.
+- Use `sourceUrl` from `member_devpost` when present.
+- Preserve `member_github`, `member_linkedin`, `member_twitter`, and `member_website` in `display`, `rawSummary`, and `raw`.
+- Preserve project participation as an aggregated list in `raw`.
+- Keep `rawSummary` compact and reviewer-friendly:
+  - project count
+  - representative project names/URLs
+  - hackathons
+  - tech stack
+  - prizes/winner flags
+  - project GitHub repos
+  - demo/all links
+  - suggested review signals
+
+Suggested Devpost signals:
+
+- `hackathon_participation`
+- `technical_project`
+- `award_or_recognition` when winner/prizes are present
+- `open_source_contribution` when member or project GitHub links exist
+- `founder_or_builder_signal` for project-building participation
+
+Expected dedup behavior:
+
+- Shared GitHub profile URLs should create strong GitHub exact-match candidates with GitHub source records.
+- Shared homepage/member website URLs may create medium homepage matches.
+- LinkedIn/Twitter URLs are preserved for reviewer context but do not create dedicated strong evidence in v1.
+
+Tests:
+
+- Tiny workbook fixture parses correctly.
+- Zip with multiple workbooks parses correctly.
+- Duplicate member rows across multiple projects aggregate into one person source record.
+- Empty member rows are skipped.
+- List-like cells such as `github_repos`, `demo_links`, `all_links`, `tech_stack`, and `prizes` are split/deduped consistently.
+- Generated source record IDs are stable across repeated runs.
+- Dry-run writes `source_records.jsonl` without network calls.
+
+#### Adapter Phase 2: GitHub Repo Export To Candidate Path
+
+Goal: convert the real GitHub `repos.xlsx` discovery output into person candidates by reusing the existing contributor extraction and scoring code.
+
+Input:
+
+- `github-20260501T061335Z-3-001.zip`
+- Specifically `github/repos.xlsx`
+
+Observed real export shape:
+
+- 23,290 repository rows.
+- 20,329 unique repository owners.
+- 1,655 owners appear in multiple repository rows.
+- Columns: `full_name`, `stars`, `language`, `description`, `topics`, `sources`, `created_at`, `pushed_at`, `html_url`, `discovered_at`.
+- These rows describe repositories, not candidates.
+
+Adapter behavior:
+
+- Convert `repos.xlsx` into the JSON shape expected by the existing GitHub pipeline.
+- Reuse the existing contributor extraction path:
+  - `github/github_contributors.py`
+  - `github/github_scorer.py`
+  - `github/github_pipeline.py`
+- Run contributor extraction on a small bounded subset first.
+- Score candidates before upload.
+- Upload only scored person candidates through the existing `--source github --domain developer` source-record adapter.
+
+`GITHUB_TOKEN` purpose:
+
+- Needed for practical GitHub API limits while extracting public contributor/profile information.
+- Used for read-only GitHub API calls such as:
+  - repository contributors
+  - user profile metadata
+  - public user events for public commit emails when available
+  - merged PR count search
+- It should not be written to source records, raw summaries, Firestore documents, logs, screenshots, or committed files.
+- Without a token, GitHub API rate limits will make anything beyond a tiny smoke test unreliable.
+
+Scale guardrails:
+
+- Do not run the full 23,290-repository export as the first real pass.
+- Start with 10-50 repositories.
+- Then try 100-500 repositories if quality and rate limits look acceptable.
+- Prefer high-signal subsets before broad ingestion:
+  - Devpost-discovered repositories
+  - repositories above a star threshold
+  - recent repositories
+  - repositories in target AI/application topics
+- Keep score thresholding before source-record upload so low-signal contributors do not flood human review.
+
+Tests:
+
+- `repos.xlsx` conversion preserves `full_name`, `stars`, `language`, `description`, `topics`, `sources`, `html_url`, and timestamps.
+- Converted repo JSON can be consumed by `github_contributors.py`.
+- Existing `github_candidates.json` fixture still uploads correctly.
+- Candidate records preserve profile URL, username, email when available, company/institution, source repos, commit/PR activity, followers, public repos, score, and suggested signals.
+- Dry-run writes source records without network calls.
+
+#### Adapter Phase 3: End-To-End Adapter Verification
+
+Goal: prove that real-derived Devpost and GitHub records work through the same flow that already passed for fixtures.
+
+Verification order:
+
+1. Run focused adapter unit tests.
+2. Run Devpost dry-run against a tiny workbook fixture.
+3. Run Devpost dry-run against a small slice of the real zip.
+4. Convert a small GitHub repo subset and run contributor extraction/scoring with `GITHUB_TOKEN`.
+5. Dry-run GitHub scored candidates.
+6. Upload tiny real-derived Devpost/GitHub subsets to the local Firebase emulator.
+7. Browser-verify local dashboard behavior:
+   - source runs appear
+   - singleton candidates appear
+   - GitHub/Devpost merge candidates appear when evidence overlaps
+   - approved entities accumulate source records correctly
+   - merge-before-enrichment guard still blocks enrichment while related merge review is pending
+8. Upload only tiny real-derived subsets to `wekruit-dev-env` after local verification.
+9. Walk through the live dashboard with the reviewer before any broad import.
+
+Acceptance criteria:
+
+- Real Devpost exports can produce normalized person source records.
+- Real GitHub repo exports can produce scored person candidates through contributor extraction.
+- No raw Drive spreadsheet is uploaded directly to Firestore.
+- No full export is uploaded before dry-run/local/live tiny-smoke validation.
+- Review dashboard remains candidate-focused, not project/repository-focused.
+- GitHub/Devpost identity merging works from real-derived evidence.
+- Social/profile links are visible as context but not treated as unreviewed strong identity evidence.
 
 ## Phase 4: Global Candidate Entity Model
 
