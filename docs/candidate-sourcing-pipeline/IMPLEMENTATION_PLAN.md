@@ -36,7 +36,7 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-04-29.
+Last updated: 2026-05-01.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
 - [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
@@ -49,14 +49,40 @@ Last updated: 2026-04-29.
 - [x] Phase 2 unified GitHub, Devpost, and research fixture ingestion through the same source-record upload path.
 - [x] Phase 3 expanded review into structured identity/relevance decisions with confirmed signals.
 - [x] Phase 4 created the global candidate entity model and verified approved candidate growth across GitHub/Devpost while research remains in the review queue.
-- [ ] Phase 3.5 remains blocked on Firebase deploy permissions and should validate the completed local workflow against a real Firebase staging/dev project before any shared deployed testing.
-- [x] Working branches renamed to `codex/candidate-sourcing-pipeline` in both active implementation repos.
+- [x] Phase 5 added manual evidence-grounded enrichment generation, controlled taxonomy validation, enrichment review, and profile materialization after human approval.
+- [x] Phase 6 added final candidate profiles, profile APIs, a Profiles dashboard tab, profile filters/search, and source/evidence/review/enrichment lineage display.
+- [x] Post-Phase 6 hardening repaired tolerant-but-audited enrichment validation for common LLM shape mistakes.
+- [x] Merge-before-enrichment guard is implemented, verified locally, committed, and pushed. Enrichment is blocked when an approved candidate overlaps a pending merge review.
+- [ ] Phase 3.5 remains paused/read-only until the team confirms the correct Firebase target and access for safe real-DB smoke testing.
+- [ ] Real GitHub/Devpost Google Drive exports require source-specific adapter work before they should be uploaded to the sourcing API.
+- [x] Current active implementation branch is `codex/phase-6-final-profiles` in both active implementation repos and has been pushed to origin.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
 - [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
 - [x] Confirm available LLM provider/model environment variables from local `.env` without exposing values.
 - [x] Validate whether local LLM keys are active before implementing Phase 5 behavior that depends on live model calls.
 - [x] Create or collect small GitHub, Devpost, and research sample outputs for repeatable tests.
+
+## Current Waiting State
+
+Last updated: 2026-05-01.
+
+This is the current single source of truth before more real Firebase work:
+
+- Local emulator implementation is working through the full intended v1 flow: GitHub source upload, singleton approval, later Devpost merge, research approval, enrichment generation, enrichment HITL, and final Profiles tab.
+- Firebase CLI access to `wekruit-dev-env` is now confirmed for `spencerycwang@gmail.com`.
+- `wekruit-dev-env` owns the live sourcing Firebase resources: default Firestore DB, `sourcing-api` Cloud Function, and Hosting sites `wekruit-dev-env` and `wekruit-sourcing`.
+- The current live dashboards at `https://wekruit-dev-env.web.app` and `https://wekruit-sourcing.web.app` are older than the local branch. They expose Jobs, Review, and Approved only; they do not expose the new Enrichment or Profiles tabs/endpoints yet.
+- The current live dashboard data appears researcher-only. Public read-only API/dashboard checks found OpenAlex, contact enrichment, and Crossref researcher source runs; no GitHub or Devpost source runs were found there.
+- Team confirmation from 2026-05-01 says the dev dashboard data can be changed for testing and no one is actively using it. Still, Phase 3.5 should use clearly prefixed tiny fixture runs first.
+- No real Firebase data has been mutated by the new local pipeline work. All full workflow verification so far used the local Firebase emulator.
+- Phase 3.5 should deploy/update only the sourcing surface:
+  - target Firebase project: `wekruit-dev-env`
+  - preferred staging dashboard site: `wekruit-sourcing.web.app`
+  - function scope: `functions:sourcing-api` only
+  - avoid broad deploys that could affect unrelated default-codebase functions
+- The Google Drive GitHub/Devpost exports are not DB-ready as-is and should wait until after the tiny-fixture real Firebase smoke test. They need adapter work.
+- Awaiting user greenlight before executing Phase 3.5.
 
 ## Phase Execution Protocol
 
@@ -127,7 +153,7 @@ The preferred path is to productize the existing prototype rather than rebuild i
 
 Last updated: 2026-04-28.
 
-- Working branch created from current `main` and later renamed for the full effort: `codex/candidate-sourcing-pipeline`.
+- Initial working branch was created from current `main` and later renamed for the full effort: `codex/candidate-sourcing-pipeline`. The current active branch has since moved to `codex/phase-6-final-profiles`, recorded in Current Execution State.
 - `wekruit-scraping` `origin/codex/sourcing-e2e-firebase` is still present and diverges from current `main`.
 - The scraping prototype branch adds a useful source-record contract, deterministic IDs, dry-run upload output, a core-service ingest client, a generic JSON/JSONL/CSV uploader, and focused tests.
 - The scraping prototype branch should be selectively ported/productized into the new implementation branch rather than used as the working branch directly, because current `main` contains newer planning docs and secret-safety work.
@@ -210,8 +236,8 @@ This phase does not add enrichment. It stabilizes the review foundation.
 
 Last updated: 2026-04-28.
 
-- Working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-pipeline`, created from current `main`.
-- Working branch in `wekruit-scraping`: `codex/candidate-sourcing-pipeline`, created from current `main`, continuing to hold the scraping-side source-record upload bridge and durable plan docs.
+- Initial working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-pipeline`, created from current `main`. Current active branch is `codex/phase-6-final-profiles`.
+- Initial working branch in `wekruit-scraping`: `codex/candidate-sourcing-pipeline`, created from current `main`, continuing to hold the scraping-side source-record upload bridge and durable plan docs. Current active branch is `codex/phase-6-final-profiles`.
 - Core-service sourcing backend, static dashboard, sourcing Firestore collection names, sourcing queue names, and sourcing-only Firebase config were selectively ported from the previous sourcing prototype branch onto current `main`.
 - Scraping-side source-record contract, deterministic source-record conversion, generic file uploader, researcher upload bridge, and tests were selectively ported from the previous sourcing prototype branch onto current `main`.
 - `firebase.sourcing.json` now runs the sourcing-only functions bundle with hosting, functions, and Firestore emulators, avoiding unrelated outbound/matching environment prompts during local sourcing verification.
@@ -524,25 +550,34 @@ Local emulator testing has proven the vertical slice:
 - Approved GitHub/Devpost evidence can grow one active global candidate instead of creating duplicate approved candidates.
 - The dashboard supports run/status/source/signal/search filtering and full-row selection.
 
-However, the team has not yet proven that the same workflow is safe and correct in a deployed Firebase project. The current repo evidence is not enough to confirm a safe staging database:
+However, the team has not yet proven that the same workflow is correct in a deployed Firebase project. The latest team clarification says `wekruit-dev-env` can be used for testing, but the first real Firebase run still needs to be narrow and observable:
 
 - `wekruit-core-service-cloud-function` has `.firebaserc.example` with `staging=wekruit-core-service-staging` and `production=wekruit-core-service-production`.
 - No checked-in `.firebaserc` was found in the core-service repo during Phase 3.5 planning.
 - `firebase.sourcing.json` defines the sourcing-only hosting/functions/firestore config and hosting site `wekruit-sourcing`.
-- The previously inspected deployed dashboard at `https://wekruit-dev-env.web.app/#review` exists, but it must not be assumed safe for mutating test data until the team confirms ownership and reset expectations.
+- The previously inspected deployed dashboard at `https://wekruit-dev-env.web.app/#review` exists, but Phase 3.5 should prefer updating the dedicated `wekruit-sourcing` site first.
 
 ### Required Team Confirmation
 
 Before running this phase, confirm:
 
-- [ ] Which Firebase project is the safe staging/dev target.
+- [x] Which Firebase project is the safe staging/dev target.
 - [ ] Whether `wekruit-core-service-staging` exists and is accessible to the implementation owner.
-- [ ] Whether `wekruit-dev-env` is a disposable dev environment, a shared team environment, or something closer to production.
+- [x] Whether `wekruit-dev-env` is a disposable dev environment, a shared team environment, or something closer to production.
 - [ ] Whether the staging Firestore data can be deleted/reset if a test upload pollutes review data.
-- [ ] Who owns Firebase Hosting deployment for the sourcing dashboard.
-- [ ] Who owns Firebase Functions deployment for the sourcing API.
+- [x] Who owns Firebase Hosting deployment for the sourcing dashboard.
+- [x] Who owns Firebase Functions deployment for the sourcing API.
 - [ ] Whether staging dashboard access/auth is acceptable for the current v1 review workflow.
 - [ ] Whether the staging project has required Firestore indexes/rules deployed or should receive them as part of this smoke test.
+
+Current decisions:
+
+- Use `wekruit-dev-env` for Phase 3.5 real Firebase testing.
+- Prefer the dedicated `wekruit-sourcing` Hosting site for the updated sourcing dashboard so the default `wekruit-dev-env.web.app` site is not overwritten unless explicitly needed.
+- The teammate confirmed dev dashboard data can be mutated for testing because no one is actively using it.
+- The implementation owner now has Firebase project access and Cloud Functions admin was reportedly granted.
+
+Still treat all real Firebase actions as deliberate. Use small prefixed fixture runs first, and do not upload the full Google Drive exports during Phase 3.5.
 
 ### Safety Rules
 
@@ -569,64 +604,75 @@ smoke-2026-04-28-research
 
 ### Planned Test Path
 
-1. Confirm the safe Firebase staging/dev project.
-2. Create or verify local `.firebaserc` project aliases without committing it.
-3. Deploy only the sourcing dashboard/API stack to staging.
-4. Open the staging dashboard and verify `/api/sourcing/health`.
-5. Upload only the small GitHub, Devpost, and research fixture files.
-6. Confirm the dashboard shows the expected source runs and review candidates.
-7. Manually perform a controlled review script:
-   - approve the Alex Rivera GitHub/Devpost merge
-   - reject one singleton as bad record
-   - reject one singleton as not relevant
-   - hold one candidate
-8. Confirm approved entities, review labels, source-record lineage, evidence lineage, suggested signals, and confirmed signals in Firestore.
-9. Confirm reviewed rows remain inspectable and action buttons are disabled for non-pending rows.
-10. Clean up test data if the staging project is intended to stay tidy.
-11. Only after fixture smoke passes, optionally run a tiny real-source batch with 3-10 records per source.
+1. Verify local build/test health before touching real Firebase.
+2. Verify deploy permissions with the narrowest safe pre-flight/dry-run available.
+3. Confirm or set the `OPENAI_API_KEY` Firebase secret for `wekruit-dev-env` without exposing its value.
+4. Deploy only the sourcing API function: `sourcing-api`.
+5. Deploy only the sourcing dashboard to `wekruit-sourcing`, not the default `wekruit-dev-env` site unless explicitly needed later.
+6. Open the deployed `wekruit-sourcing` dashboard and verify health plus the new Enrichment/Profile endpoints.
+7. Upload the small GitHub fixture first.
+8. Have the reviewer approve Alex Rivera as a GitHub singleton.
+9. Upload the small Devpost fixture second.
+10. Have the reviewer resolve the Alex Rivera Devpost/GitHub merge and confirm it updates the existing approved candidate instead of creating a duplicate.
+11. Upload the small research fixture third.
+12. Have the reviewer approve a research candidate.
+13. Generate enrichment from the Approved tab.
+14. Review/approve enrichment from the Enrichment tab.
+15. Confirm the Profiles tab shows final matching-ready profiles with lineage.
+16. Record deployed project, URL, run IDs, and any cleanup steps in this document.
+17. Only after fixture smoke passes, plan the real Google Drive export adapter path.
 
 ### Expected Fixture Result
 
 - [ ] Three source runs exist: GitHub, Devpost, and research.
 - [ ] Nine fixture source records upload successfully.
 - [ ] Evidence records are created with source-specific provenance.
-- [ ] Alex Rivera appears as a GitHub/Devpost duplicate review candidate.
+- [ ] Alex Rivera can be approved first as a GitHub singleton.
+- [ ] Alex Rivera later appears as a GitHub/Devpost duplicate review candidate after Devpost upload.
 - [ ] Nora Kim, Mira Patel, Priya Natarajan, and Taylor Chen appear as singleton or research review cases.
-- [ ] Approving Alex Rivera creates one approved entity with GitHub and Devpost lineage.
+- [ ] Approving the later Devpost/GitHub merge updates the existing Alex Rivera approved entity instead of creating a second approved entity.
 - [ ] Rejecting bad/not-relevant/held candidates creates no approved entity.
+- [ ] Merge-before-enrichment guard blocks enrichment if overlapping pending merge review still exists.
+- [ ] Enrichment generation works against deployed Functions and uses the deployed `OPENAI_API_KEY` secret.
+- [ ] Enrichment review items appear in the Enrichment tab.
+- [ ] Approved enrichment creates final candidate profiles in the Profiles tab.
 - [ ] Dashboard filters work on deployed staging data.
 - [ ] Firestore documents are queryable by run ID/status/source enough for review/debug workflows.
 
 ### Exit Criteria
 
 - [ ] The team has identified the correct staging/dev Firebase project.
-- [ ] The staging dashboard loads the Phase 3 UI.
+- [ ] The staging dashboard loads the Phase 6 UI with Jobs, Review, Approved, Enrichment, and Profiles.
 - [ ] The staging sourcing API accepts fixture uploads.
 - [ ] The staging review workflow behaves the same as local emulator verification.
+- [ ] The staging enrichment workflow behaves the same as local emulator verification.
+- [ ] The staging final-profile workflow behaves the same as local emulator verification.
 - [ ] The team understands how to clean up staging smoke-test data.
-- [ ] Any staging-only deployment/config/index/auth issues are documented before shared deployed testing or Phase 5 work depends on deployed data.
+- [ ] Any staging-only deployment/config/index/auth issues are documented before real Google Drive source adapters depend on deployed data.
 
 ### Phase 3.5 Current Status
 
 Last updated: 2026-05-01.
 
-- Phase 3.5 started against Firebase project `wekruit-core-service`.
-- Firebase CLI auth now works locally as `spencerycwang@gmail.com`.
-- `wekruit-core-service` is visible through `firebase projects:list`.
-- Firestore database `projects/wekruit-core-service/databases/(default)` is visible.
-- Firebase Hosting has one site: `wekruit-core-service`, available at `https://wekruit-core-service.web.app`.
-- `firebase hosting:sites:list --project wekruit-core-service` shows the default Hosting site only.
-- `firebase functions:list --project wekruit-core-service` currently reports no deployed functions.
-- The active dashboard previously inspected by the team is `https://wekruit-dev-env.web.app/#review`, not the default `wekruit-core-service.web.app` site. That dashboard has existing researcher-oriented source runs such as `poc-openalex-ai-2026-04-19-replay`, `real-openalex-ai-2026-04-16-table`, `real-crossref-ai-2024-04-16`, and `real-openalex-ai-2024-04-16`.
-- The `wekruit-dev-env` dashboard appears to already contain Firestore-backed sourcing data, but it should not be assumed to point at the same Firebase project/database as `wekruit-core-service` until the deployed app config and Firebase project ownership are traced.
-- `firebase.sourcing.json` still points to hosting site `wekruit-sourcing`, but that site does not exist in the `wekruit-core-service` project.
-- `firebase.json` hosting dry-run succeeds against the default `wekruit-core-service` site and can be used for staging dashboard hosting without creating a new site.
-- `functions:list` initially failed because Cloud Functions API was disabled.
-- A functions deploy dry-run enabled the required Google APIs for functions deployment; no function was deployed during the dry run.
-- Actual `firebase deploy --config firebase.sourcing.json --project wekruit-core-service --only functions` failed before deployment because the account lacks `cloudfunctions.functions.setIamPolicy`, required to deploy the new HTTPS `sourcing-api` function.
-- `firebase functions:list --project wekruit-core-service` still reports no functions after the failed deploy.
-- No fixture uploads were run and no sourcing Firestore data was created.
-- Phase 3.5 is blocked until the Firebase account receives Cloud Functions deploy permissions, likely the Cloud Functions Admin role or an equivalent custom role including `cloudfunctions.functions.setIamPolicy`.
+- Phase 3.5 remains read-only/paused for real Firebase. No fixture uploads or write mutations have been run against a real Firebase project from the new pipeline.
+- Firebase CLI auth works locally as `spencerycwang@gmail.com`.
+- `firebase projects:list` now shows both `wekruit-core-service` and `wekruit-dev-env`.
+- `wekruit-dev-env` has default Firestore database `projects/wekruit-dev-env/databases/(default)`.
+- `wekruit-dev-env` has Hosting sites:
+  - `wekruit-dev-env`: `https://wekruit-dev-env.web.app`
+  - `wekruit-sourcing`: `https://wekruit-sourcing.web.app`
+  - `wekruit-outbound-staging`: currently not the sourcing dashboard target
+- `wekruit-dev-env` has deployed Cloud Function `sourcing-api` in `us-central1`, runtime `nodejs20`, codebase `core-service`, entry point `sourcing.api`.
+- `wekruit-dev-env` also has many unrelated default-codebase functions, so Phase 3.5 deploys must target only sourcing resources.
+- Public read-only checks of both `https://wekruit-dev-env.web.app/api/sourcing/health` and `https://wekruit-sourcing.web.app/api/sourcing/health` returned a healthy sourcing API.
+- Public read-only checks of both public sourcing sites returned the same existing researcher source runs: `poc-openalex-ai-2026-04-19-replay`, `real-openalex-ai-2026-04-16-table`, `real-crossref-ai-2024-04-16`, and `real-openalex-ai-2024-04-16`.
+- Public read-only checks of the live dashboard/API found 23 dedup candidates and 3 approved entities.
+- The live dashboard currently appears researcher-only: source runs and review records are from OpenAlex, contact enrichment, and Crossref/researcher flows. No GitHub or Devpost source runs were found in the live dashboard data.
+- The live dashboard is older than the current implementation branch. It supports Jobs, Review, and Approved; `/api/sourcing/enrichment-review-items` and `/api/sourcing/candidate-profiles` returned 404 during read-only checks, so Enrichment and Profiles are not deployed there yet.
+- The currently visible live approved entities appear to use an older schema. They do not yet prove that the new fields for `sourceNames`, `sourceDomains`, `reviewLabelIds`, `identityEvidenceHashes`, `confirmedSignals`, `needsEnrichment`, and `enrichmentStatus` are present on older data.
+- `firebase.sourcing.json` points to Hosting site `wekruit-sourcing`, which does exist in `wekruit-dev-env`. This makes it the preferred Phase 3.5 dashboard target.
+- The current local sourcing function declares Firebase secret `OPENAI_API_KEY` for enrichment. Phase 3.5 must confirm/set this secret before live enrichment generation.
+- Current blocker is no longer environment discovery. The blocker is user greenlight to execute the real Firebase pre-flight/deploy/fixture-smoke process.
 
 ### Phase 3.5 Data-Flow Clarification
 
@@ -636,15 +682,38 @@ The source exports provided on 2026-05-01 are raw scraper/discovery outputs. The
 - GitHub export: `github-20260501T061335Z-3-001.zip` contains `github/repos.xlsx` with about 23,290 repository discovery rows. These rows describe repositories (`full_name`, `stars`, `language`, `topics`, `html_url`) and are upstream of candidate extraction. They are not person/candidate rows. The GitHub contributor extraction/scoring output should be generated first, or a deliberate repo-owner/contributor adapter must be designed.
 - LinkedIn/social fields: Devpost exports include LinkedIn/Twitter/member website URLs, but current core-service evidence extraction only treats GitHub/homepage/source URLs as first-class URL evidence. LinkedIn/Twitter are preserved in raw summaries if mapped, but they are not yet dedicated identity evidence types.
 
-Recommended Phase 3.5 sequence:
+Recommended Phase 3.5 execution sequence after user greenlight:
 
-1. Trace the deployed `wekruit-dev-env.web.app` app config and confirm which Firebase project/database it reads from.
-2. Confirm whether that environment is disposable, shared dev, or production-like before mutating any data.
-3. Deploy the current sourcing dashboard/API only to an approved dev/staging Firebase target.
-4. Upload tiny fixture data first, not the large Devpost/GitHub exports.
-5. Verify source-run, dedup review, approval, enrichment, enrichment review, and final profile behavior against real Firestore.
-6. Add a Devpost flat-row adapter and test a tiny slice of real Devpost rows.
-7. Produce proper GitHub candidate output from contributor extraction/scoring before feeding GitHub data into the review dashboard.
+1. Run local build/tests one more time in `wekruit-core-service-cloud-function` and the focused uploader tests in `wekruit-scraping`.
+2. Run a non-mutating deploy dry-run/pre-flight for `sourcing-api` against Firebase project `wekruit-dev-env`.
+3. If the deploy pre-flight shows `OPENAI_API_KEY` is missing, set only that Firebase secret for `wekruit-dev-env` without printing the value.
+4. Deploy only `functions:sourcing-api` to `wekruit-dev-env`. Avoid broad deploys because this project has many unrelated default-codebase functions.
+5. Deploy the current sourcing dashboard to the dedicated `wekruit-sourcing` Hosting site, preferably via `firebase.sourcing.json`. Use a preview channel first if the CLI flow makes that practical; otherwise deploy the live `wekruit-sourcing` site, not the default `wekruit-dev-env` site.
+6. Verify live health and endpoint shape:
+   - `/api/sourcing/health`
+   - `/api/sourcing/source-runs`
+   - `/api/sourcing/dedup-candidates?include=details`
+   - `/api/sourcing/approved-entities`
+   - `/api/sourcing/enrichment-review-items`
+   - `/api/sourcing/candidate-profiles`
+7. Upload only tiny fixture data with clear run IDs such as `phase35-github-*`, `phase35-devpost-*`, and `phase35-research-*`. Do not upload full Google Drive exports.
+8. Pause and walk through the live dashboard with the user:
+   - approve GitHub singleton first
+   - upload/resolve Devpost merge second
+   - upload/approve research third
+   - generate enrichment
+   - approve enrichment
+   - inspect final Profiles tab
+9. Only after the live tiny-fixture smoke passes, plan and build the real adapter path:
+   - Devpost flat XLSX/CSV rows to normalized source records
+   - GitHub repo discovery to candidate/person output through contributor extraction/scoring
+   - optional first-class LinkedIn/Twitter evidence if the team wants those links used for identity or enrichment
+
+Execution ownership:
+
+- The implementation agent can perform steps 1-7 after explicit user greenlight.
+- Step 8 should be interactive with the user in the browser so the reviewer workflow is validated by the person who will demo/share it.
+- Step 9 is not part of Phase 3.5 execution; it begins only after the live tiny-fixture workflow is accepted.
 
 ## Phase 4: Global Candidate Entity Model
 
@@ -774,6 +843,94 @@ In v1, enrichment is manually triggered from the Approved detail panel with a `G
 - [x] `hardware_mechanical`
 - [x] `academic_research`
 - [x] `unknown_other`
+
+### Current V1 Taxonomy Snapshot
+
+Last updated from `wekruit-core-service-cloud-function/src/services/sourcing/domain/records.ts` on 2026-05-01.
+
+These values are intentionally small and controlled for v1. The LLM must choose from these values before proposing open-ended tags, and reviewers can edit the selected values during enrichment review.
+
+Tracks:
+
+- `software_engineering`
+- `ai_research`
+- `data_science`
+- `product_design`
+- `product_management`
+- `marketing_growth`
+- `business_founder`
+- `hardware_mechanical`
+- `academic_research`
+- `unknown_other`
+
+Specializations:
+
+- `frontend_engineering`
+- `backend_engineering`
+- `full_stack_engineering`
+- `mobile_engineering`
+- `machine_learning`
+- `natural_language_processing`
+- `computer_vision`
+- `data_engineering`
+- `data_analysis`
+- `academic_publishing`
+- `developer_experience`
+- `product_strategy`
+- `growth_marketing`
+- `mechanical_design`
+- `embedded_systems`
+- `robotics`
+- `ux_ui_design`
+- `unknown_other`
+
+Industry/domain interests:
+
+- `artificial_intelligence`
+- `ai_infrastructure`
+- `developer_tools`
+- `healthcare_ai`
+- `robotics`
+- `education_technology`
+- `climate_energy`
+- `finance_fintech`
+- `biotech_life_sciences`
+- `enterprise_saas`
+- `cybersecurity`
+- `gaming_media`
+- `accessibility_assistive_technology`
+- `research_tools`
+- `open_source`
+- `unknown_other`
+
+Career stages:
+
+- `student`
+- `early_career`
+- `mid_career`
+- `senior`
+- `founder`
+- `academic_researcher`
+- `unknown`
+
+Contactability:
+
+- `high`
+- `medium`
+- `low`
+- `unknown`
+
+Current source/review relevance signal examples:
+
+- `open_source_contribution`
+- `technical_project`
+- `hackathon_participation`
+- `award_or_recognition`
+- `founder_or_builder_signal`
+- `research_publication`
+- `education_affiliation`
+
+Relevance signals are normalized string tokens rather than a fully closed taxonomy. The reviewer confirms/edit/removes them during identity/relevance review, and the enrichment flow treats confirmed signals as approved evidence context.
 
 ### Enrichment Output Tasks
 
