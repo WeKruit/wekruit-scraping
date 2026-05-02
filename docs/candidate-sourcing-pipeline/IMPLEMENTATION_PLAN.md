@@ -652,10 +652,9 @@ smoke-2026-04-28-research
 
 ### Phase 3.5 Current Status
 
-Last updated: 2026-05-01.
+Last updated: 2026-05-02.
 
-- Phase 3.5 execution started on 2026-05-01 and is currently paused on a real Firebase deploy permission blocker.
-- No fixture uploads or Firestore source/review data writes have been run against real Firebase from the new pipeline.
+- Phase 3.5 execution resumed on 2026-05-02 after Secret Manager Admin permission was granted.
 - Firebase CLI auth works locally as `spencerycwang@gmail.com`.
 - `firebase projects:list` now shows both `wekruit-core-service` and `wekruit-dev-env`.
 - `wekruit-dev-env` has default Firestore database `projects/wekruit-dev-env/databases/(default)`.
@@ -669,7 +668,7 @@ Last updated: 2026-05-01.
 - Public read-only checks of both public sourcing sites returned the same existing researcher source runs: `poc-openalex-ai-2026-04-19-replay`, `real-openalex-ai-2026-04-16-table`, `real-crossref-ai-2024-04-16`, and `real-openalex-ai-2024-04-16`.
 - Public read-only checks of the live dashboard/API found 23 dedup candidates and 3 approved entities.
 - The live dashboard currently appears researcher-only: source runs and review records are from OpenAlex, contact enrichment, and Crossref/researcher flows. No GitHub or Devpost source runs were found in the live dashboard data.
-- The live dashboard is older than the current implementation branch. It supports Jobs, Review, and Approved; `/api/sourcing/enrichment-review-items` and `/api/sourcing/candidate-profiles` returned 404 during read-only checks, so Enrichment and Profiles are not deployed there yet.
+- The previous live dashboard was older than the current implementation branch. After the 2026-05-02 deploy, `https://wekruit-sourcing.web.app` serves the Phase 6 dashboard with Jobs, Review, Approved, Enrichment, and Profiles.
 - The currently visible live approved entities appear to use an older schema. They do not yet prove that the new fields for `sourceNames`, `sourceDomains`, `reviewLabelIds`, `identityEvidenceHashes`, `confirmedSignals`, `needsEnrichment`, and `enrichmentStatus` are present on older data.
 - `firebase.sourcing.json` points to Hosting site `wekruit-sourcing`, which does exist in `wekruit-dev-env`. This makes it the preferred Phase 3.5 dashboard target.
 - The current local sourcing function declares Firebase secret `OPENAI_API_KEY` for enrichment. Phase 3.5 must confirm/set this secret before live enrichment generation.
@@ -679,18 +678,30 @@ Last updated: 2026-05-01.
   - `wekruit-scraping`: focused sourcing uploader tests passed, 8 tests.
 - Phase 3.5 step 2 completed:
   - Scoped Firebase dry run passed with `firebase.sourcing.json`, project `wekruit-dev-env`, and only `functions:core-service:sourcing.api`.
-- Phase 3.5 step 3 partially completed:
+- Phase 3.5 step 3 completed:
   - Firebase secret `OPENAI_API_KEY` was created in `wekruit-dev-env` without printing its value.
-- Phase 3.5 step 4 is blocked:
-  - Actual deploy of only `functions:core-service:sourcing.api` failed before updating the function.
-  - Firebase CLI failed while trying to grant runtime service account access to `OPENAI_API_KEY`.
-  - Error permission: `secretmanager.secrets.setIamPolicy`.
-  - Runtime service account involved: `526256649094-compute@developer.gserviceaccount.com`.
-  - The live `sourcing-api` hash remains unchanged and Enrichment/Profile endpoints still return 404, confirming the deploy did not update the live API.
-- Required unblock:
-  - Grant `spencerycwang@gmail.com` a role that includes `secretmanager.secrets.setIamPolicy` on `wekruit-dev-env`, such as Secret Manager Admin, for deployment; or have a project admin perform the secret IAM grant/deploy.
-  - Cloud Functions Admin alone was not sufficient for this deploy because the function declares a Firebase secret.
-- After this permission is fixed, resume at Phase 3.5 step 4. Do not upload fixtures until the deployed API exposes Enrichment/Profile endpoints.
+- Phase 3.5 step 4 completed:
+  - Deployed only `functions:core-service:sourcing.api` to `wekruit-dev-env`.
+  - Firebase granted `roles/secretmanager.secretAccessor` on `OPENAI_API_KEY` to runtime service account `526256649094-compute@developer.gserviceaccount.com`.
+- Phase 3.5 step 5 completed:
+  - Deployed only Hosting site `wekruit-sourcing` in `wekruit-dev-env`.
+  - Did not deploy the default `wekruit-dev-env` Hosting site.
+- Phase 3.5 step 6 completed:
+  - `https://wekruit-sourcing.web.app/app.js` now includes the Phase 6 page set: Jobs, Review, Approved, Enrichment, and Profiles.
+  - `GET /api/sourcing/health` returned 200.
+  - `GET /api/sourcing/source-runs` returned 200.
+  - `GET /api/sourcing/dedup-candidates?include=details` returned 200.
+  - `GET /api/sourcing/approved-entities` returned 200.
+  - `GET /api/sourcing/enrichment-review-items` returned 200 with zero items.
+  - `GET /api/sourcing/candidate-profiles` returned 200 with zero profiles.
+- Phase 3.5 step 7 started:
+  - Uploaded the GitHub fixture only with run ID `phase35-20260502-github`.
+  - The live run has 2 source records and 2 pending GitHub singleton review candidates: Alex Rivera and Mira Patel.
+- Current pause point:
+  - Open `https://wekruit-sourcing.web.app/#review`.
+  - Select run `phase35-20260502-github`.
+  - Human reviewer should approve Alex Rivera as the GitHub singleton first.
+  - Do not upload Devpost or research until the reviewer confirms the GitHub approval is done.
 
 ### Phase 3.5 Data-Flow Clarification
 
