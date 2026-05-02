@@ -654,7 +654,8 @@ smoke-2026-04-28-research
 
 Last updated: 2026-05-01.
 
-- Phase 3.5 remains read-only/paused for real Firebase. No fixture uploads or write mutations have been run against a real Firebase project from the new pipeline.
+- Phase 3.5 execution started on 2026-05-01 and is currently paused on a real Firebase deploy permission blocker.
+- No fixture uploads or Firestore source/review data writes have been run against real Firebase from the new pipeline.
 - Firebase CLI auth works locally as `spencerycwang@gmail.com`.
 - `firebase projects:list` now shows both `wekruit-core-service` and `wekruit-dev-env`.
 - `wekruit-dev-env` has default Firestore database `projects/wekruit-dev-env/databases/(default)`.
@@ -672,7 +673,24 @@ Last updated: 2026-05-01.
 - The currently visible live approved entities appear to use an older schema. They do not yet prove that the new fields for `sourceNames`, `sourceDomains`, `reviewLabelIds`, `identityEvidenceHashes`, `confirmedSignals`, `needsEnrichment`, and `enrichmentStatus` are present on older data.
 - `firebase.sourcing.json` points to Hosting site `wekruit-sourcing`, which does exist in `wekruit-dev-env`. This makes it the preferred Phase 3.5 dashboard target.
 - The current local sourcing function declares Firebase secret `OPENAI_API_KEY` for enrichment. Phase 3.5 must confirm/set this secret before live enrichment generation.
-- Current blocker is no longer environment discovery. The blocker is user greenlight to execute the real Firebase pre-flight/deploy/fixture-smoke process.
+- Phase 3.5 step 1 completed:
+  - `wekruit-core-service-cloud-function`: `npm run build` passed.
+  - `wekruit-core-service-cloud-function`: `node --test lib/services/sourcing/**/*.test.js` passed, 17 tests.
+  - `wekruit-scraping`: focused sourcing uploader tests passed, 8 tests.
+- Phase 3.5 step 2 completed:
+  - Scoped Firebase dry run passed with `firebase.sourcing.json`, project `wekruit-dev-env`, and only `functions:core-service:sourcing.api`.
+- Phase 3.5 step 3 partially completed:
+  - Firebase secret `OPENAI_API_KEY` was created in `wekruit-dev-env` without printing its value.
+- Phase 3.5 step 4 is blocked:
+  - Actual deploy of only `functions:core-service:sourcing.api` failed before updating the function.
+  - Firebase CLI failed while trying to grant runtime service account access to `OPENAI_API_KEY`.
+  - Error permission: `secretmanager.secrets.setIamPolicy`.
+  - Runtime service account involved: `526256649094-compute@developer.gserviceaccount.com`.
+  - The live `sourcing-api` hash remains unchanged and Enrichment/Profile endpoints still return 404, confirming the deploy did not update the live API.
+- Required unblock:
+  - Grant `spencerycwang@gmail.com` a role that includes `secretmanager.secrets.setIamPolicy` on `wekruit-dev-env`, such as Secret Manager Admin, for deployment; or have a project admin perform the secret IAM grant/deploy.
+  - Cloud Functions Admin alone was not sufficient for this deploy because the function declares a Firebase secret.
+- After this permission is fixed, resume at Phase 3.5 step 4. Do not upload fixtures until the deployed API exposes Enrichment/Profile endpoints.
 
 ### Phase 3.5 Data-Flow Clarification
 
