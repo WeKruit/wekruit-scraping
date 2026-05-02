@@ -196,8 +196,8 @@ class GitHubScorer:
 
     def save_json(self, candidates, path=None):
         """Save scored candidates to JSON."""
-        os.makedirs(OUTPUT_DIR, exist_ok=True)
         path = path or os.path.join(OUTPUT_DIR, "scored_candidates.json")
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
 
         with open(path, "w", encoding="utf-8") as f:
             json.dump(candidates, f, ensure_ascii=False, indent=2)
@@ -207,8 +207,8 @@ class GitHubScorer:
 
     def save_csv(self, candidates, path=None):
         """Save scored candidates to CSV for easy viewing."""
-        os.makedirs(OUTPUT_DIR, exist_ok=True)
         path = path or os.path.join(OUTPUT_DIR, "scored_candidates.csv")
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
 
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f)

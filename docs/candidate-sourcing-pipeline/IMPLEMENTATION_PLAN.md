@@ -54,8 +54,10 @@ Last updated: 2026-05-02.
 - [x] Post-Phase 6 hardening repaired tolerant-but-audited enrichment validation for common LLM shape mistakes.
 - [x] Merge-before-enrichment guard is implemented, verified locally, committed, and pushed. Enrichment is blocked when an approved candidate overlaps a pending merge review.
 - [x] Phase 3.5 real Firebase tiny-fixture smoke test passed against `wekruit-dev-env` / `wekruit-sourcing.web.app`.
-- [ ] Real GitHub/Devpost Google Drive exports require source-specific adapter work before they should be uploaded to the sourcing API.
-- [x] Current active implementation branch is `codex/phase-6-final-profiles` in both active implementation repos and has been pushed to origin.
+- [x] Real Devpost Google Drive exports now have a source-specific adapter path to normalized person source records.
+- [x] Real GitHub Google Drive repo exports now have a source-specific adapter path into the existing contributor extraction, scoring, and source-record upload flow.
+- [ ] Real-derived Devpost/GitHub subsets still need local emulator and optional tiny live verification before any broad import.
+- [x] Current active implementation branch is `codex/real-source-adapters` in both active implementation repos and has been pushed to origin.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
 - [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
@@ -83,9 +85,9 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - Alex Rivera: `software_engineering`, sources `devpost + github`.
   - Taylor Chen: `academic_research`, source `openalex`.
 - A legacy/live researcher candidate, Jakob Uszkoreit, was also enriched successfully, which gives useful evidence that the enrichment/profile path can operate on existing researcher approved data.
-- Remaining primary implementation work is now the real-source adapter path:
-  - Devpost flat XLSX/CSV rows to normalized person source records.
-  - GitHub repository discovery output to candidate/person records through contributor extraction and scoring.
+- Remaining primary implementation work is now real-derived verification and import operations:
+  - Devpost flat XLSX/CSV rows are implemented as normalized person source records and need local/live subset verification.
+  - GitHub repository discovery output is implemented through contributor extraction/scoring and needs local/live subset verification.
   - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
   - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
 
@@ -939,6 +941,18 @@ Tests:
 - Existing `github_candidates.json` fixture still uploads correctly.
 - Candidate records preserve profile URL, username, email when available, company/institution, source repos, commit/PR activity, followers, public repos, score, and suggested signals.
 - Dry-run writes source records without network calls.
+
+Phase 2 implementation status as of 2026-05-02:
+
+- [x] Added `github/github_import_repos_export.py` to convert the Drive `github/repos.xlsx` export into the existing `github/output/repos.json` repository contract.
+- [x] The helper supports `.zip`, `.xlsx`, `.csv`, `.json`, and directory inputs by reusing the generic sourcing file loader.
+- [x] The helper preserves repo name, URL, stars, language, description, topics, source tags, and date fields.
+- [x] The helper supports bounded runs through exact `--repo`, `--limit`, `--min-stars`, `--language`, and `--source-contains` filters.
+- [x] Real GitHub zip dry-run loaded 23,290 rows, normalized 23,290 repository records, and preserved star counts correctly.
+- [x] Controlled real API smoke converted `n8n-io/n8n`, extracted 20 enriched contributor candidates with `GITHUB_TOKEN`, scored them with threshold `0`, and dry-ran 20 GitHub person source records.
+- [x] GitHub source-record dry-run preserved person display names, GitHub profile URLs, emails when public/available, repo contribution context, scores, and suggested signals.
+- [x] `github/github_scorer.py --output-dir` now creates the requested output directory, so verification artifacts can stay under `/tmp` instead of writing only to the default output path.
+- [x] Focused tests cover repo export conversion, exact repo selection from `html_url`, custom scorer output directories, and the existing GitHub candidate upload bridge.
 
 #### Adapter Phase 3: End-To-End Adapter Verification
 
