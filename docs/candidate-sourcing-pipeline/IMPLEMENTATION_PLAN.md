@@ -36,7 +36,7 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-05-01.
+Last updated: 2026-05-02.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
 - [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
@@ -53,7 +53,7 @@ Last updated: 2026-05-01.
 - [x] Phase 6 added final candidate profiles, profile APIs, a Profiles dashboard tab, profile filters/search, and source/evidence/review/enrichment lineage display.
 - [x] Post-Phase 6 hardening repaired tolerant-but-audited enrichment validation for common LLM shape mistakes.
 - [x] Merge-before-enrichment guard is implemented, verified locally, committed, and pushed. Enrichment is blocked when an approved candidate overlaps a pending merge review.
-- [ ] Phase 3.5 remains paused/read-only until the team confirms the correct Firebase target and access for safe real-DB smoke testing.
+- [x] Phase 3.5 real Firebase tiny-fixture smoke test passed against `wekruit-dev-env` / `wekruit-sourcing.web.app`.
 - [ ] Real GitHub/Devpost Google Drive exports require source-specific adapter work before they should be uploaded to the sourcing API.
 - [x] Current active implementation branch is `codex/phase-6-final-profiles` in both active implementation repos and has been pushed to origin.
 - [x] Create implementation branch from `main` when implementation begins.
@@ -65,24 +65,28 @@ Last updated: 2026-05-01.
 
 ## Current Waiting State
 
-Last updated: 2026-05-01.
+Last updated: 2026-05-02.
 
-This is the current single source of truth before more real Firebase work:
+This is the current single source of truth after the successful Phase 3.5 real Firebase smoke test:
 
 - Local emulator implementation is working through the full intended v1 flow: GitHub source upload, singleton approval, later Devpost merge, research approval, enrichment generation, enrichment HITL, and final Profiles tab.
 - Firebase CLI access to `wekruit-dev-env` is now confirmed for `spencerycwang@gmail.com`.
 - `wekruit-dev-env` owns the live sourcing Firebase resources: default Firestore DB, `sourcing-api` Cloud Function, and Hosting sites `wekruit-dev-env` and `wekruit-sourcing`.
-- The current live dashboards at `https://wekruit-dev-env.web.app` and `https://wekruit-sourcing.web.app` are older than the local branch. They expose Jobs, Review, and Approved only; they do not expose the new Enrichment or Profiles tabs/endpoints yet.
-- The current live dashboard data appears researcher-only. Public read-only API/dashboard checks found OpenAlex, contact enrichment, and Crossref researcher source runs; no GitHub or Devpost source runs were found there.
-- Team confirmation from 2026-05-01 says the dev dashboard data can be changed for testing and no one is actively using it. Still, Phase 3.5 should use clearly prefixed tiny fixture runs first.
-- No real Firebase data has been mutated by the new local pipeline work. All full workflow verification so far used the local Firebase emulator.
-- Phase 3.5 should deploy/update only the sourcing surface:
-  - target Firebase project: `wekruit-dev-env`
-  - preferred staging dashboard site: `wekruit-sourcing.web.app`
-  - function scope: `functions:sourcing-api` only
-  - avoid broad deploys that could affect unrelated default-codebase functions
-- The Google Drive GitHub/Devpost exports are not DB-ready as-is and should wait until after the tiny-fixture real Firebase smoke test. They need adapter work.
-- Awaiting user greenlight before executing Phase 3.5.
+- `https://wekruit-sourcing.web.app` now serves the Phase 6 dashboard with Jobs, Review, Approved, Enrichment, and Profiles.
+- The live `sourcing-api` on `wekruit-dev-env` now exposes the Phase 6 endpoints, including enrichment review items and final candidate profiles.
+- The tiny live fixture walkthrough succeeded:
+  - GitHub first: Alex Rivera approved as a singleton.
+  - Devpost second: Alex Rivera appeared as a GitHub/Devpost merge candidate and updated the existing approved candidate instead of creating a duplicate.
+  - Research third: Taylor Chen approved from grouped research evidence.
+  - Enrichment: Alex Rivera and Taylor Chen generated enrichment drafts, were approved by the human reviewer, and materialized final profiles.
+- Confirmed live final profiles:
+  - Alex Rivera: `software_engineering`, sources `devpost + github`.
+  - Taylor Chen: `academic_research`, source `openalex`.
+- A legacy/live researcher candidate, Jakob Uszkoreit, was also enriched successfully, which gives useful evidence that the enrichment/profile path can operate on existing researcher approved data.
+- Remaining primary implementation work is now the real-source adapter path:
+  - Devpost flat XLSX/CSV rows to normalized source records.
+  - GitHub repository discovery output to candidate/person records through contributor extraction/scoring or an explicit owner/contributor adapter.
+  - Optional first-class LinkedIn/Twitter evidence if the team wants those links used for identity or enrichment.
 
 ## Phase Execution Protocol
 
@@ -624,31 +628,36 @@ smoke-2026-04-28-research
 
 ### Expected Fixture Result
 
-- [ ] Three source runs exist: GitHub, Devpost, and research.
-- [ ] Nine fixture source records upload successfully.
-- [ ] Evidence records are created with source-specific provenance.
-- [ ] Alex Rivera can be approved first as a GitHub singleton.
-- [ ] Alex Rivera later appears as a GitHub/Devpost duplicate review candidate after Devpost upload.
-- [ ] Nora Kim, Mira Patel, Priya Natarajan, and Taylor Chen appear as singleton or research review cases.
-- [ ] Approving the later Devpost/GitHub merge updates the existing Alex Rivera approved entity instead of creating a second approved entity.
+- [x] Three source runs exist: GitHub, Devpost, and research.
+- [x] Nine fixture source records upload successfully.
+- [x] Evidence records are created with source-specific provenance.
+- [x] Alex Rivera can be approved first as a GitHub singleton.
+- [x] Alex Rivera later appears as a GitHub/Devpost duplicate review candidate after Devpost upload.
+- [x] Nora Kim, Mira Patel, Priya Natarajan, and Taylor Chen appear as singleton or research review cases.
+- [x] Approving the later Devpost/GitHub merge updates the existing Alex Rivera approved entity instead of creating a second approved entity.
 - [ ] Rejecting bad/not-relevant/held candidates creates no approved entity.
 - [ ] Merge-before-enrichment guard blocks enrichment if overlapping pending merge review still exists.
-- [ ] Enrichment generation works against deployed Functions and uses the deployed `OPENAI_API_KEY` secret.
-- [ ] Enrichment review items appear in the Enrichment tab.
-- [ ] Approved enrichment creates final candidate profiles in the Profiles tab.
-- [ ] Dashboard filters work on deployed staging data.
-- [ ] Firestore documents are queryable by run ID/status/source enough for review/debug workflows.
+- [x] Enrichment generation works against deployed Functions and uses the deployed `OPENAI_API_KEY` secret.
+- [x] Enrichment review items appear in the Enrichment tab.
+- [x] Approved enrichment creates final candidate profiles in the Profiles tab.
+- [x] Dashboard filters work on deployed staging data.
+- [x] Firestore documents are queryable by run ID/status/source enough for review/debug workflows.
+
+Not re-tested live in Phase 3.5 because they were already covered locally and were not part of the happy-path smoke walkthrough:
+
+- Rejecting bad/not-relevant/held candidates.
+- Merge-before-enrichment guard blocking an approved candidate with an unresolved pending merge.
 
 ### Exit Criteria
 
-- [ ] The team has identified the correct staging/dev Firebase project.
-- [ ] The staging dashboard loads the Phase 6 UI with Jobs, Review, Approved, Enrichment, and Profiles.
-- [ ] The staging sourcing API accepts fixture uploads.
-- [ ] The staging review workflow behaves the same as local emulator verification.
-- [ ] The staging enrichment workflow behaves the same as local emulator verification.
-- [ ] The staging final-profile workflow behaves the same as local emulator verification.
-- [ ] The team understands how to clean up staging smoke-test data.
-- [ ] Any staging-only deployment/config/index/auth issues are documented before real Google Drive source adapters depend on deployed data.
+- [x] The team has identified the correct staging/dev Firebase project.
+- [x] The staging dashboard loads the Phase 6 UI with Jobs, Review, Approved, Enrichment, and Profiles.
+- [x] The staging sourcing API accepts fixture uploads.
+- [x] The staging review workflow behaves the same as local emulator verification.
+- [x] The staging enrichment workflow behaves the same as local emulator verification.
+- [x] The staging final-profile workflow behaves the same as local emulator verification.
+- [x] The team understands how to clean up staging smoke-test data.
+- [x] Any staging-only deployment/config/index/auth issues are documented before real Google Drive source adapters depend on deployed data.
 
 ### Phase 3.5 Current Status
 
@@ -697,11 +706,29 @@ Last updated: 2026-05-02.
 - Phase 3.5 step 7 started:
   - Uploaded the GitHub fixture only with run ID `phase35-20260502-github`.
   - The live run has 2 source records and 2 pending GitHub singleton review candidates: Alex Rivera and Mira Patel.
-- Current pause point:
-  - Open `https://wekruit-sourcing.web.app/#review`.
-  - Select run `phase35-20260502-github`.
-  - Human reviewer should approve Alex Rivera as the GitHub singleton first.
-  - Do not upload Devpost or research until the reviewer confirms the GitHub approval is done.
+- Phase 3.5 live walkthrough completed:
+  - Human reviewer approved Alex Rivera as a GitHub singleton.
+  - Uploaded Devpost fixture with run ID `phase35-20260502-devpost`.
+  - Devpost created a strong Alex Rivera `devpost + github` merge candidate.
+  - Human reviewer approved the Alex Rivera merge.
+  - Live verification confirmed there was still exactly one Alex Rivera global candidate: `cand_a9870200e5d76e6eb15fa2f4`.
+  - Alex Rivera accumulated `devpost + github`, 2 source records, and 2 review decisions.
+  - Uploaded research fixture with run ID `phase35-20260502-research`.
+  - Human reviewer approved Taylor Chen from the grouped research candidate.
+  - Human reviewer generated and approved enrichment for Alex Rivera and Taylor Chen.
+  - Live verification confirmed Alex Rivera and Taylor Chen have final profiles.
+- Phase 3.5 final live verification:
+  - Approved entities total: 6.
+  - Enrichment review items total: 3.
+  - Final candidate profiles total: 3.
+  - Alex Rivera approved entity: `needsEnrichment=false`, `enrichmentStatus=enriched`, sources `devpost + github`.
+  - Alex Rivera final profile: `profile_cand_a9870200e5d76e6eb15fa2f4`, primary track `software_engineering`.
+  - Taylor Chen approved entity: `needsEnrichment=false`, `enrichmentStatus=enriched`, source `openalex`.
+  - Taylor Chen final profile: `profile_cand_9297e18151c003f75dd5d1bf`, primary track `academic_research`.
+  - Existing live researcher candidate Jakob Uszkoreit also has an approved enrichment/profile with primary track `ai_research`.
+- Phase 3.5 conclusion:
+  - The core workflow is now proven against the actual Firebase dev environment.
+  - The remaining blocker to real data is not the Firebase pipeline; it is adapting the Google Drive GitHub/Devpost exports into the normalized source-record contract.
 
 ### Phase 3.5 Data-Flow Clarification
 
