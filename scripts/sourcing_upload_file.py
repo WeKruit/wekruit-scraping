@@ -5,8 +5,12 @@ import argparse
 import csv
 import json
 import sys
+import zipfile
+from collections import OrderedDict
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 RESEARCHER_ROOT = ROOT / "researcher"
@@ -15,6 +19,11 @@ if str(RESEARCHER_ROOT) not in sys.path:
 
 from pipeline.sourcing_client import DEFAULT_BATCH_SIZE, dry_run_upload, upload_source_records
 from pipeline.sourcing_records import content_hash, raw_storage_path, safe_id, utc_now
+
+try:
+    from openpyxl import load_workbook
+except ModuleNotFoundError:  # pragma: no cover - only reached when dependencies are missing.
+    load_workbook = None
 
 
 def first_non_empty(*values: Any) -> str:
@@ -42,11 +51,35 @@ def list_values(value: Any) -> list[str]:
     return [text] if text else []
 
 
+def split_values(value: Any, *, separators: tuple[str, ...] = (";", "\n")) -> list[str]:
+    output: list[str] = []
+    for text in list_values(value):
+        parts = [text]
+        for separator in separators:
+            next_parts: list[str] = []
+            for part in parts:
+                next_parts.extend(part.split(separator))
+            parts = next_parts
+        output.extend(part.strip() for part in parts if part.strip())
+    return output
+
+
 def unique_values(*values: Any) -> list[str]:
     seen: set[str] = set()
     output: list[str] = []
     for value in values:
         for text in list_values(value):
+            if text not in seen:
+                seen.add(text)
+                output.append(text)
+    return output
+
+
+def unique_split_values(*values: Any, separators: tuple[str, ...] = (";", "\n")) -> list[str]:
+    seen: set[str] = set()
+    output: list[str] = []
+    for value in values:
+        for text in split_values(value, separators=separators):
             if text not in seen:
                 seen.add(text)
                 output.append(text)
@@ -66,6 +99,58 @@ def safe_int(value: Any) -> int:
 
 def suggested_signals(*signals: str) -> list[str]:
     return unique_values(*signals)
+
+
+def normalized_url_key(value: Any) -> str:
+    text = first_non_empty(value)
+    if not text:
+        return ""
+    try:
+        parsed = urlparse(text)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.netloc.lower()}{parsed.path.rstrip('/').lower()}"
+    except ValueError:
+        pass
+    return text.strip().rstrip("/").lower()
+
+
+def url_last_segment(value: Any) -> str:
+    text = first_non_empty(value)
+    if not text:
+        return ""
+    try:
+        parsed = urlparse(text)
+        path = parsed.path.rstrip("/")
+        if path:
+            return path.rsplit("/", 1)[-1]
+    except ValueError:
+        pass
+    return text.rstrip("/").rsplit("/", 1)[-1]
+
+
+def github_repo_ref(value: Any) -> str:
+    text = first_non_empty(value)
+    if not text:
+        return ""
+    try:
+        parsed = urlparse(text)
+        if "github.com" in parsed.netloc.lower():
+            parts = [part for part in parsed.path.strip("/").split("/") if part]
+            if len(parts) >= 2:
+                return f"{parts[0]}/{parts[1]}"
+    except ValueError:
+        pass
+    return text
+
+
+def link_domain(value: Any) -> str:
+    text = first_non_empty(value)
+    if not text:
+        return ""
+    try:
+        return urlparse(text).netloc.lower()
+    except ValueError:
+        return ""
 
 
 def github_suggested_signals(candidate: dict[str, Any]) -> list[str]:
@@ -91,6 +176,168 @@ def devpost_project_signals(project: dict[str, Any]) -> list[str]:
     return suggested_signals(*signals)
 
 
+def devpost_member_signals(rows: list[dict[str, Any]]) -> list[str]:
+    signals = ["hackathon_participation", "technical_project", "founder_or_builder_signal"]
+    if any(first_non_empty(row.get("winner"), row.get("prizes")) for row in rows):
+        signals.append("award_or_recognition")
+    if any(first_non_empty(row.get("member_github"), row.get("github_repos")) for row in rows):
+        signals.append("open_source_contribution")
+    return suggested_signals(*signals)
+
+
+def is_devpost_flat_row(record: dict[str, Any]) -> bool:
+    return any(
+        key in record
+        for key in (
+            "member_username",
+            "member_devpost",
+            "member_github",
+            "member_linkedin",
+            "member_twitter",
+            "member_website",
+        )
+    )
+
+
+def devpost_member_key(record: dict[str, Any]) -> str:
+    for key in ("member_devpost", "member_github", "member_linkedin", "member_username"):
+        value = first_non_empty(record.get(key))
+        if value:
+            return f"{key}:{normalized_url_key(value)}"
+    return f"row:{content_hash(record).split(':', 1)[1][:16]}"
+
+
+def devpost_project_key(record: dict[str, Any]) -> str:
+    project_url = first_non_empty(record.get("project_url"))
+    if project_url:
+        return f"url:{normalized_url_key(project_url)}"
+    return f"name:{first_non_empty(record.get('hackathon'))}:{first_non_empty(record.get('project_name'))}".lower()
+
+
+def devpost_project_context(row: dict[str, Any]) -> dict[str, Any]:
+    github_repo_links = unique_split_values(row.get("github_repos"))
+    demo_links = unique_split_values(row.get("demo_links"))
+    all_links = unique_split_values(row.get("all_links"))
+    return compact({
+        "hackathon": row.get("hackathon"),
+        "projectName": row.get("project_name"),
+        "tagline": row.get("tagline"),
+        "description": row.get("description"),
+        "projectUrl": row.get("project_url"),
+        "projectRef": url_last_segment(row.get("project_url")),
+        "videoUrl": row.get("video_url"),
+        "winner": row.get("winner"),
+        "likes": row.get("likes"),
+        "projectGithubRepos": github_repo_links,
+        "projectGithubRepoRefs": unique_values([github_repo_ref(link) for link in github_repo_links]),
+        "demoLinks": demo_links,
+        "allLinks": all_links,
+        "externalLinkDomains": unique_values(
+            [link_domain(link) for link in [*demo_links, *all_links] if "github.com" not in link.lower()]
+        ),
+        "techStack": unique_split_values(row.get("tech_stack"), separators=(",", ";", "\n")),
+        "prizes": unique_split_values(row.get("prizes")),
+        "imageCount": row.get("image_count"),
+        "inputFile": row.get("_input_file"),
+    })
+
+
+def devpost_flat_records(rows: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    grouped: "OrderedDict[str, list[dict[str, Any]]]" = OrderedDict()
+    for row in rows:
+        if not is_devpost_flat_row(row):
+            continue
+        if not any(
+            first_non_empty(row.get(key))
+            for key in (
+                "member_name",
+                "member_username",
+                "member_devpost",
+                "member_github",
+                "member_linkedin",
+                "member_twitter",
+                "member_website",
+            )
+        ):
+            continue
+        grouped.setdefault(devpost_member_key(row), []).append(row)
+
+    for member_rows in grouped.values():
+        first = member_rows[0]
+        member_name = first_non_empty(
+            first.get("member_name"),
+            first.get("name"),
+            first.get("member_username"),
+            url_last_segment(first.get("member_devpost")),
+            url_last_segment(first.get("member_github")),
+        )
+        member_devpost = first_non_empty(*[row.get("member_devpost") for row in member_rows])
+        member_github = first_non_empty(*[row.get("member_github") for row in member_rows])
+        member_linkedin = first_non_empty(*[row.get("member_linkedin") for row in member_rows])
+        member_twitter = first_non_empty(*[row.get("member_twitter") for row in member_rows])
+        member_website = first_non_empty(*[row.get("member_website") for row in member_rows])
+
+        projects_by_key: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+        for row in member_rows:
+            projects_by_key.setdefault(devpost_project_key(row), devpost_project_context(row))
+        projects = list(projects_by_key.values())
+        project_names = unique_values([project.get("projectName") for project in projects])
+        hackathons = unique_values([project.get("hackathon") for project in projects])
+        tech_stack = unique_values([tag for project in projects for tag in project.get("techStack", [])])
+        prizes = unique_values([prize for project in projects for prize in project.get("prizes", [])])
+        project_github_repo_refs = unique_values(
+            [repo for project in projects for repo in project.get("projectGithubRepoRefs", [])]
+        )
+
+        yield {
+            "entityType": "person",
+            "sourceNativeId": first_non_empty(
+                member_devpost,
+                member_github,
+                member_linkedin,
+                first.get("member_username"),
+                member_name,
+            ),
+            "sourceUrl": member_devpost,
+            "displayName": member_name,
+            "display": compact({
+                "name": member_name,
+                "homepage": member_website,
+                "github": member_github,
+                "linkedin": member_linkedin,
+                "twitter": member_twitter,
+            }),
+            "rawSummary": compact({
+                "devpost": member_devpost,
+                "github": member_github,
+                "linkedin": member_linkedin,
+                "twitter": member_twitter,
+                "homepage": member_website,
+                "projectCount": len(projects),
+                "projectNames": project_names[:10],
+                "hackathons": hackathons[:10],
+                "tech": tech_stack[:30],
+                "prizes": prizes[:10],
+                "winnerProjectCount": sum(1 for project in projects if project.get("winner")),
+                "projectGithubRepoRefs": project_github_repo_refs[:20],
+                "suggestedSignals": devpost_member_signals(member_rows),
+            }),
+            "raw": {
+                "member": compact({
+                    "name": member_name,
+                    "username": first.get("member_username"),
+                    "devpost": member_devpost,
+                    "github": member_github,
+                    "linkedin": member_linkedin,
+                    "twitter": member_twitter,
+                    "website": member_website,
+                }),
+                "projects": projects,
+                "sourceRows": member_rows,
+            },
+        }
+
+
 def research_suggested_signals(record: dict[str, Any]) -> list[str]:
     entity_type = str(record.get("entityType") or record.get("entity_type") or record.get("type") or "").lower()
     signals: list[str] = []
@@ -103,11 +350,85 @@ def research_suggested_signals(record: dict[str, Any]) -> list[str]:
     return suggested_signals(*signals)
 
 
+def _row_dict(headers: list[str], row: tuple[Any, ...], *, input_file: str = "") -> dict[str, Any]:
+    record = {
+        headers[index]: "" if index >= len(row) or row[index] is None else str(row[index]).strip()
+        for index in range(len(headers))
+        if headers[index]
+    }
+    if input_file:
+        record["_input_file"] = input_file
+    return record
+
+
+def load_csv_text_records(text: str, *, input_file: str = "") -> list[dict[str, Any]]:
+    records = [dict(row) for row in csv.DictReader(StringIO(text))]
+    if input_file:
+        for record in records:
+            record["_input_file"] = input_file
+    return records
+
+
+def load_xlsx_records_from_bytes(payload: bytes, *, input_file: str = "") -> list[dict[str, Any]]:
+    if load_workbook is None:
+        raise RuntimeError("openpyxl is required to read .xlsx files. Install dependencies from requirements.txt.")
+    workbook = load_workbook(BytesIO(payload), read_only=True, data_only=True)
+    worksheet = workbook.active
+    rows = worksheet.iter_rows(values_only=True)
+    try:
+        headers = ["" if header is None else str(header).strip() for header in next(rows)]
+    except StopIteration:
+        workbook.close()
+        return []
+
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        record = _row_dict(headers, row, input_file=input_file)
+        if any(value for key, value in record.items() if not key.startswith("_")):
+            output.append(record)
+    workbook.close()
+    return output
+
+
+def load_xlsx_records(path: Path) -> list[dict[str, Any]]:
+    return load_xlsx_records_from_bytes(path.read_bytes(), input_file=str(path))
+
+
+def load_zip_records(path: Path) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    with zipfile.ZipFile(path) as archive:
+        for name in sorted(archive.namelist()):
+            if name.endswith("/") or name.startswith("__MACOSX/"):
+                continue
+            suffix = Path(name).suffix.lower()
+            if suffix == ".xlsx":
+                output.extend(load_xlsx_records_from_bytes(archive.read(name), input_file=name))
+            elif suffix == ".csv":
+                output.extend(load_csv_text_records(archive.read(name).decode("utf-8-sig"), input_file=name))
+    return output
+
+
+def load_directory_records(path: Path) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for child in sorted(item for item in path.rglob("*") if item.is_file()):
+        if child.name.startswith(".") or "__MACOSX" in child.parts:
+            continue
+        if child.suffix.lower() in {".csv", ".json", ".jsonl", ".xlsx", ".zip"}:
+            output.extend(load_input_records(child))
+    return output
+
+
 def load_input_records(path: Path) -> list[dict[str, Any]]:
+    if path.is_dir():
+        return load_directory_records(path)
     suffix = path.suffix.lower()
     if suffix == ".csv":
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
             return [dict(row) for row in csv.DictReader(handle)]
+    if suffix == ".xlsx":
+        return load_xlsx_records(path)
+    if suffix == ".zip":
+        return load_zip_records(path)
     if suffix == ".jsonl":
         return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     if suffix == ".json":
@@ -124,7 +445,12 @@ def load_input_records(path: Path) -> list[dict[str, Any]]:
 
 
 def iter_domain_records(source: str, records: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    for record in records:
+    materialized = list(records)
+    if source == "devpost" and any(is_devpost_flat_row(record) for record in materialized):
+        yield from devpost_flat_records(materialized)
+        return
+
+    for record in materialized:
         if source == "devpost":
             yield from devpost_records(record)
         elif source == "github":

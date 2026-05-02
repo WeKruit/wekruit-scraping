@@ -873,6 +873,14 @@ Tests:
 - Generated source record IDs are stable across repeated runs.
 - Dry-run writes `source_records.jsonl` without network calls.
 
+Phase 1 implementation status as of 2026-05-02:
+
+- [x] Flat Devpost `.xlsx` and zipped workbook inputs are supported by the generic sourcing upload helper.
+- [x] Real Devpost zip dry-run produced 21,441 normalized `person` source records.
+- [x] Devpost project rows are embedded as context on person records instead of being uploaded as separate candidate records.
+- [x] Shared Devpost project/demo/repository links are treated as context, not person identity evidence, so teammates should not be grouped just because they worked on the same project.
+- [x] Focused Devpost adapter tests pass locally.
+
 #### Adapter Phase 2: GitHub Repo Export To Candidate Path
 
 Goal: convert the real GitHub `repos.xlsx` discovery output into person candidates by reusing the existing contributor extraction and scoring code.
