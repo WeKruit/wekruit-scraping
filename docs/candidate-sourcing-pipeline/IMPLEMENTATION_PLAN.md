@@ -985,6 +985,17 @@ Acceptance criteria:
 - GitHub/Devpost identity merging works from real-derived evidence.
 - Social/profile links are visible as context but not treated as unreviewed strong identity evidence.
 
+Phase 3 local implementation status as of 2026-05-02:
+
+- [x] Local emulator dashboard was restarted from the rebuilt `codex/real-source-adapters` core-service branch.
+- [x] Uploaded a real-derived GitHub subset from `n8n-io/n8n`: 20 scored contributor candidates, 128 evidence records, and 20 pending singleton review candidates.
+- [x] Uploaded a real-derived Devpost subset from the real Amazon Nova workbook rows: 3 Devpost member records.
+- [x] The first real-derived Devpost run exposed a false strong merge between two teammates because the original flat row field `raw.sourceRows[].github_repos` was still being treated as person GitHub identity evidence.
+- [x] Core-service evidence extraction was tightened so `github_repos` / `githubrepos` paths are treated as shared project context, matching `projectGithubRepos`, `demoLinks`, and `allLinks`.
+- [x] Regression test added to ensure shared project GitHub repos from both normalized project context and original flat source rows are ignored as person identity evidence.
+- [x] After rebuilding and re-running the same local subset, the Devpost run produced 3 singleton review candidates, 14 evidence records, and 0 multi-record/strong false matches.
+- [x] Browser verification at `http://127.0.0.1:5100/#review` showed `Jobs 2`, `Review 23`, `Approved 0`, with `real-devpost-local-smoke · 3 pending` and `real-github-local-smoke · 20 pending` available in the run selector.
+
 ## Phase 4: Global Candidate Entity Model
 
 ### Goal
