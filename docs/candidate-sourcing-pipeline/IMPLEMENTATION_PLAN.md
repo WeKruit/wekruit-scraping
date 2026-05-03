@@ -56,7 +56,7 @@ Last updated: 2026-05-02.
 - [x] Phase 3.5 real Firebase tiny-fixture smoke test passed against `wekruit-dev-env` / `wekruit-sourcing.web.app`.
 - [x] Real Devpost Google Drive exports now have a source-specific adapter path to normalized person source records.
 - [x] Real GitHub Google Drive repo exports now have a source-specific adapter path into the existing contributor extraction, scoring, and source-record upload flow.
-- [ ] Real-derived Devpost/GitHub subsets still need local emulator and optional tiny live verification before any broad import.
+- [x] Real-derived Devpost/GitHub subsets passed local emulator and tiny live verification before any broad import.
 - [x] Current active implementation branch is `codex/real-source-adapters` in both active implementation repos and has been pushed to origin.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
@@ -85,9 +85,9 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - Alex Rivera: `software_engineering`, sources `devpost + github`.
   - Taylor Chen: `academic_research`, source `openalex`.
 - A legacy/live researcher candidate, Jakob Uszkoreit, was also enriched successfully, which gives useful evidence that the enrichment/profile path can operate on existing researcher approved data.
-- Remaining primary implementation work is now real-derived verification and import operations:
-  - Devpost flat XLSX/CSV rows are implemented as normalized person source records and need local/live subset verification.
-  - GitHub repository discovery output is implemented through contributor extraction/scoring and needs local/live subset verification.
+- Remaining primary implementation work is now controlled import planning and broader source operations:
+  - Devpost flat XLSX/CSV rows are implemented as normalized person source records and passed local/live tiny subset verification.
+  - GitHub repository discovery output is implemented through contributor extraction/scoring and passed local/live tiny subset verification.
   - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
   - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
 
@@ -995,6 +995,30 @@ Phase 3 local implementation status as of 2026-05-02:
 - [x] Regression test added to ensure shared project GitHub repos from both normalized project context and original flat source rows are ignored as person identity evidence.
 - [x] After rebuilding and re-running the same local subset, the Devpost run produced 3 singleton review candidates, 14 evidence records, and 0 multi-record/strong false matches.
 - [x] Browser verification at `http://127.0.0.1:5100/#review` showed `Jobs 2`, `Review 23`, `Approved 0`, with `real-devpost-local-smoke · 3 pending` and `real-github-local-smoke · 20 pending` available in the run selector.
+
+Phase 3 tiny live implementation status as of 2026-05-02 local / 2026-05-03 UTC:
+
+- [x] Deployed only the sourcing backend function to `wekruit-dev-env` with `--config firebase.sourcing.json --only functions:core-service:sourcing.api`.
+- [x] The deployed health endpoint at `https://wekruit-sourcing.web.app/api/sourcing/health` returned healthy after deploy.
+- [x] Uploaded tiny real-derived GitHub run `real-github-live-smoke-20260503T041219Z` to the live sourcing API:
+  - Source: `github`
+  - Domain: `developer`
+  - Source records: `20`
+  - Evidence records: `128`
+  - Dedup review candidates: `20`
+  - Pending candidate shape: all singleton review candidates; `0` multi-record candidates.
+- [x] Uploaded tiny real-derived Devpost run `real-devpost-live-smoke-20260503T041219Z` to the live sourcing API:
+  - Source: `devpost`
+  - Domain: `hackathon`
+  - Source records: `3`
+  - Evidence records: `14`
+  - Dedup review candidates: `3`
+  - Pending candidate shape: all singleton review candidates; `0` multi-record candidates.
+- [x] Live API verification confirmed the Devpost false-merge guard is active in the deployed backend: the real Amazon Nova member subset stayed separated as `Shubham140401`, `Sudeepjarvis`, and `tchimhande` instead of merging teammates through shared project GitHub repositories.
+- [x] Live dashboard verification at `https://wekruit-sourcing.web.app/#review` showed the new run selector entries:
+  - `real-devpost-live-smoke-20260503T041219Z · 3 pending`
+  - `real-github-live-smoke-20260503T041219Z · 20 pending`
+- [x] Screenshot captured for reference at `/tmp/wekruit-real-source-live-smoke-review.png`.
 
 ## Phase 4: Global Candidate Entity Model
 
