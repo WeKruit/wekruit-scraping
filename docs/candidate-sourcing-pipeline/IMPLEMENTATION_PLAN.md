@@ -90,6 +90,14 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - GitHub repository discovery output is implemented through contributor extraction/scoring and passed local/live tiny subset verification.
   - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
   - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
+- Current live import status:
+  - The `wekruit-dev-env` sourcing collections were backed up to `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-real-import-20260503T044020Z`.
+  - The sourcing collections were clean-swept after backup.
+  - Full Devpost dry-run produced `21,441` normalized person source records.
+  - A first live Devpost import was intentionally stopped after the user decided that a smaller review set is enough for functional verification.
+  - Live Devpost run `real-import-20260503T044207Z-devpost` is completed with `11,000` source records, `51,746` evidence records, and `10,860` dedup review candidates.
+  - The stop target was `10,000`; the non-interactive upload process had already advanced into the next batches before it could be killed, so the final completed live count is `11,000`.
+  - The bounded GitHub top-10 repo batch has been extracted/scored locally but has not been uploaded live yet.
 
 ## Phase Execution Protocol
 
