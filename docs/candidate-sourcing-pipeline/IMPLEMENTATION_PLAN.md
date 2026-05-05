@@ -57,7 +57,9 @@ Last updated: 2026-05-05.
 - [x] Real Devpost Google Drive exports now have a source-specific adapter path to normalized person source records.
 - [x] Real GitHub Google Drive repo exports now have a source-specific adapter path into the existing contributor extraction, scoring, and source-record upload flow.
 - [x] Real-derived Devpost/GitHub subsets passed local emulator and tiny live verification before any broad import.
-- [x] Current active implementation branch is `codex/real-source-adapters` in both active implementation repos and has been pushed to origin.
+- [x] Current stable adapter baseline branch is `codex/real-source-adapters` in both active implementation repos and has been pushed to origin.
+- [x] Current clickable-evidence/lifecycle implementation branch is `codex/clickable-evidence-lifecycle` in both active implementation repos, branched from `codex/real-source-adapters`.
+- [x] Clickable evidence/source links and derived lifecycle callouts are implemented and verified locally against the Firebase emulator before any staging/live deployment.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
 - [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
@@ -106,16 +108,17 @@ The core v1 workflow is now proven locally and against the live `wekruit-dev-env
 Current priority order:
 
 1. **Clickable evidence/source links.**
-   - This is the highest-priority cleanup because HITL review quality depends on the reviewer being able to inspect evidence quickly.
-   - Review, Approved, Enrichment, and Profiles screens should render URL-like evidence values as clickable links wherever they appear.
-   - The UI should expose the source URLs already present in source records, including GitHub profiles/repos, Devpost profiles/projects, member websites, project/demo/video links, and LinkedIn/Twitter/social URLs when those links exist in raw source data.
-   - LinkedIn/Twitter/social URLs remain reviewer context for v1. They should be clickable and visible, but they should not become strong identity/dedup signals until the team explicitly decides the product/compliance policy.
-   - Testing must happen against the local Firebase emulator first. Only after local browser verification should the change be deployed or tested against the live Firebase project.
+   - Completed locally on `codex/clickable-evidence-lifecycle`.
+   - Review, Approved, Enrichment, and Profiles screens now render URL-like evidence/source values as clickable links where they appear.
+   - The UI exposes source URLs already present in source records, including GitHub profiles/repos, Devpost profiles/projects, member websites, project/demo/video links, and LinkedIn/Twitter/social URLs when those links exist in raw source data.
+   - LinkedIn/Twitter/social URLs remain reviewer context for v1. They are clickable and visible, but they are not promoted to strong identity/dedup signals.
+   - The local Firebase emulator/browser walkthrough passed. Staging/live deployment is still intentionally pending until the team gives a separate greenlight.
 
 2. **Candidate lifecycle clarity.**
-   - The system currently has the most important transitions working: pending review, approved candidate, bad record/rejected candidate, enrichment draft, approved enrichment, and final profile.
-   - The lifecycle should be made concrete in code/UI language so reviewers understand what state a candidate is in and what actions are available.
-   - The dashboard should distinguish identity-review states from enrichment-review states. A candidate should not be treated as enrichment-ready when unresolved duplicate/merge candidates still point at that approved entity.
+   - Completed locally on `codex/clickable-evidence-lifecycle` as derived dashboard callouts rather than a stored-status rewrite.
+   - The system already stores the important transitions: pending review, approved candidate, bad record/rejected candidate, enrichment draft, approved enrichment, and final profile.
+   - The dashboard now distinguishes identity-review, approved/profile, and enrichment-review states with explicit lifecycle callouts.
+   - The backend merge-before-enrichment guard remains the enforcement point: a candidate is not enrichment-ready when unresolved duplicate/merge candidates still point at that approved entity.
 
 3. **Large queue handling.**
    - The live Devpost import proved that the backend can ingest a broad run, but the current review UI intentionally loads a capped review set.
@@ -145,6 +148,27 @@ Current priority order:
 8. **Controlled GitHub live upload.**
    - The GitHub adapter/contributor extraction path has passed bounded local verification.
    - A controlled live upload is intentionally not the next priority. Finish emulator-tested reviewer features first, then reset/reseed staging with bounded Devpost/GitHub batches.
+
+### Clickable Evidence/Lifecycle Local Verification
+
+Status: passed locally on `codex/clickable-evidence-lifecycle`.
+
+Verification path:
+
+1. Started the full local Firebase emulator/dashboard from `wekruit-core-service-cloud-function`.
+2. Uploaded tiny GitHub, Devpost, and research fixtures from `wekruit-scraping`.
+3. Verified the Review tab rendered clickable evidence/source links for candidate homepages, GitHub URLs, Devpost URLs, and project/source URLs.
+4. Approved the Alex Rivera GitHub/Devpost merge candidate and verified the Approved tab rendered clickable source/profile/project links.
+5. Generated and approved Alex Rivera enrichment, then verified the Enrichment and Profiles tabs preserved clickable evidence/source lineage.
+6. Verified lifecycle callouts appeared in Review, Approved/Profile, and Enrichment states.
+7. Confirmed no staging/live Firebase mutation was needed for this feature verification.
+
+Automated verification:
+
+- `node --check web/app.js` passed.
+- `npm run build` passed.
+- `node --test lib/services/sourcing/**/*.test.js` passed.
+- Full `npm test` still has the pre-existing matching API recency-score failures unrelated to sourcing; sourcing tests pass.
 
 ### Clickable Evidence/Source Links Plan
 
