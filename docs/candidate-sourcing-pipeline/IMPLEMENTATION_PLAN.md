@@ -36,7 +36,7 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-05-02.
+Last updated: 2026-05-05.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
 - [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
@@ -98,6 +98,130 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - Live Devpost run `real-import-20260503T044207Z-devpost` is completed with `11,000` source records, `51,746` evidence records, and `10,860` dedup review candidates.
   - The stop target was `10,000`; the non-interactive upload process had already advanced into the next batches before it could be killed, so the final completed live count is `11,000`.
   - The bounded GitHub top-10 repo batch has been extracted/scored locally but has not been uploaded live yet.
+
+## Current Remaining Work Triage
+
+The core v1 workflow is now proven locally and against the live `wekruit-dev-env` Firebase project. The remaining work should be treated as hardening, reviewer usability, and controlled-source operations before any additional broad live imports.
+
+Current priority order:
+
+1. **Clickable evidence/source links.**
+   - This is the highest-priority cleanup because HITL review quality depends on the reviewer being able to inspect evidence quickly.
+   - Review, Approved, Enrichment, and Profiles screens should render URL-like evidence values as clickable links wherever they appear.
+   - The UI should expose the source URLs already present in source records, including GitHub profiles/repos, Devpost profiles/projects, member websites, project/demo/video links, and LinkedIn/Twitter/social URLs when those links exist in raw source data.
+   - LinkedIn/Twitter/social URLs remain reviewer context for v1. They should be clickable and visible, but they should not become strong identity/dedup signals until the team explicitly decides the product/compliance policy.
+   - Testing must happen against the local Firebase emulator first. Only after local browser verification should the change be deployed or tested against the live Firebase project.
+
+2. **Candidate lifecycle clarity.**
+   - The system currently has the most important transitions working: pending review, approved candidate, bad record/rejected candidate, enrichment draft, approved enrichment, and final profile.
+   - The lifecycle should be made concrete in code/UI language so reviewers understand what state a candidate is in and what actions are available.
+   - The dashboard should distinguish identity-review states from enrichment-review states. A candidate should not be treated as enrichment-ready when unresolved duplicate/merge candidates still point at that approved entity.
+
+3. **Large queue handling.**
+   - The live Devpost import proved that the backend can ingest a broad run, but the current review UI intentionally loads a capped review set.
+   - The dashboard now displays the total review-candidate count separately from the currently loaded candidates, but true cursor pagination / next-page review navigation is still future work.
+   - Before another broad import, the team should decide whether reviewers need pagination, source filters, search-first review, or a smaller curated import batch.
+
+4. **Bounded staging reset/reseed.**
+   - The current live `wekruit-dev-env` sourcing collections contain the broad Devpost test import: `11,000` source records and `10,860` dedup candidates.
+   - This is useful proof that the adapter and backend can handle scale, but it is too much data for day-to-day demo/reviewer testing.
+   - After the remaining emulator-verified features are implemented, the recommended staging state is a clean reset followed by a bounded seed such as roughly `200` Devpost candidate records and `200` GitHub candidate records.
+   - A live reset must only happen after an explicit user/team greenlight, with a backup/export taken first.
+
+5. **Website profile enrichment.**
+   - Candidate personal websites are a better near-term enrichment target than LinkedIn because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
+   - A future website enrichment worker can fetch only URLs that already exist on source records or approved candidates, extract page title, description/meta tags, visible about/project text, social/profile links, and outbound project/repo links, then store the extracted facts as evidence/context.
+   - This worker should respect robots/rate limits, store source URL + extraction timestamp + raw snapshot pointer, and route meaningful new profile fields through enrichment review instead of silently mutating final profiles.
+
+6. **LinkedIn/social profile handling.**
+   - For v1, preserve LinkedIn/Twitter/social URLs as clickable reviewer context and optional enrichment context.
+   - Do not implement an unofficial LinkedIn scraper as a production path.
+   - Any automated LinkedIn profile fetching should wait until the team confirms approved API/product access and the exact data-use policy. The likely approved paths are either user-consented LinkedIn OAuth for the authenticated member, LinkedIn Talent/Sales partner APIs if WeKruit qualifies, or manual reviewer link-out.
+
+7. **Feedback loop and metrics.**
+   - Metrics remain valuable but lower priority than reviewer usability and source adapter hardening.
+   - Keep Phase 7 in the roadmap, but do not block the clickable evidence/source links or lifecycle cleanup on metrics work.
+
+8. **Controlled GitHub live upload.**
+   - The GitHub adapter/contributor extraction path has passed bounded local verification.
+   - A controlled live upload is intentionally not the next priority. Finish emulator-tested reviewer features first, then reset/reseed staging with bounded Devpost/GitHub batches.
+
+### Clickable Evidence/Source Links Plan
+
+Goal: make every reviewer-facing source/evidence URL directly inspectable from the dashboard without changing the backend data contract.
+
+Implementation shape:
+
+1. Reuse the existing dashboard URL renderer where possible.
+2. Apply link rendering consistently to:
+   - matched signal values in the Review detail panel;
+   - the extracted evidence list in the Review detail panel;
+   - source record comparison cards in the Review detail panel;
+   - Approved entity fields and any available source-record/source-URL lineage;
+   - Profile field evidence and source lineage;
+   - enrichment evidence/context panels if URL values appear there.
+3. Expand dashboard source-record extraction to surface URL fields already preserved by adapters:
+   - `sourceUrl`;
+   - `display.homepage`, `display.github`, `display.linkedin`, `display.twitter`, `display.devpost`;
+   - `rawSummary.homepage`, `rawSummary.github`, `rawSummary.linkedin`, `rawSummary.twitter`, `rawSummary.devpost`, `rawSummary.projectUrl`, `rawSummary.demo`, `rawSummary.video`, `rawSummary.allLinks`;
+   - Devpost project context links under `raw.projects`, including `projectUrl`, `videoUrl`, `projectGithubRepos`, `demoLinks`, and `allLinks`.
+4. Keep rendering safe:
+   - escape visible text;
+   - only link `http://` and `https://` URLs;
+   - open links in a new tab with `rel="noreferrer"`;
+   - do not turn non-URL IDs or hashes into links.
+5. Preserve current backend behavior. This is a dashboard visibility improvement, not a dedup/enrichment logic change.
+
+Emulator-first verification:
+
+1. Start the local full dashboard/API emulator from `wekruit-core-service-cloud-function`.
+2. Upload tiny local GitHub, Devpost, and research fixtures from `wekruit-scraping`.
+3. Confirm the Review tab shows clickable GitHub/profile/homepage/project links before approval.
+4. Approve a GitHub singleton, then upload a Devpost record for the same candidate and verify the merge-review evidence links are clickable.
+5. Approve the merge and confirm the Approved tab shows clickable source/profile links.
+6. Generate and approve enrichment, then confirm the Profiles tab preserves clickable source/evidence lineage.
+7. Only after the browser walkthrough passes locally should the dashboard be deployed for live Firebase verification.
+
+### Candidate Lifecycle Cleanup Plan
+
+Goal: make state transitions explicit enough that reviewers and future engineers understand where each candidate is in the pipeline.
+
+Recommended lifecycle model:
+
+1. `source_record_ingested`: raw source record is normalized and stored.
+2. `identity_review_pending`: dedup candidate needs human review.
+3. `identity_approved`: reviewer approved a candidate/entity as real and relevant.
+4. `identity_rejected_bad_record`: reviewer rejected because the source record is broken/spam/not a person.
+5. `identity_rejected_not_relevant`: reviewer rejected because the person exists but is not useful for sourcing.
+6. `identity_hold`: reviewer deferred the decision.
+7. `merge_pending`: new evidence appears to match an existing approved candidate and needs merge review.
+8. `enrichment_blocked_by_merge`: approved candidate has unresolved pending merge evidence and should not generate enrichment yet.
+9. `enrichment_ready`: approved candidate has no merge blockers and can generate an enrichment draft.
+10. `enrichment_review_pending`: enrichment draft needs human approval/editing.
+11. `profile_materialized`: enrichment was approved and final profile exists.
+
+Implementation should avoid a broad rewrite. The likely shortest correct path is to keep the existing stored statuses, add clearer derived UI labels, and keep the backend guard that blocks enrichment generation when unresolved merge candidates still point at the approved entity.
+
+### LinkedIn And Social Profile Investigation Plan
+
+Current recommendation:
+
+- Keep LinkedIn/Twitter/social links clickable and visible for reviewers now.
+- Do not build an automated LinkedIn scraper into the production pipeline.
+- Treat automated LinkedIn profile fetching as a separate product/compliance decision.
+
+Why:
+
+- LinkedIn profile API access is not equivalent to fetching arbitrary public candidate profiles. The common self-serve LinkedIn OpenID Connect path is for the authenticated member's own profile/email.
+- Talent/recruiting integrations are partner/API programs that require explicit approval and should be planned separately from the current source adapter work.
+
+Practical near-term approach:
+
+1. Preserve any LinkedIn/social URLs from Devpost/GitHub/source exports as source context.
+2. Render them as clickable links in review/profiles.
+3. Let reviewers use those links manually as supporting evidence.
+4. Add structured review notes or confirmed signals if LinkedIn/social evidence materially changes the candidate profile.
+5. Revisit automated LinkedIn ingestion only after the team confirms approved API access and acceptable data-use policy.
 
 ## Phase Execution Protocol
 
