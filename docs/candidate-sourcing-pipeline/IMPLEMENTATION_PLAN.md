@@ -59,7 +59,7 @@ Last updated: 2026-05-05.
 - [x] Real-derived Devpost/GitHub subsets passed local emulator and tiny live verification before any broad import.
 - [x] Current stable adapter baseline branch is `codex/real-source-adapters` in both active implementation repos and has been pushed to origin.
 - [x] Current clickable-evidence/lifecycle implementation branch is `codex/clickable-evidence-lifecycle` in both active implementation repos, branched from `codex/real-source-adapters`.
-- [x] Clickable evidence/source links and derived lifecycle callouts are implemented and verified locally against the Firebase emulator before any staging/live deployment.
+- [x] Clickable evidence/source links and derived lifecycle callouts are implemented, verified locally against the Firebase emulator, and deployed to `https://wekruit-sourcing.web.app`.
 - [x] Create implementation branch from `main` when implementation begins.
 - [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
 - [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
@@ -112,7 +112,8 @@ Current priority order:
    - Review, Approved, Enrichment, and Profiles screens now render URL-like evidence/source values as clickable links where they appear.
    - The UI exposes source URLs already present in source records, including GitHub profiles/repos, Devpost profiles/projects, member websites, project/demo/video links, and LinkedIn/Twitter/social URLs when those links exist in raw source data.
    - LinkedIn/Twitter/social URLs remain reviewer context for v1. They are clickable and visible, but they are not promoted to strong identity/dedup signals.
-   - The local Firebase emulator/browser walkthrough passed. Staging/live deployment is still intentionally pending until the team gives a separate greenlight.
+   - The local Firebase emulator/browser walkthrough passed.
+   - Staging deployment to `wekruit-sourcing.web.app` passed browser verification without changing Firestore data.
 
 2. **Candidate lifecycle clarity.**
    - Completed locally on `codex/clickable-evidence-lifecycle` as derived dashboard callouts rather than a stored-status rewrite.
@@ -169,6 +170,22 @@ Automated verification:
 - `npm run build` passed.
 - `node --test lib/services/sourcing/**/*.test.js` passed.
 - Full `npm test` still has the pre-existing matching API recency-score failures unrelated to sourcing; sourcing tests pass.
+
+### Clickable Evidence/Lifecycle Staging Verification
+
+Status: deployed and browser-verified on `https://wekruit-sourcing.web.app`.
+
+Deployment path:
+
+1. Built the sourcing function bundle from `wekruit-core-service-cloud-function`.
+2. Ran focused sourcing tests before deployment.
+3. Deployed `firebase.sourcing.json` to Firebase project `wekruit-dev-env`, including the `sourcing-api` Cloud Function and `wekruit-sourcing` Hosting site.
+4. Opened `https://wekruit-sourcing.web.app/#review` and confirmed the staging dashboard loaded the updated UI.
+5. Confirmed the Review tab shows the capped queue copy: `Showing 200 of 10,860 review candidates`.
+6. Confirmed the selected candidate detail shows the lifecycle callout for pending identity review.
+7. Confirmed source/evidence URLs render as clickable links, including GitHub, Devpost, LinkedIn, website, and project/demo/video links when present.
+
+No Firestore data was reset or reseeded as part of this deployment.
 
 ### Clickable Evidence/Source Links Plan
 
