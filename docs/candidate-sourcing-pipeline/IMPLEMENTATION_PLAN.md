@@ -93,14 +93,20 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
   - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
 - Current live import status:
-  - The older broad Devpost staging import was backed up and replaced with a bounded Devpost/GitHub staging dataset on 2026-05-05 local / 2026-05-06 UTC.
-  - Backup before the bounded reseed: `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-bounded-reseed-20260506T014120Z`.
-  - Backup counts before reset: `1` source run, `11,000` source records, `51,746` evidence records, `10,860` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
-  - The sourcing collections were clean-swept after backup.
-  - Bounded Devpost run `bounded-reseed-20260506T014120Z-devpost` uploaded `200` source records, producing `932` evidence records and `197` dedup review candidates.
-  - Bounded GitHub run `bounded-reseed-20260506T014120Z-github` uploaded `189` source records, producing `1,175` evidence records and `189` dedup review candidates.
-  - Exact Firestore counts after reseed: `2` source runs, `389` source records, `2,107` evidence records, `386` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
-  - No candidate approvals, merge decisions, enrichment generation, enrichment review decisions, or profile materialization were performed during this reseed.
+  - The bounded Devpost/GitHub staging dataset was backed up and replaced with one Stanford-related Devpost competition on 2026-05-05 local / 2026-05-06 UTC.
+  - Active staging run: `stanford-treehacks-2026-20260506T030716Z`.
+  - Source: `devpost`; domain: `hackathon`; competition filter: `TreeHacks 2026`.
+  - Input workbook: `devpost/treehacks-2026.xlsx` from `/Users/spencerwang/Downloads/devpost-20260501T061334Z-3-001.zip`.
+  - The workbook contained `1,055` raw rows; `1,030` rows matched `TreeHacks 2026`; these collapsed to `1,029` unique Devpost person source records.
+  - Backup before the Stanford reset: `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-stanford-treehacks-20260506T030716Z`.
+  - Backup counts before Stanford reset: `2` source runs, `389` source records, `2,107` evidence records, `386` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
+  - Exact Firestore counts after Stanford upload: `1` source run, `1,029` source records, `4,878` evidence records, `1,010` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
+  - No candidate approvals, merge decisions, enrichment generation, enrichment review decisions, or profile materialization were performed during this Stanford upload.
+  - Earlier bounded reseed history:
+    - Backup before the bounded reseed: `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-bounded-reseed-20260506T014120Z`.
+    - Backup counts before reset: `1` source run, `11,000` source records, `51,746` evidence records, `10,860` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
+    - Bounded Devpost run `bounded-reseed-20260506T014120Z-devpost` uploaded `200` source records, producing `932` evidence records and `197` dedup review candidates.
+    - Bounded GitHub run `bounded-reseed-20260506T014120Z-github` uploaded `189` source records, producing `1,175` evidence records and `189` dedup review candidates.
 
 ## Current Remaining Work Triage
 
@@ -127,29 +133,38 @@ Current priority order:
    - The dashboard now displays the total review-candidate count separately from the currently loaded candidates, but true cursor pagination / next-page review navigation is still future work.
    - Before another broad import, the team should decide whether reviewers need pagination, source filters, search-first review, or a smaller curated import batch.
 
-4. **Bounded staging reset/reseed.**
+4. **Stanford/TreeHacks staging reset/reseed.**
+   - Completed on 2026-05-05 local / 2026-05-06 UTC after explicit user greenlight.
+   - The active staging dataset is now only the Stanford-related Devpost competition `TreeHacks 2026`.
+   - The upload preserved the intended workflow boundary: source upload only, with `0` review labels, `0` approved entities, `0` enrichment review items, and `0` final profiles.
+   - The Review API/dashboard still load a capped review set of `200` candidates even though the TreeHacks upload produced `1,010` pending dedup candidates. This cap is acceptable for current verification, but true cursor pagination / next-page review navigation remains future work.
+
+5. **Bounded Devpost/GitHub reseed history.**
    - Completed on 2026-05-05 local / 2026-05-06 UTC after explicit user greenlight.
    - The previous broad Devpost staging import proved scale, but it was too much data for day-to-day demo/reviewer testing.
-   - The current staging data is intentionally bounded: `200` Devpost source records and `189` GitHub source records.
-   - The Review API/dashboard currently load a capped review set of `200` candidates even though the reseed produced `386` pending dedup candidates. This cap is acceptable for current verification, but true cursor pagination / next-page review navigation remains future work.
-   - The clean reseed preserved the intended workflow boundary: source upload only, with `0` review labels, `0` approved entities, `0` enrichment review items, and `0` final profiles.
+   - The bounded dataset was intentionally replaced by the TreeHacks-only run after the team asked to start with one Stanford-related competition.
 
-5. **Website profile enrichment.**
+6. **Website profile enrichment.**
    - Candidate personal websites are a better near-term enrichment target than LinkedIn because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
    - A future website enrichment worker can fetch only URLs that already exist on source records or approved candidates, extract page title, description/meta tags, visible about/project text, social/profile links, and outbound project/repo links, then store the extracted facts as evidence/context.
    - This worker should respect robots/rate limits, store source URL + extraction timestamp + raw snapshot pointer, and route meaningful new profile fields through enrichment review instead of silently mutating final profiles.
 
-6. **LinkedIn/social profile handling.**
+7. **LinkedIn/social profile handling.**
    - For v1, preserve LinkedIn/Twitter/social URLs as clickable reviewer context and optional enrichment context.
    - Do not implement an unofficial LinkedIn scraper as a production path.
    - Any automated LinkedIn profile fetching should wait until the team confirms approved API/product access and the exact data-use policy. The likely approved paths are either user-consented LinkedIn OAuth for the authenticated member, LinkedIn Talent/Sales partner APIs if WeKruit qualifies, or manual reviewer link-out.
 
-7. **Feedback loop and metrics.**
+8. **Bright Data / Coresignal evaluation.**
+   - Current recommendation: evaluate Coresignal first for candidate enrichment and list discovery because its product/API surface is already employee/profile-search oriented.
+   - Bright Data is still useful as a URL-first structured fetcher for known public profile/company/job/post URLs and niche public-web extraction, but LinkedIn and Devpost/GitHub scraping should stay behind explicit legal/product approval.
+   - Neither vendor should bypass the HITL workflow: any externally enriched professional profile data should become evidence/context and route through enrichment review before profile materialization.
+
+9. **Feedback loop and metrics.**
    - Metrics remain valuable but lower priority than reviewer usability and source adapter hardening.
    - Keep Phase 7 in the roadmap, but do not block the clickable evidence/source links or lifecycle cleanup on metrics work.
 
-8. **Post-reseed dashboard walkthrough.**
-   - The bounded GitHub and Devpost staging source uploads are complete.
+10. **Post-reseed dashboard walkthrough.**
+   - The Stanford/TreeHacks Devpost staging source upload is complete.
    - The next live action should be a reviewer walkthrough in the staging dashboard: inspect Jobs and Review, confirm links/lifecycle callouts, then manually exercise a small number of approvals/merges/enrichments only when the user intentionally starts that validation pass.
    - Do not approve, merge, enrich, or materialize profiles as part of source upload verification.
 
