@@ -93,13 +93,14 @@ This is the current single source of truth after the successful Phase 3.5 real F
   - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
   - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
 - Current live import status:
-  - The `wekruit-dev-env` sourcing collections were backed up to `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-real-import-20260503T044020Z`.
+  - The older broad Devpost staging import was backed up and replaced with a bounded Devpost/GitHub staging dataset on 2026-05-05 local / 2026-05-06 UTC.
+  - Backup before the bounded reseed: `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-bounded-reseed-20260506T014120Z`.
+  - Backup counts before reset: `1` source run, `11,000` source records, `51,746` evidence records, `10,860` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
   - The sourcing collections were clean-swept after backup.
-  - Full Devpost dry-run produced `21,441` normalized person source records.
-  - A first live Devpost import was intentionally stopped after the user decided that a smaller review set is enough for functional verification.
-  - Live Devpost run `real-import-20260503T044207Z-devpost` is completed with `11,000` source records, `51,746` evidence records, and `10,860` dedup review candidates.
-  - The stop target was `10,000`; the non-interactive upload process had already advanced into the next batches before it could be killed, so the final completed live count is `11,000`.
-  - The bounded GitHub top-10 repo batch has been extracted/scored locally but has not been uploaded live yet.
+  - Bounded Devpost run `bounded-reseed-20260506T014120Z-devpost` uploaded `200` source records, producing `932` evidence records and `197` dedup review candidates.
+  - Bounded GitHub run `bounded-reseed-20260506T014120Z-github` uploaded `189` source records, producing `1,175` evidence records and `189` dedup review candidates.
+  - Exact Firestore counts after reseed: `2` source runs, `389` source records, `2,107` evidence records, `386` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
+  - No candidate approvals, merge decisions, enrichment generation, enrichment review decisions, or profile materialization were performed during this reseed.
 
 ## Current Remaining Work Triage
 
@@ -127,10 +128,11 @@ Current priority order:
    - Before another broad import, the team should decide whether reviewers need pagination, source filters, search-first review, or a smaller curated import batch.
 
 4. **Bounded staging reset/reseed.**
-   - The current live `wekruit-dev-env` sourcing collections contain the broad Devpost test import: `11,000` source records and `10,860` dedup candidates.
-   - This is useful proof that the adapter and backend can handle scale, but it is too much data for day-to-day demo/reviewer testing.
-   - After the remaining emulator-verified features are implemented, the recommended staging state is a clean reset followed by a bounded seed such as roughly `200` Devpost candidate records and `200` GitHub candidate records.
-   - A live reset must only happen after an explicit user/team greenlight, with a backup/export taken first.
+   - Completed on 2026-05-05 local / 2026-05-06 UTC after explicit user greenlight.
+   - The previous broad Devpost staging import proved scale, but it was too much data for day-to-day demo/reviewer testing.
+   - The current staging data is intentionally bounded: `200` Devpost source records and `189` GitHub source records.
+   - The Review API/dashboard currently load a capped review set of `200` candidates even though the reseed produced `386` pending dedup candidates. This cap is acceptable for current verification, but true cursor pagination / next-page review navigation remains future work.
+   - The clean reseed preserved the intended workflow boundary: source upload only, with `0` review labels, `0` approved entities, `0` enrichment review items, and `0` final profiles.
 
 5. **Website profile enrichment.**
    - Candidate personal websites are a better near-term enrichment target than LinkedIn because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
@@ -146,9 +148,10 @@ Current priority order:
    - Metrics remain valuable but lower priority than reviewer usability and source adapter hardening.
    - Keep Phase 7 in the roadmap, but do not block the clickable evidence/source links or lifecycle cleanup on metrics work.
 
-8. **Controlled GitHub live upload.**
-   - The GitHub adapter/contributor extraction path has passed bounded local verification.
-   - A controlled live upload is intentionally not the next priority. Finish emulator-tested reviewer features first, then reset/reseed staging with bounded Devpost/GitHub batches.
+8. **Post-reseed dashboard walkthrough.**
+   - The bounded GitHub and Devpost staging source uploads are complete.
+   - The next live action should be a reviewer walkthrough in the staging dashboard: inspect Jobs and Review, confirm links/lifecycle callouts, then manually exercise a small number of approvals/merges/enrichments only when the user intentionally starts that validation pass.
+   - Do not approve, merge, enrich, or materialize profiles as part of source upload verification.
 
 ### Clickable Evidence/Lifecycle Local Verification
 
@@ -181,11 +184,11 @@ Deployment path:
 2. Ran focused sourcing tests before deployment.
 3. Deployed `firebase.sourcing.json` to Firebase project `wekruit-dev-env`, including the `sourcing-api` Cloud Function and `wekruit-sourcing` Hosting site.
 4. Opened `https://wekruit-sourcing.web.app/#review` and confirmed the staging dashboard loaded the updated UI.
-5. Confirmed the Review tab shows the capped queue copy: `Showing 200 of 10,860 review candidates`.
+5. At deployment time, confirmed the Review tab showed capped queue copy against the then-current broad import: `Showing 200 of 10,860 review candidates`.
 6. Confirmed the selected candidate detail shows the lifecycle callout for pending identity review.
 7. Confirmed source/evidence URLs render as clickable links, including GitHub, Devpost, LinkedIn, website, and project/demo/video links when present.
 
-No Firestore data was reset or reseeded as part of this deployment.
+No Firestore data was reset or reseeded as part of this deployment. The later bounded staging reset/reseed replaced that broad import; see the current live import status above for the active staging counts.
 
 ### Clickable Evidence/Source Links Plan
 
