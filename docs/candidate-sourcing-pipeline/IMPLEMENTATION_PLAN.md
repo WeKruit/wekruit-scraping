@@ -148,6 +148,11 @@ Current priority order:
    - Candidate personal websites are a better near-term enrichment target than LinkedIn because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
    - A future website enrichment worker can fetch only URLs that already exist on source records or approved candidates, extract page title, description/meta tags, visible about/project text, social/profile links, and outbound project/repo links, then store the extracted facts as evidence/context.
    - This worker should respect robots/rate limits, store source URL + extraction timestamp + raw snapshot pointer, and route meaningful new profile fields through enrichment review instead of silently mutating final profiles.
+   - 2026-05-07 scraper research update:
+     - ScrapeGraphAI remains useful inspiration for LLM-guided structured extraction from a known page or small website, especially when the target page layout is unknown and the desired output is a typed JSON object.
+     - Crawl4AI is also a strong fit for this layer because it is an open-source LLM-friendly crawler/scraper with markdown and structured JSON extraction workflows.
+     - Recommended v1 website path: start with a small deterministic worker for already-known candidate URLs, use one crawler/extractor abstraction, and store extracted website facts as source/evidence context. Do not crawl broadly from the open web until reviewer value, compliance posture, and rate limits are clear.
+     - Website extraction is separate from LinkedIn enrichment. Personal websites are the safer first target; LinkedIn should stay behind approved vendor/API policy.
 
 7. **LinkedIn/social profile handling.**
    - For v1, preserve LinkedIn/Twitter/social URLs as clickable reviewer context and optional enrichment context.
@@ -158,6 +163,12 @@ Current priority order:
    - Current recommendation: evaluate Coresignal first for candidate enrichment and list discovery because its product/API surface is already employee/profile-search oriented.
    - Bright Data is still useful as a URL-first structured fetcher for known public profile/company/job/post URLs and niche public-web extraction, but LinkedIn and Devpost/GitHub scraping should stay behind explicit legal/product approval.
    - Neither vendor should bypass the HITL workflow: any externally enriched professional profile data should become evidence/context and route through enrichment review before profile materialization.
+   - 2026-05-07 vendor decision update:
+     - If the team wants to pick only one vendor path for LinkedIn/professional profile enrichment, choose Coresignal first.
+     - Rationale: Coresignal's API surface is closer to the product problem: search/collect professional employee/profile records, return normalized professional fields, and support discovery from candidate-like attributes.
+     - Bright Data is better when WeKruit already has exact LinkedIn/profile/company/job/post URLs and needs URL-first extraction, but it is less directly aligned with "given a Devpost/GitHub candidate, discover or enrich professional identity."
+     - Proposed integration shape: Coresignal enrichment worker runs only after candidate identity approval or on an explicitly selected source subset; it uses approved evidence fields as query/context; returned professional data becomes enrichment evidence/context; reviewer approval remains required before final profile or unified tag assignment.
+     - Bright Data should remain a later fallback for known URL extraction, not the primary LinkedIn discovery path.
 
 9. **Unified tag package and Firebase tag assignment model.**
    - Team direction as of 2026-05-07: adopt the shared tag architecture once the teammate-owned npm package is ready.
@@ -175,6 +186,19 @@ Current priority order:
    - The Stanford/TreeHacks Devpost staging source upload is complete.
    - The next live action should be a reviewer walkthrough in the staging dashboard: inspect Jobs and Review, confirm links/lifecycle callouts, then manually exercise a small number of approvals/merges/enrichments only when the user intentionally starts that validation pass.
    - Do not approve, merge, enrich, or materialize profiles as part of source upload verification.
+
+12. **TreeHacks weak-strength investigation.**
+   - 2026-05-07 live Firestore read-only check on the active TreeHacks staging dataset found:
+     - `1,001` weak dedup candidates.
+     - `9` strong dedup candidates.
+     - `1,001` candidates have reason code `singleton_review`.
+     - Strong candidates come from exact `github_exact` or `email_exact` matches across two or more source records.
+   - Current conclusion: this is mostly expected for a Devpost-only run. A single-source candidate that has no duplicate partner is intentionally represented as a `singleton_review` candidate with `strength: weak`; this label means weak identity/dedup evidence, not a weak person/candidate.
+   - Current code behavior:
+     - `buildSingletonReviewCandidate` assigns `strength: weak` to every singleton person record.
+     - Exact email/GitHub/ORCID/etc. evidence can produce `strong` multi-record dedup candidates.
+     - Homepage matches can produce `medium` multi-record dedup candidates.
+   - UX risk: showing a `Weak` pill on singleton candidates can make reviewers think the candidate is low quality. Recommended future UI wording: for singleton review candidates, show `Single-source` or `Needs identity review` instead of emphasizing `Weak`; reserve `Weak/Medium/Strong` language for actual multi-record match strength.
 
 ### Clickable Evidence/Lifecycle Local Verification
 
