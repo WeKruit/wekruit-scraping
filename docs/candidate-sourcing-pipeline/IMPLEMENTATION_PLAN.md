@@ -169,6 +169,37 @@ Current priority order:
      - Bright Data is better when WeKruit already has exact LinkedIn/profile/company/job/post URLs and needs URL-first extraction, but it is less directly aligned with "given a Devpost/GitHub candidate, discover or enrich professional identity."
      - Proposed integration shape: Coresignal enrichment worker runs only after candidate identity approval or on an explicitly selected source subset; it uses approved evidence fields as query/context; returned professional data becomes enrichment evidence/context; reviewer approval remains required before final profile or unified tag assignment.
      - Bright Data should remain a later fallback for known URL extraction, not the primary LinkedIn discovery path.
+   - 2026-05-08 Coresignal integration planning update:
+     - Recommendation: integrate Coresignal as a post-identity-approval professional enrichment provider, not as a raw source importer and not as a replacement for the Devpost/GitHub adapters.
+     - First-principles reason: raw source adapters answer "what did we discover from GitHub/Devpost/research?"; dedup/HITL answers "is this a real candidate and which source records belong together?"; Coresignal should answer "can we find additional professional evidence for an already-approved person?" These are different jobs and should stay separated.
+     - Coresignal should run after the existing merge-before-enrichment guard. If an approved entity still has unresolved pending merge candidates, block vendor lookup/enrichment until the reviewer resolves identity first.
+     - Coresignal query seeds should come only from approved candidate evidence and source records: name, GitHub URL, Devpost URL, personal website, LinkedIn URL when present, email when already approved, institution, location, source domains, and reviewer-approved signals.
+     - Coresignal output should be stored as vendor evidence/context and routed through enrichment review. It should not silently overwrite approved candidate fields, final profiles, or unified tags.
+     - Secret handling: use local `.env` for local tests and Firebase Secret Manager for deployed functions, with a future `CORESIGNAL_API_KEY`. Do not store API keys in Firestore, source records, run metadata, review notes, or dashboard-visible payloads.
+     - Current code integration point: `generateEnrichmentForApprovedEntity` in `wekruit-core-service-cloud-function/src/services/sourcing/application/service.ts` already builds the approved evidence pack and enforces pending-merge blockers before OpenAI enrichment. A future Coresignal lookup should either run as a separate manual action before OpenAI enrichment or enrich the evidence pack through an explicit provider port before the existing LLM taxonomy step.
+     - Current API/UI integration point: the dashboard already exposes `Generate enrichment` from the Approved detail panel. A future first version can add a separate manual action such as "Find professional profile" or "Run Coresignal lookup" near that control, then show the returned candidate profile match as reviewer-visible evidence before allowing it into final enrichment.
+     - Current Firestore state: sourcing collections currently cover source runs, source records, evidence, dedup candidates, review labels, approved entities, enrichment runs, enrichment review items, and candidate profiles. There is no vendor-enrichment collection yet.
+     - Recommended future Firestore shape:
+       - `sourcing-vendor-enrichment-runs`: provider, approved entity ID, query input hash, requested fields, status, error, created/updated timestamps, and cost/credit metadata when available.
+       - `sourcing-vendor-profile-candidates` or `sourcing-external-profile-matches`: approved entity ID, provider, provider record ID/profile URL, normalized display fields, match rationale, confidence, evidence IDs used as query seeds, reviewer status, and raw payload storage pointer.
+       - Keep large/raw vendor payloads out of hot dashboard documents where practical. Store a compact normalized summary in Firestore and use a storage pointer for full payloads if the team decides raw retention is acceptable.
+     - Recommended future implementation phases:
+       1. Define the provider contract and emulator-only fake Coresignal fixture. No live vendor calls.
+       2. Add manual dashboard/API path for one approved candidate lookup in the local emulator.
+       3. Add Coresignal live connectivity using `CORESIGNAL_API_KEY` with one known test candidate and a small field set.
+       4. Add reviewer selection/approval of the matched professional profile before it becomes enrichment context.
+       5. Feed approved Coresignal evidence into the existing OpenAI enrichment pack so taxonomy generation uses richer evidence while still requiring HITL enrichment approval.
+       6. Only after manual flow is trusted, consider queueing/batching, rate limits, credit budgets, and retry behavior.
+     - Team inputs required before implementation:
+       - Confirm Coresignal account/API access and provide `CORESIGNAL_API_KEY` through local `.env` and deployed Firebase Secret Manager when needed.
+       - Confirm allowed use case, data-use policy, and whether LinkedIn/profile URLs from Devpost/GitHub may be used as lookup seeds.
+       - Confirm budget/credit limits and whether the first implementation should be manual-only.
+       - Confirm which returned fields may be displayed/stored: current title/company, location, skills, education, experience, emails, LinkedIn URL, activity, and/or salary-like fields.
+       - Confirm retention policy for raw vendor payloads versus normalized summaries only.
+     - Vendor comparison:
+       - Coresignal remains the better first choice when WeKruit needs professional profile discovery/enrichment from partial candidate attributes.
+       - Bright Data remains better when WeKruit already has an exact LinkedIn/profile/company/job/post URL and wants a URL-first structured fetch.
+       - ScrapeGraphAI/Crawl4AI remain better fits for public personal websites and project pages, not for LinkedIn profile enrichment.
 
 9. **Unified tag package and Firebase tag assignment model.**
    - Team direction as of 2026-05-07: adopt the shared tag architecture once the teammate-owned npm package is ready.
