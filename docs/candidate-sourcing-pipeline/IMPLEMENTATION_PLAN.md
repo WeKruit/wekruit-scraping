@@ -159,11 +159,19 @@ Current priority order:
    - Bright Data is still useful as a URL-first structured fetcher for known public profile/company/job/post URLs and niche public-web extraction, but LinkedIn and Devpost/GitHub scraping should stay behind explicit legal/product approval.
    - Neither vendor should bypass the HITL workflow: any externally enriched professional profile data should become evidence/context and route through enrichment review before profile materialization.
 
-9. **Feedback loop and metrics.**
+9. **Unified tag package and Firebase tag assignment model.**
+   - Team direction as of 2026-05-07: adopt the shared tag architecture once the teammate-owned npm package is ready.
+   - The npm package should centralize allowed tag definitions, display labels, tag categories, and any cross-repo helpers. Examples include current track values, specializations, industry/domain interests, career-stage values, contactability values, and future matching-oriented tags.
+   - Firestore should store candidate-specific tag assignments separately from the taxonomy package. The package answers "what tags are valid"; Firebase answers "which tags are assigned to this candidate, with what confidence/evidence/review state."
+   - Recommended migration path: do not rip out the existing enrichment/profile fields immediately. Keep current profile fields working, then introduce unified tag records as a normalized projection derived from approved enrichment decisions. After the shared package stabilizes, core-service, dashboard UI, scraping adapters, and future matching code should import the same tag definitions instead of duplicating taxonomy arrays.
+   - Candidate tag assignment records should preserve lineage: candidate/profile ID, tag ID, tag type/category, confidence or reviewer decision, evidence IDs, source/enrichment/review IDs, assignment status, created/updated timestamps, and schema/package version.
+   - The current hardcoded taxonomy source remains `wekruit-core-service-cloud-function/src/services/sourcing/domain/records.ts` until the shared package exists. The current dashboard still mirrors those values in `wekruit-core-service-cloud-function/web/app.js`; this duplication should be removed during package integration.
+
+10. **Feedback loop and metrics.**
    - Metrics remain valuable but lower priority than reviewer usability and source adapter hardening.
    - Keep Phase 7 in the roadmap, but do not block the clickable evidence/source links or lifecycle cleanup on metrics work.
 
-10. **Post-reseed dashboard walkthrough.**
+11. **Post-reseed dashboard walkthrough.**
    - The Stanford/TreeHacks Devpost staging source upload is complete.
    - The next live action should be a reviewer walkthrough in the staging dashboard: inspect Jobs and Review, confirm links/lifecycle callouts, then manually exercise a small number of approvals/merges/enrichments only when the user intentionally starts that validation pass.
    - Do not approve, merge, enrich, or materialize profiles as part of source upload verification.
