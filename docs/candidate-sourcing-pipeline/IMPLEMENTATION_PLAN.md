@@ -20,15 +20,19 @@ Use a conservative productization path:
 3. Expand review workflow for singleton approval and structured signals.
 4. Create the global candidate entity model.
 5. Add evidence-grounded enrichment and enrichment review.
-6. Add metrics and evaluation loops.
-7. Defer Neo4j projection until graph queries justify it.
+6. Add final candidate profiles and reviewer-facing lineage.
+7. Harden real source adapters and controlled staging imports.
+8. Add vendor-approved professional enrichment, starting with Coresignal if the team confirms access and policy.
+9. Add metrics and evaluation loops after reviewer flow and source operations are stable.
+10. Defer Neo4j projection until graph queries justify it.
 
 ## Guiding Constraints
 
 - Do not migrate Python scrapers to Cloud Run in v1.
 - Do not rebuild the dashboard from scratch.
 - Do not use Neo4j as v1 source of truth.
-- Do not add social/personal/LinkedIn crawling in v1.
+- Do not add unofficial social/LinkedIn crawling in v1.
+- Do not let vendor enrichment bypass identity review, merge review, or enrichment review.
 - Do not automatically approve candidates.
 - Do not enrich from pending, rejected, or unsure evidence.
 - Do not implement full job/company matching in this phase.
@@ -36,15 +40,15 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-05-05.
+Last updated: 2026-05-08.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
-- [x] Implementation should branch from current `main` so feature work does not break the functional mainline.
 - [x] Firebase/Firestore remains the v1 operational source of truth.
 - [x] Existing dashboard should be extended rather than rebuilt.
 - [x] GitHub, Devpost, and research remain the only v1 source families.
 - [x] Enrichment should include industry/domain interests in addition to role/track, specialization, skills, and contactability.
 - [x] Local `.env` files are ignored by git and must not be committed.
+- [x] Phase 0 clarified branch/deploy strategy and confirmed the sourcing dashboard/backend path.
 - [x] Phase 1 stabilized the source-run/source-record/evidence/dedup/review/approved-entity loop.
 - [x] Phase 2 unified GitHub, Devpost, and research fixture ingestion through the same source-record upload path.
 - [x] Phase 3 expanded review into structured identity/relevance decisions with confirmed signals.
@@ -57,94 +61,69 @@ Last updated: 2026-05-05.
 - [x] Real Devpost Google Drive exports now have a source-specific adapter path to normalized person source records.
 - [x] Real GitHub Google Drive repo exports now have a source-specific adapter path into the existing contributor extraction, scoring, and source-record upload flow.
 - [x] Real-derived Devpost/GitHub subsets passed local emulator and tiny live verification before any broad import.
-- [x] Current stable adapter baseline branch is `codex/real-source-adapters` in both active implementation repos and has been pushed to origin.
-- [x] Current clickable-evidence/lifecycle implementation branch is `codex/clickable-evidence-lifecycle` in both active implementation repos, branched from `codex/real-source-adapters`.
 - [x] Clickable evidence/source links and derived lifecycle callouts are implemented, verified locally against the Firebase emulator, and deployed to `https://wekruit-sourcing.web.app`.
-- [x] Create implementation branch from `main` when implementation begins.
-- [x] Re-check the current state of the sourcing prototype branch before porting or productizing code.
-- [x] Verify local backend/dashboard/Firebase setup before changing workflow behavior.
-- [x] Confirm available LLM provider/model environment variables from local `.env` without exposing values.
-- [x] Validate whether local LLM keys are active before implementing Phase 5 behavior that depends on live model calls.
-- [x] Create or collect small GitHub, Devpost, and research sample outputs for repeatable tests.
+- [x] Capped review-count copy is implemented so the dashboard can distinguish loaded review rows from total pending review candidates.
+- [x] Staging Firestore was reset/reseeded to a single Stanford-related Devpost competition, `TreeHacks 2026`, after explicit user/team direction.
+- [x] The TreeHacks `Weak` match-strength concern was investigated and documented as expected singleton-review behavior, with a remaining UI wording cleanup recommended.
+- [x] Current active planning branch is `codex/coresignal-integration-plan` in both active implementation repos, branched from `codex/clickable-evidence-lifecycle`.
+- [x] Coresignal integration planning has been added to this document. No Coresignal implementation has started yet.
 
-## Current Waiting State
+## Current Open Decisions And Waiting State
 
-Last updated: 2026-05-02.
+Last updated: 2026-05-08.
 
-This is the current single source of truth after the successful Phase 3.5 real Firebase smoke test:
+This is the current single source of truth after the successful Phase 3.5 live smoke, real source adapters, clickable evidence/lifecycle deployment, TreeHacks staging reseed, and Coresignal planning update:
 
-- Local emulator implementation is working through the full intended v1 flow: GitHub source upload, singleton approval, later Devpost merge, research approval, enrichment generation, enrichment HITL, and final Profiles tab.
-- Firebase CLI access to `wekruit-dev-env` is now confirmed for `spencerycwang@gmail.com`.
-- `wekruit-dev-env` owns the live sourcing Firebase resources: default Firestore DB, `sourcing-api` Cloud Function, and Hosting sites `wekruit-dev-env` and `wekruit-sourcing`.
-- `https://wekruit-sourcing.web.app` now serves the Phase 6 dashboard with Jobs, Review, Approved, Enrichment, and Profiles.
-- The live `sourcing-api` on `wekruit-dev-env` now exposes the Phase 6 endpoints, including enrichment review items and final candidate profiles.
-- The tiny live fixture walkthrough succeeded:
-  - GitHub first: Alex Rivera approved as a singleton.
-  - Devpost second: Alex Rivera appeared as a GitHub/Devpost merge candidate and updated the existing approved candidate instead of creating a duplicate.
-  - Research third: Taylor Chen approved from grouped research evidence.
-  - Enrichment: Alex Rivera and Taylor Chen generated enrichment drafts, were approved by the human reviewer, and materialized final profiles.
-- Confirmed live final profiles:
-  - Alex Rivera: `software_engineering`, sources `devpost + github`.
-  - Taylor Chen: `academic_research`, source `openalex`.
-- A legacy/live researcher candidate, Jakob Uszkoreit, was also enriched successfully, which gives useful evidence that the enrichment/profile path can operate on existing researcher approved data.
-- Remaining primary implementation work is now controlled import planning and broader source operations:
-  - Devpost flat XLSX/CSV rows are implemented as normalized person source records and passed local/live tiny subset verification.
-  - GitHub repository discovery output is implemented through contributor extraction/scoring and passed local/live tiny subset verification.
-  - LinkedIn/Twitter/social URLs should be preserved as reviewer/enrichment context for v1, but not promoted to first-class dedup evidence yet.
-  - Devpost projects should not be uploaded as separate candidate records in v1; project facts should be embedded as evidence/context on member/person records.
-- Current live import status:
-  - The bounded Devpost/GitHub staging dataset was backed up and replaced with one Stanford-related Devpost competition on 2026-05-05 local / 2026-05-06 UTC.
+- Not waiting on Phase 3.5 access anymore. Firebase CLI access, live sourcing API deploy, live dashboard deploy, and tiny live workflow verification all succeeded.
+- Not waiting on clickable evidence/source links or lifecycle callouts. Those are implemented, verified, and deployed.
+- Current active staging dataset:
+  - Firebase project: `wekruit-dev-env`.
+  - Hosting site: `https://wekruit-sourcing.web.app`.
   - Active staging run: `stanford-treehacks-2026-20260506T030716Z`.
   - Source: `devpost`; domain: `hackathon`; competition filter: `TreeHacks 2026`.
   - Input workbook: `devpost/treehacks-2026.xlsx` from `/Users/spencerwang/Downloads/devpost-20260501T061334Z-3-001.zip`.
-  - The workbook contained `1,055` raw rows; `1,030` rows matched `TreeHacks 2026`; these collapsed to `1,029` unique Devpost person source records.
-  - Backup before the Stanford reset: `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-stanford-treehacks-20260506T030716Z`.
-  - Backup counts before Stanford reset: `2` source runs, `389` source records, `2,107` evidence records, `386` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
   - Exact Firestore counts after Stanford upload: `1` source run, `1,029` source records, `4,878` evidence records, `1,010` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
-  - No candidate approvals, merge decisions, enrichment generation, enrichment review decisions, or profile materialization were performed during this Stanford upload.
-  - Earlier bounded reseed history:
-    - Backup before the bounded reseed: `/tmp/wekruit-live-sourcing-backups/live-sourcing-before-bounded-reseed-20260506T014120Z`.
-    - Backup counts before reset: `1` source run, `11,000` source records, `51,746` evidence records, `10,860` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
-    - Bounded Devpost run `bounded-reseed-20260506T014120Z-devpost` uploaded `200` source records, producing `932` evidence records and `197` dedup review candidates.
-    - Bounded GitHub run `bounded-reseed-20260506T014120Z-github` uploaded `189` source records, producing `1,175` evidence records and `189` dedup review candidates.
+  - No candidate approvals, merge decisions, enrichment generation, enrichment review decisions, or profile materialization were performed during the Stanford upload.
+- Current Coresignal waiting items:
+  - Obtain `CORESIGNAL_API_KEY`.
+  - Confirm allowed use case, data-use policy, and which Coresignal fields may be stored/displayed.
+  - Confirm whether LinkedIn/profile URLs found in Devpost/GitHub records may be used as Coresignal lookup seeds.
+  - Confirm budget/credit limits and whether v1 should be manual-only.
+  - Confirm raw vendor payload retention policy versus normalized summary-only storage.
+- Current tag-system waiting item:
+  - Wait for the teammate-owned unified tag npm package, then migrate hardcoded taxonomy definitions out of `records.ts` / `web/app.js` duplication.
+- Current reviewer workflow caution:
+  - Do not approve, merge, enrich, or materialize profiles from the TreeHacks staging dataset unless the user/team intentionally starts a validation pass.
 
 ## Current Remaining Work Triage
 
-The core v1 workflow is now proven locally and against the live `wekruit-dev-env` Firebase project. The remaining work should be treated as hardening, reviewer usability, and controlled-source operations before any additional broad live imports.
+The core v1 workflow is proven locally and against the live `wekruit-dev-env` Firebase project. Completed milestones are kept below as historical verification; this triage list now contains only forward-looking work.
 
 Current priority order:
 
-1. **Clickable evidence/source links.**
-   - Completed locally on `codex/clickable-evidence-lifecycle`.
-   - Review, Approved, Enrichment, and Profiles screens now render URL-like evidence/source values as clickable links where they appear.
-   - The UI exposes source URLs already present in source records, including GitHub profiles/repos, Devpost profiles/projects, member websites, project/demo/video links, and LinkedIn/Twitter/social URLs when those links exist in raw source data.
-   - LinkedIn/Twitter/social URLs remain reviewer context for v1. They are clickable and visible, but they are not promoted to strong identity/dedup signals.
-   - The local Firebase emulator/browser walkthrough passed.
-   - Staging deployment to `wekruit-sourcing.web.app` passed browser verification without changing Firestore data.
+1. **Coresignal professional enrichment integration.**
+   - Status: planned only on `codex/coresignal-integration-plan`; no implementation yet.
+   - Recommended first version: manual lookup for an approved candidate after identity review and merge-blocker checks.
+   - Coresignal results should become reviewer-visible vendor evidence/context. They should not silently mutate approved entities, final profiles, or unified tags.
+   - Implementation should start with an emulator fake/provider contract before any live Coresignal call.
+   - Team input required: API key, allowed fields, budget limits, lookup policy, and retention policy.
 
-2. **Candidate lifecycle clarity.**
-   - Completed locally on `codex/clickable-evidence-lifecycle` as derived dashboard callouts rather than a stored-status rewrite.
-   - The system already stores the important transitions: pending review, approved candidate, bad record/rejected candidate, enrichment draft, approved enrichment, and final profile.
-   - The dashboard now distinguishes identity-review, approved/profile, and enrichment-review states with explicit lifecycle callouts.
-   - The backend merge-before-enrichment guard remains the enforcement point: a candidate is not enrichment-ready when unresolved duplicate/merge candidates still point at that approved entity.
+2. **Unified tag package migration.**
+   - Status: waiting on teammate-owned npm package.
+   - Current hardcoded taxonomy source remains `wekruit-core-service-cloud-function/src/services/sourcing/domain/records.ts`.
+   - The dashboard currently mirrors values in `wekruit-core-service-cloud-function/web/app.js`.
+   - Migration should make the shared package the source of valid tags and keep Firestore as the source of candidate-specific tag assignments.
 
-3. **Large queue handling.**
+3. **Large queue handling / pagination.**
    - The live Devpost import proved that the backend can ingest a broad run, but the current review UI intentionally loads a capped review set.
    - The dashboard now displays the total review-candidate count separately from the currently loaded candidates, but true cursor pagination / next-page review navigation is still future work.
    - Before another broad import, the team should decide whether reviewers need pagination, source filters, search-first review, or a smaller curated import batch.
 
-4. **Stanford/TreeHacks staging reset/reseed.**
-   - Completed on 2026-05-05 local / 2026-05-06 UTC after explicit user greenlight.
-   - The active staging dataset is now only the Stanford-related Devpost competition `TreeHacks 2026`.
-   - The upload preserved the intended workflow boundary: source upload only, with `0` review labels, `0` approved entities, `0` enrichment review items, and `0` final profiles.
-   - The Review API/dashboard still load a capped review set of `200` candidates even though the TreeHacks upload produced `1,010` pending dedup candidates. This cap is acceptable for current verification, but true cursor pagination / next-page review navigation remains future work.
+4. **Singleton strength wording cleanup.**
+   - Current issue: Devpost-only singleton review candidates correctly have `strength: weak`, but showing a `Weak` pill can make reviewers think the person is low-quality.
+   - Recommended UI wording: show `Single-source` or `Needs identity review` for singleton review candidates; reserve `Weak/Medium/Strong` language for actual multi-record match strength.
 
-5. **Bounded Devpost/GitHub reseed history.**
-   - Completed on 2026-05-05 local / 2026-05-06 UTC after explicit user greenlight.
-   - The previous broad Devpost staging import proved scale, but it was too much data for day-to-day demo/reviewer testing.
-   - The bounded dataset was intentionally replaced by the TreeHacks-only run after the team asked to start with one Stanford-related competition.
-
-6. **Website profile enrichment.**
+5. **Website profile enrichment.**
    - Candidate personal websites are a better near-term enrichment target than LinkedIn because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
    - A future website enrichment worker can fetch only URLs that already exist on source records or approved candidates, extract page title, description/meta tags, visible about/project text, social/profile links, and outbound project/repo links, then store the extracted facts as evidence/context.
    - This worker should respect robots/rate limits, store source URL + extraction timestamp + raw snapshot pointer, and route meaningful new profile fields through enrichment review instead of silently mutating final profiles.
@@ -154,12 +133,12 @@ Current priority order:
      - Recommended v1 website path: start with a small deterministic worker for already-known candidate URLs, use one crawler/extractor abstraction, and store extracted website facts as source/evidence context. Do not crawl broadly from the open web until reviewer value, compliance posture, and rate limits are clear.
      - Website extraction is separate from LinkedIn enrichment. Personal websites are the safer first target; LinkedIn should stay behind approved vendor/API policy.
 
-7. **LinkedIn/social profile handling.**
+6. **LinkedIn/social profile handling.**
    - For v1, preserve LinkedIn/Twitter/social URLs as clickable reviewer context and optional enrichment context.
    - Do not implement an unofficial LinkedIn scraper as a production path.
    - Any automated LinkedIn profile fetching should wait until the team confirms approved API/product access and the exact data-use policy. The likely approved paths are either user-consented LinkedIn OAuth for the authenticated member, LinkedIn Talent/Sales partner APIs if WeKruit qualifies, or manual reviewer link-out.
 
-8. **Bright Data / Coresignal evaluation.**
+7. **Bright Data / Coresignal evaluation.**
    - Current recommendation: evaluate Coresignal first for candidate enrichment and list discovery because its product/API surface is already employee/profile-search oriented.
    - Bright Data is still useful as a URL-first structured fetcher for known public profile/company/job/post URLs and niche public-web extraction, but LinkedIn and Devpost/GitHub scraping should stay behind explicit legal/product approval.
    - Neither vendor should bypass the HITL workflow: any externally enriched professional profile data should become evidence/context and route through enrichment review before profile materialization.
@@ -201,24 +180,20 @@ Current priority order:
        - Bright Data remains better when WeKruit already has an exact LinkedIn/profile/company/job/post URL and wants a URL-first structured fetch.
        - ScrapeGraphAI/Crawl4AI remain better fits for public personal websites and project pages, not for LinkedIn profile enrichment.
 
-9. **Unified tag package and Firebase tag assignment model.**
-   - Team direction as of 2026-05-07: adopt the shared tag architecture once the teammate-owned npm package is ready.
-   - The npm package should centralize allowed tag definitions, display labels, tag categories, and any cross-repo helpers. Examples include current track values, specializations, industry/domain interests, career-stage values, contactability values, and future matching-oriented tags.
-   - Firestore should store candidate-specific tag assignments separately from the taxonomy package. The package answers "what tags are valid"; Firebase answers "which tags are assigned to this candidate, with what confidence/evidence/review state."
-   - Recommended migration path: do not rip out the existing enrichment/profile fields immediately. Keep current profile fields working, then introduce unified tag records as a normalized projection derived from approved enrichment decisions. After the shared package stabilizes, core-service, dashboard UI, scraping adapters, and future matching code should import the same tag definitions instead of duplicating taxonomy arrays.
-   - Candidate tag assignment records should preserve lineage: candidate/profile ID, tag ID, tag type/category, confidence or reviewer decision, evidence IDs, source/enrichment/review IDs, assignment status, created/updated timestamps, and schema/package version.
-   - The current hardcoded taxonomy source remains `wekruit-core-service-cloud-function/src/services/sourcing/domain/records.ts` until the shared package exists. The current dashboard still mirrors those values in `wekruit-core-service-cloud-function/web/app.js`; this duplication should be removed during package integration.
+8. **Re-enrichment and profile versioning.**
+   - Current first-time enrichment flow works.
+   - Remaining behavior: when new approved evidence attaches to an existing candidate, compare enrichment-relevant fields, create a new enrichment review only for important changes, and preserve enrichment/profile version history.
 
-10. **Feedback loop and metrics.**
+9. **Feedback loop and metrics.**
    - Metrics remain valuable but lower priority than reviewer usability and source adapter hardening.
-   - Keep Phase 7 in the roadmap, but do not block the clickable evidence/source links or lifecycle cleanup on metrics work.
+   - Keep Phase 7 in the roadmap, but do not block Coresignal planning, tag migration, queue handling, or reviewer usability on metrics work.
 
-11. **Post-reseed dashboard walkthrough.**
+10. **Post-reseed dashboard walkthrough.**
    - The Stanford/TreeHacks Devpost staging source upload is complete.
    - The next live action should be a reviewer walkthrough in the staging dashboard: inspect Jobs and Review, confirm links/lifecycle callouts, then manually exercise a small number of approvals/merges/enrichments only when the user intentionally starts that validation pass.
    - Do not approve, merge, enrich, or materialize profiles as part of source upload verification.
 
-12. **TreeHacks weak-strength investigation.**
+11. **TreeHacks weak-strength investigation.**
    - 2026-05-07 live Firestore read-only check on the active TreeHacks staging dataset found:
      - `1,001` weak dedup candidates.
      - `9` strong dedup candidates.
@@ -414,7 +389,7 @@ The preferred path is to productize the existing prototype rather than rebuild i
 
 Last updated: 2026-04-28.
 
-- Initial working branch was created from current `main` and later renamed for the full effort: `codex/candidate-sourcing-pipeline`. The current active branch has since moved to `codex/phase-6-final-profiles`, recorded in Current Execution State.
+- Initial working branch was created from current `main` and later renamed for the full effort: `codex/candidate-sourcing-pipeline`. Later implementation branches continued from that line of work; the current active branch is recorded in Current Execution State.
 - `wekruit-scraping` `origin/codex/sourcing-e2e-firebase` is still present and diverges from current `main`.
 - The scraping prototype branch adds a useful source-record contract, deterministic IDs, dry-run upload output, a core-service ingest client, a generic JSON/JSONL/CSV uploader, and focused tests.
 - The scraping prototype branch should be selectively ported/productized into the new implementation branch rather than used as the working branch directly, because current `main` contains newer planning docs and secret-safety work.
@@ -497,8 +472,8 @@ This phase does not add enrichment. It stabilizes the review foundation.
 
 Last updated: 2026-04-28.
 
-- Initial working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-pipeline`, created from current `main`. Current active branch is `codex/phase-6-final-profiles`.
-- Initial working branch in `wekruit-scraping`: `codex/candidate-sourcing-pipeline`, created from current `main`, continuing to hold the scraping-side source-record upload bridge and durable plan docs. Current active branch is `codex/phase-6-final-profiles`.
+- Initial working branch in `wekruit-core-service-cloud-function`: `codex/candidate-sourcing-pipeline`, created from current `main`. Later phase branches continued from this line of work; the current active branch is recorded in Current Execution State.
+- Initial working branch in `wekruit-scraping`: `codex/candidate-sourcing-pipeline`, created from current `main`, continuing to hold the scraping-side source-record upload bridge and durable plan docs. Later phase branches continued from this line of work; the current active branch is recorded in Current Execution State.
 - Core-service sourcing backend, static dashboard, sourcing Firestore collection names, sourcing queue names, and sourcing-only Firebase config were selectively ported from the previous sourcing prototype branch onto current `main`.
 - Scraping-side source-record contract, deterministic source-record conversion, generic file uploader, researcher upload bridge, and tests were selectively ported from the previous sourcing prototype branch onto current `main`.
 - `firebase.sourcing.json` now runs the sourcing-only functions bundle with hosting, functions, and Firestore emulators, avoiding unrelated outbound/matching environment prompts during local sourcing verification.
@@ -918,7 +893,7 @@ Not re-tested live in Phase 3.5 because they were already covered locally and we
 
 ### Phase 3.5 Current Status
 
-Last updated: 2026-05-02.
+Last updated: 2026-05-08.
 
 - Phase 3.5 execution resumed on 2026-05-02 after Secret Manager Admin permission was granted.
 - Firebase CLI auth works locally as `spencerycwang@gmail.com`.
@@ -927,6 +902,8 @@ Last updated: 2026-05-02.
 - `wekruit-dev-env` has Hosting sites:
   - `wekruit-dev-env`: `https://wekruit-dev-env.web.app`
   - `wekruit-sourcing`: `https://wekruit-sourcing.web.app`
+- Phase 3.5 is no longer blocked. The live tiny-fixture workflow succeeded, and `wekruit-sourcing.web.app` is the active staging dashboard for sourcing work.
+- Later live staging work also reset/reseeded Firestore with the TreeHacks-only Devpost run recorded in Current Open Decisions And Waiting State.
   - `wekruit-outbound-staging`: currently not the sourcing dashboard target
 - `wekruit-dev-env` has deployed Cloud Function `sourcing-api` in `us-central1`, runtime `nodejs20`, codebase `core-service`, entry point `sourcing.api`.
 - `wekruit-dev-env` also has many unrelated default-codebase functions, so Phase 3.5 deploys must target only sourcing resources.
@@ -1643,7 +1620,7 @@ Last updated: 2026-04-29.
 - The Profiles tab shows clean summary, primary track, scored tracks, specializations, skills, industry/domain interests, contactability, career stage, evidence by field, source lineage, review lineage, and lineage IDs.
 - Local browser verification confirmed the Profiles tab renders Alex Rivera, profile search and filters work, evidence/source/review lineage sections appear, and no browser console errors were reported.
 - Local API verification confirmed profile detail source summaries omit raw payloads while preserving source/evidence/review/enrichment lineage.
-- Full real Firebase E2E remains blocked on Phase 3.5 permissions/staging decisions; Phase 6 was verified against the local Firebase emulator.
+- Phase 6 was originally verified against the local Firebase emulator. Later Phase 3.5 live smoke and staging dashboard deployment verified the Phase 6 API/UI path against `wekruit-dev-env` and `wekruit-sourcing.web.app`.
 - Post-Phase 6 hardening made enrichment validation tolerant of repairable LLM shape mistakes while keeping the important evidence rules strict:
   - optional skills, specializations, domains, scored tracks, and proposed tags without approved evidence are dropped with validation warnings
   - career stage/contactability suggestions without evidence are downgraded to `unknown`
@@ -1760,6 +1737,93 @@ Final local API verification from this walkthrough:
   - Taylor Chen: `academic_research`, source `openalex`
   - Alex Rivera: `software_engineering`, sources `devpost+github`
 
+## Phase 6.5: Coresignal Professional Enrichment
+
+### Goal
+
+Use Coresignal to add professional-profile evidence for candidates that have already passed identity/relevance review, without weakening the existing HITL boundaries.
+
+### Why This Phase Exists
+
+The current pipeline can ingest source records, dedup candidates, approve global candidates, generate enrichment drafts, review enrichment, and materialize final profiles. The remaining gap is that a GitHub/Devpost/research source record can be thin: it may show a project, paper, or public repository but not enough professional context to understand the person's current role, career stage, company, or broader domain interests.
+
+Coresignal should fill that professional-context gap. It should not replace source adapters, dedup, reviewer approval, or the OpenAI taxonomy step.
+
+### Non-Goals
+
+- Do not use Coresignal to import raw candidate pools before identity review.
+- Do not use Coresignal as the source of truth for candidate identity.
+- Do not write Coresignal output directly into final candidate profiles without reviewer approval.
+- Do not store Coresignal API keys in Firestore or dashboard-visible documents.
+- Do not implement broad batch lookup until the manual single-candidate path is proven.
+
+### Recommended Workflow Placement
+
+```mermaid
+flowchart LR
+  Source["GitHub / Devpost / Research source records"]
+  Dedup["Dedup candidates"]
+  IdentityHITL["Identity / relevance HITL"]
+  Approved["Approved global candidate"]
+  MergeGuard["Pending-merge guard"]
+  Coresignal["Coresignal lookup"]
+  VendorReview["Professional evidence review"]
+  Enrichment["OpenAI taxonomy enrichment"]
+  EnrichmentHITL["Enrichment HITL"]
+  Profile["Final candidate profile"]
+
+  Source --> Dedup
+  Dedup --> IdentityHITL
+  IdentityHITL --> Approved
+  Approved --> MergeGuard
+  MergeGuard --> Coresignal
+  Coresignal --> VendorReview
+  VendorReview --> Enrichment
+  Enrichment --> EnrichmentHITL
+  EnrichmentHITL --> Profile
+```
+
+### Future Implementation Tasks
+
+- [ ] Add a provider interface such as `ProfessionalProfileLookupPort` in core-service.
+- [ ] Add an emulator-only fake Coresignal provider with deterministic fixture responses.
+- [ ] Add Firestore storage for vendor lookup runs and candidate professional-profile matches.
+- [ ] Add a manual dashboard action from the Approved detail panel after merge blockers are clear.
+- [ ] Show Coresignal match candidates with query seeds, match rationale, confidence, and source/evidence lineage.
+- [ ] Let the reviewer approve, reject, or ignore a Coresignal match before it becomes enrichment context.
+- [ ] Feed approved Coresignal evidence into the existing enrichment evidence pack.
+- [ ] Keep OpenAI taxonomy generation and enrichment HITL unchanged: Coresignal adds evidence; it does not assign final labels by itself.
+- [ ] Add focused tests for merge-blocked candidates, missing API key behavior, no-match results, rejected vendor matches, approved vendor matches, and enrichment evidence-pack inclusion.
+- [ ] Run the full local emulator workflow before any live Coresignal call.
+
+### Proposed Firestore Shape
+
+- `sourcing-vendor-enrichment-runs`
+  - provider, approved entity ID, query input hash, requested fields, status, error, created/updated timestamps, and cost/credit metadata when available.
+- `sourcing-vendor-profile-candidates` or `sourcing-external-profile-matches`
+  - approved entity ID, provider, provider record ID/profile URL, normalized display fields, match rationale, confidence, evidence IDs used as query seeds, reviewer status, and raw payload storage pointer.
+
+Keep raw/large vendor payloads out of hot dashboard documents where practical. Store compact normalized summaries in Firestore and use a storage pointer for full payloads if the team approves raw retention.
+
+### Required Team Decisions
+
+- [ ] Provide `CORESIGNAL_API_KEY` through local `.env` for local testing and Firebase Secret Manager for deployed testing.
+- [ ] Confirm allowed Coresignal use case and data-use policy.
+- [ ] Confirm whether LinkedIn/profile URLs from Devpost/GitHub records may be used as query seeds.
+- [ ] Confirm which fields may be stored/displayed: current title/company, location, skills, education, experience, emails, profile URL, activity, salary-like fields, etc.
+- [ ] Confirm first implementation mode: manual-only is recommended.
+- [ ] Confirm credit/budget limits and live test candidate(s).
+- [ ] Confirm raw payload retention policy.
+
+### Acceptance Criteria
+
+- [ ] A reviewer can run a professional-profile lookup for one approved candidate in the local emulator.
+- [ ] Lookup is blocked when the approved candidate has unresolved pending merge candidates.
+- [ ] Lookup output is reviewable and does not directly mutate final profiles.
+- [ ] Approved Coresignal evidence appears in the enrichment evidence pack.
+- [ ] Enrichment still requires human approval before profile materialization.
+- [ ] Local tests and browser verification pass before any live deployment.
+
 ## Phase 7: Metrics And Evaluation
 
 ### Goal
@@ -1862,24 +1926,24 @@ These rules should hold through every phase:
 
 ```mermaid
 gantt
-  title Candidate Sourcing Pipeline Implementation Order
+  title Candidate Sourcing Pipeline Forward Order
   dateFormat  YYYY-MM-DD
   axisFormat  %m/%d
-  section Foundation
-  Align prototype branch and deploy path         :p0, 2026-04-26, 3d
-  Stabilize source/evidence/review loop          :p1, after p0, 5d
-  section Source Integration
-  Connect GitHub adapter                         :p2, after p1, 4d
-  Connect Devpost adapter                        :p3, after p1, 4d
-  Verify research adapter                        :p4, after p1, 3d
-  section Review
-  Add singleton review and structured signals    :p5, after p2, 6d
-  Add global candidate entity model              :p6, after p5, 4d
-  section Enrichment
-  Add enrichment workflow                         :p7, after p6, 7d
-  Add enrichment review UI                        :p8, after p7, 5d
-  section Quality
-  Add metrics and evaluation                      :p9, after p8, 5d
+  section Completed
+  Source/evidence/review loop                     :done, c1, 2026-04-26, 5d
+  GitHub/Devpost/research adapters                :done, c2, after c1, 5d
+  Review, global candidates, enrichment, profiles :done, c3, after c2, 7d
+  Live smoke, clickable links, lifecycle UI       :done, c4, after c3, 5d
+  TreeHacks staging reseed                        :done, c5, 2026-05-05, 1d
+  section Next
+  Coresignal provider planning and local fake     :active, n1, 2026-05-08, 3d
+  Manual Coresignal lookup and review flow        :n2, after n1, 5d
+  Unified tag package migration                   :n3, after n1, 4d
+  Queue pagination and singleton wording cleanup  :n4, after n2, 4d
+  section Later
+  Website enrichment                              :l1, after n4, 5d
+  Metrics and feedback loop                       :l2, after l1, 5d
+  Optional graph projection                       :l3, after l2, 5d
 ```
 
 Dates above are placeholders. The sequencing matters more than the exact dates.
@@ -1900,18 +1964,25 @@ Dates above are placeholders. The sequencing matters more than the exact dates.
 
 ## Launch Readiness Checklist
 
-- [ ] All three v1 sources can upload into the shared pipeline.
-- [ ] Dashboard shows source runs for GitHub, Devpost, and research.
-- [ ] Dashboard shows merge review items.
-- [ ] Dashboard shows singleton review items.
-- [ ] Reviewers can approve/reject/hold with notes.
-- [ ] Reviewers can confirm structured relevance signals.
-- [ ] Approved candidates become global candidate entities.
-- [ ] Enrichment runs only after candidate approval.
-- [ ] Enrichment output is validated against controlled taxonomy.
-- [ ] Enrichment review UI supports editing labels.
-- [ ] Final candidate profiles are materialized.
-- [ ] Final profiles include lineage pointers.
+- [x] All three v1 sources can upload into the shared pipeline.
+- [x] Dashboard shows source runs for GitHub, Devpost, and research.
+- [x] Dashboard shows merge review items.
+- [x] Dashboard shows singleton review items.
+- [x] Reviewers can approve/reject/hold with notes.
+- [x] Reviewers can confirm structured relevance signals.
+- [x] Approved candidates become global candidate entities.
+- [x] Enrichment runs only after candidate approval.
+- [x] Enrichment is blocked when unresolved pending merge candidates overlap an approved entity.
+- [x] Enrichment output is validated against controlled taxonomy.
+- [x] Enrichment review UI supports editing labels.
+- [x] Final candidate profiles are materialized.
+- [x] Final profiles include lineage pointers.
+- [x] Real Devpost and GitHub source adapters have local and controlled live verification.
+- [x] Staging dashboard has clickable evidence/source links and lifecycle callouts.
+- [ ] Coresignal/professional enrichment is integrated only after policy/key/field decisions are confirmed.
+- [ ] Unified tag package is integrated after the teammate-owned package is ready.
+- [ ] Review queue pagination or an equivalent large-queue strategy exists for broad imports.
+- [ ] Singleton review wording avoids implying low candidate quality.
 - [ ] Metrics exist for review outcomes and enrichment edits.
 - [ ] Non-goals remain out of scope.
 
