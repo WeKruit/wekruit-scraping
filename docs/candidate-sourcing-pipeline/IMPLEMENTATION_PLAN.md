@@ -40,7 +40,7 @@ Use a conservative productization path:
 
 ## Current Execution State
 
-Last updated: 2026-05-08.
+Last updated: 2026-05-09.
 
 - [x] PRD, architecture, and implementation plan documents are drafted.
 - [x] Firebase/Firestore remains the v1 operational source of truth.
@@ -89,8 +89,13 @@ This is the current single source of truth after the successful Phase 3.5 live s
   - User/team will provide `BRIGHTDATA_API_KEY` through `wekruit-core-service-cloud-function/.env` for local development and Firebase Secret Manager for deployed testing.
   - Confirm the Bright Data account has access to the LinkedIn Scraper API / Profiles scraper.
   - Confirm the team-approved data-use policy for scraping LinkedIn profile URLs that already appear in Devpost/GitHub/source evidence.
-  - Confirm the first live test candidate and LinkedIn URL after the emulator fake path is working.
-  - Confirm raw vendor payload retention policy versus normalized summary-only storage.
+  - First live Bright Data test policy is confirmed: after local fake/provider tests pass, use exactly one approved staging candidate from the active sourcing dashboard `https://wekruit-sourcing.web.app`, backed by Firebase project `wekruit-dev-env`, with a clear LinkedIn profile URL manually selected from the Approved detail panel. The exact candidate/URL remains to be chosen at test time.
+  - Manual-only v1 mode from the Approved detail panel is confirmed.
+  - Raw vendor payload retention policy is confirmed for v1: store normalized summaries only, with no full raw Bright Data payload in hot Firestore docs.
+  - Field allowlist is confirmed for v1: profile URL, name, headline/position, current company, location, education summary, experience summary, skills, about summary, and projects/publications if present. Contact/private/sensitive fields are excluded unless explicitly approved later.
+  - Rejected/ignored Bright Data matches should be remembered by selected LinkedIn URL/query hash and approved evidence lineage so unchanged lookups do not spend credits or show the same bad match again.
+  - If approved Bright Data evidence is added to a candidate that already has a final enriched profile, set or preserve `needsEnrichment=true` and allow manual re-enrichment; do not implement complex diffing/versioning in v1.
+  - LinkedIn URLs should become first-class evidence for display, reviewer selection, vendor lookup inputs, and lineage, but not strong dedup evidence in v1.
 - Paused Coresignal waiting items:
   - Keep the Coresignal API key, field, retention, and budget decisions below for future reference only. Coresignal is not the active implementation path unless the team pivots back.
 - Current tag-system waiting item:
@@ -140,6 +145,7 @@ Current priority order:
    - For v1, preserve LinkedIn/Twitter/social URLs as clickable reviewer context and optional enrichment context.
    - Do not implement an unofficial LinkedIn scraper as a production path.
    - Automated LinkedIn profile fetching should use the approved Bright Data LinkedIn Scraper API path only after the team confirms account access, policy, and field retention. The first version should be URL-first, not broad LinkedIn discovery.
+   - 2026-05-09 decision: LinkedIn profile URLs should be first-class evidence for display, reviewer selection, Bright Data query inputs, and downstream lineage, but they should not become strong dedup evidence or trigger automatic identity merges in v1.
 
 7. **Bright Data / Coresignal evaluation.**
    - Current recommendation after teammate direction: implement Bright Data first for LinkedIn profile enrichment when WeKruit already has a LinkedIn URL from approved source evidence.
@@ -1814,33 +1820,37 @@ flowchart LR
 - [ ] Add Firestore storage for vendor lookup runs and candidate professional-profile matches.
 - [ ] Add a manual dashboard action from the Approved detail panel after merge blockers are clear.
 - [ ] Show all known LinkedIn URLs found on the approved candidate's source/evidence records and require the reviewer to choose which URL(s) to fetch.
+- [ ] Treat LinkedIn profile URLs as first-class evidence for display, reviewer selection, Bright Data query seeds, and lineage, but not as strong dedup evidence in v1.
 - [ ] Use synchronous Bright Data `/scrape` for the first manual single-candidate path. Support the returned `snapshot_id` case if Bright Data automatically switches to async.
-- [ ] Normalize the returned LinkedIn profile into a compact professional summary: name, headline/current role, company, location, education summary, experience summary, skills, profile URL, and source lineage.
+- [ ] Normalize the returned LinkedIn profile into a compact professional summary using only the approved v1 field allowlist: profile URL, name, headline/position, current company, location, education summary, experience summary, skills, about summary, projects/publications if present, and source lineage.
 - [ ] Let the reviewer approve, reject, or ignore a Bright Data profile summary before it becomes enrichment context.
 - [ ] Feed approved Bright Data evidence into the existing enrichment evidence pack.
+- [ ] If approved Bright Data evidence is added after a final profile already exists, set or preserve `needsEnrichment=true` and allow manual re-enrichment without complex diffing/versioning in v1.
 - [ ] Keep OpenAI taxonomy generation and enrichment HITL unchanged: Bright Data adds evidence; it does not assign final labels by itself.
 - [ ] Add focused tests for merge-blocked candidates, missing API key behavior, no-match results, rejected vendor matches, approved vendor matches, and enrichment evidence-pack inclusion.
 - [ ] Run the full local emulator workflow before any live Bright Data call.
-- [ ] After local fake verification, run one live staging lookup against a known approved candidate with a real LinkedIn profile URL.
+- [ ] After local fake verification, run exactly one live staging lookup from `https://wekruit-sourcing.web.app` / Firebase project `wekruit-dev-env` against a known approved candidate with a clear reviewer-selected LinkedIn profile URL.
 
 ### Proposed Firestore Shape
 
 - `sourcing-vendor-enrichment-runs`
   - provider (`brightdata`), lookup type (`linkedin_profile_by_url`), approved entity ID, input URL hash, selected LinkedIn URL(s), requested dataset ID, status, snapshot ID when async, error, created/updated timestamps, and cost/credit metadata when available.
 - `sourcing-vendor-profile-matches`
-  - approved entity ID, provider, provider record ID/profile URL, normalized display fields, match rationale, confidence, evidence IDs that supplied the LinkedIn URL, reviewer status, and raw payload storage pointer only if raw retention is approved.
+  - approved entity ID, provider, provider record ID/profile URL, input URL/query hash, normalized display fields, match rationale, confidence, evidence IDs that supplied the LinkedIn URL, reviewer status, reviewer decision metadata, and no full raw vendor payload in v1.
 
-Keep raw/large vendor payloads out of hot dashboard documents where practical. Store compact normalized summaries in Firestore and use a storage pointer for full payloads if the team approves raw retention.
+Keep raw/large vendor payloads out of hot dashboard documents. Store compact normalized summaries in Firestore for v1. If debugging later requires raw payload inspection, add short-lived raw snapshots or storage pointers only after a separate explicit retention decision.
+Rejected or ignored matches should remain tied to the selected LinkedIn URL/query hash and approved evidence lineage so repeated manual attempts against unchanged evidence can surface the prior decision instead of spending another vendor call or redisplaying the same bad match as new.
 
 ### Required Team Decisions
 
 - [ ] Provide `BRIGHTDATA_API_KEY` through `wekruit-core-service-cloud-function/.env` for local testing and Firebase Secret Manager for deployed testing.
 - [ ] Confirm Bright Data account access to the LinkedIn Scraper API and Profiles dataset.
 - [ ] Confirm allowed Bright Data use case and data-use policy for LinkedIn URLs found in Devpost/GitHub/source evidence.
-- [ ] Confirm which fields may be stored/displayed: current title/company, location, skills, education, experience summaries, profile URL, public activity summaries, emails/contact fields, etc.
-- [ ] Confirm first implementation mode: manual-only is recommended.
+- [x] Confirm which fields may be stored/displayed: v1 allows profile URL, name, headline/position, current company, location, education summary, experience summary, skills, about summary, and projects/publications if present. Contact/private/sensitive fields are excluded unless explicitly approved later.
+- [x] Confirm first implementation mode: manual-only from the Approved detail panel.
 - [ ] Confirm credit/budget expectations and live test candidate(s).
-- [ ] Confirm raw payload retention policy.
+- [x] Confirm first live test policy: after local fake/provider tests pass, run exactly one live lookup through the active staging dashboard `https://wekruit-sourcing.web.app` / Firebase project `wekruit-dev-env` against a known approved candidate with a clear reviewer-selected LinkedIn profile URL. Exact candidate/URL remains to be chosen at test time.
+- [x] Confirm raw payload retention policy: v1 stores normalized summaries only and does not store the full raw Bright Data payload in hot Firestore docs.
 
 ### Bright Data Decision Log
 
@@ -1851,16 +1861,62 @@ This section should be updated after each planning discussion so implementation 
    - Reason: core-service owns approved candidates, merge guards, enrichment, Firestore writes, and deployed function secrets. `wekruit-scraping` should continue producing source records and should not call Bright Data directly.
 
 2. **Which Bright Data mode should v1 support first?**
-   - Current recommendation: manual single-candidate LinkedIn profile lookup from the Approved detail panel.
-   - Reason: this matches the existing HITL workflow, avoids large unexpected vendor spend, and is easy to verify in the emulator before touching live staging.
+   - Answer recorded 2026-05-09: v1 Bright Data lookup should be manual-only from the Approved detail panel.
+   - Reason: this matches the existing HITL workflow, keeps reviewer control over every vendor call, avoids unexpected Bright Data spend, and is easy to verify in the emulator before touching live staging.
+   - Deferred: automatic lookup on candidate approval, batch lookup, scheduled lookup, and source-run-wide lookup are out of scope until the manual flow is proven.
 
 3. **What should be used as the Bright Data input?**
-   - Current recommendation: only LinkedIn profile URLs that already exist in approved source/evidence records or are explicitly selected by a reviewer.
-   - Boundary: name/company/GitHub/Devpost fields can help a reviewer decide whether the returned profile belongs to the candidate, but v1 should not use Bright Data for broad LinkedIn discovery from partial attributes.
+   - Answer recorded 2026-05-09: v1 Bright Data lookup is LinkedIn-URL-only.
+   - Allowed inputs: LinkedIn profile URLs that already exist in Devpost/GitHub/research source evidence after candidate approval, plus LinkedIn profile URLs explicitly selected or supplied by a reviewer in the approved-candidate context.
+   - Boundary: name/company/GitHub/Devpost fields can help a reviewer decide whether the returned profile belongs to the candidate, but v1 must not use Bright Data for broad LinkedIn discovery from name, company, school, GitHub, Devpost, or other partial attributes.
 
-4. **How does Bright Data output affect enrichment?**
-   - Current recommendation: Bright Data output becomes vendor evidence/context only after reviewer approval. Approved vendor evidence can then be included in the existing OpenAI enrichment evidence pack.
+4. **Should Bright Data lookup be blocked by unresolved pending merge candidates?**
+   - Answer recorded 2026-05-09: yes. Bright Data lookup must use the same pending-merge guard principle as OpenAI enrichment.
+   - Required behavior: if an approved candidate has unresolved pending merge review candidates, the backend must block Bright Data lookup and the Approved detail panel should disable or explain the action until the merge review is resolved.
+   - Reason: vendor professional context should not be attached before identity is clean enough to know which real person the returned LinkedIn profile belongs to.
+
+5. **How does Bright Data output affect enrichment?**
+   - Answer recorded 2026-05-09: Bright Data output requires its own lightweight HITL approval before it can affect OpenAI enrichment.
+   - Reviewer decisions: the Approved detail panel should let the reviewer approve, reject, or ignore a returned Bright Data professional profile match.
+   - Enrichment boundary: only approved Bright Data summaries may be included in the existing OpenAI enrichment evidence pack.
    - Boundary: Bright Data does not directly approve candidates, merge candidates, assign final labels, or materialize profiles.
+   - Reason: Bright Data can return the wrong LinkedIn profile or professional context for common names, stale URLs, shared/team pages, or thin source evidence. A separate vendor-match review prevents confidently wrong downstream enrichment.
+
+6. **Which Bright Data fields may be stored and displayed in v1?**
+   - Answer recorded 2026-05-09: store and display only the approved v1 safe professional-context fields.
+   - Allowed fields: profile URL, name, headline/position, current company, location, education summary, experience summary, skills, about summary, and projects/publications if present.
+   - Excluded unless explicitly approved later: emails, phone numbers, contact-data fields, private fields, sensitive demographic fields, salary-like fields, and any full raw vendor payload.
+   - Reason: the v1 product need is professional context for reviewer judgment and enrichment, not contact-data acquisition or broad profile warehousing.
+
+7. **Should Bright Data raw payloads be stored, or should v1 store normalized summaries only?**
+   - Answer recorded 2026-05-09: store normalized summaries only for v1.
+   - Required behavior: Firestore vendor match documents should contain only the approved normalized field allowlist, provider metadata, query/input lineage, reviewer decision state, and operational lookup status. Do not store the full raw Bright Data JSON payload in hot dashboard documents.
+   - Deferred: if debugging later requires raw payload inspection, add short-lived raw snapshots or storage pointers only after a separate explicit retention policy decision.
+   - Reason: normalized summaries keep the first implementation focused, prevent accidental retention/display of fields outside the v1 allowlist, and reduce noisy vendor payload storage.
+
+8. **Should rejected or ignored Bright Data matches be remembered?**
+   - Answer recorded 2026-05-09: yes. Rejected and ignored Bright Data matches should be remembered by selected LinkedIn URL/query hash and approved evidence lineage.
+   - Required behavior: if the reviewer manually tries the same unchanged lookup again, the system should surface the prior rejected/ignored decision instead of spending another Bright Data call or showing the same bad match as if it were new.
+   - Re-run boundary: a fresh lookup is allowed when the selected LinkedIn URL changes or when approved candidate evidence materially changes enough to produce a different query/input hash.
+   - Reason: this prevents duplicate credit spend, avoids reviewer fatigue, and preserves the reviewer’s prior judgment without blocking legitimately new evidence.
+
+9. **How should approved Bright Data evidence affect candidates that already have final profiles?**
+   - Answer recorded 2026-05-09: keep v1 simple. Approved Bright Data evidence should set or preserve `needsEnrichment=true` and allow a reviewer to manually generate a re-enrichment draft.
+   - Required behavior: do not silently mutate the existing final candidate profile when Bright Data evidence is approved. The new professional context becomes approved enrichment evidence and waits for manual re-enrichment plus the existing enrichment HITL path.
+   - Deferred: do not implement complex important-field diffing, automatic profile version comparison, or full profile version history as part of the first Bright Data implementation.
+   - Reason: this ensures newly approved professional context can improve future matching-ready profiles without silently changing finalized data or expanding v1 scope.
+
+10. **Should LinkedIn become a first-class evidence type for display/query seeds but not strong dedup evidence?**
+   - Answer recorded 2026-05-09: yes. LinkedIn profile URLs should be first-class evidence for display, reviewer selection, Bright Data lookup inputs, and downstream lineage.
+   - Dedup boundary: LinkedIn profile URLs must not count as strong dedup evidence or trigger automatic strong identity merges in v1 unless the team explicitly approves that policy later.
+   - Required behavior: reviewers should be able to inspect and choose LinkedIn URLs as Bright Data inputs, and any approved vendor evidence should preserve LinkedIn/source lineage.
+   - Reason: LinkedIn URLs are useful context and vendor lookup inputs, but treating them as strong identity evidence would change merge semantics and compliance/product policy beyond the current Bright Data enrichment scope.
+
+11. **What should the first live Bright Data test candidate/environment be?**
+   - Answer recorded 2026-05-09: after local fake/provider tests pass, run exactly one live staging lookup through the active sourcing dashboard `https://wekruit-sourcing.web.app`, backed by Firebase project `wekruit-dev-env`.
+   - Candidate policy: use one known approved staging candidate with a clear LinkedIn profile URL manually selected from the Approved detail panel. The exact candidate and URL will be chosen at test time after the local path works.
+   - Boundary: do not run live Bright Data calls during planning or before local fake/provider verification passes.
+   - Reason: this validates the real integration in the environment the team is currently using while keeping vendor spend, data mutation, and reviewer workflow risk tightly bounded.
 
 ### Coresignal Planning Archive (Paused)
 
@@ -1962,7 +2018,7 @@ This section should be updated after each planning discussion so implementation 
 - [ ] A reviewer can run a professional-profile lookup for one approved candidate in the local emulator.
 - [ ] Lookup is blocked when the approved candidate has unresolved pending merge candidates.
 - [ ] Lookup output is reviewable and does not directly mutate final profiles.
-- [ ] Approved Coresignal evidence appears in the enrichment evidence pack.
+- [ ] Approved Bright Data evidence appears in the enrichment evidence pack.
 - [ ] Enrichment still requires human approval before profile materialization.
 - [ ] Local tests and browser verification pass before any live deployment.
 
