@@ -22,7 +22,7 @@ Use a conservative productization path:
 5. Add evidence-grounded enrichment and enrichment review.
 6. Add final candidate profiles and reviewer-facing lineage.
 7. Harden real source adapters and controlled staging imports.
-8. Add vendor-approved professional enrichment, starting with Coresignal if the team confirms access and policy.
+8. Add vendor-approved professional enrichment, starting with Bright Data LinkedIn profile scraping for reviewer-approved LinkedIn URLs.
 9. Add metrics and evaluation loops after reviewer flow and source operations are stable.
 10. Defer Neo4j projection until graph queries justify it.
 
@@ -65,14 +65,15 @@ Last updated: 2026-05-08.
 - [x] Capped review-count copy is implemented so the dashboard can distinguish loaded review rows from total pending review candidates.
 - [x] Staging Firestore was reset/reseeded to a single Stanford-related Devpost competition, `TreeHacks 2026`, after explicit user/team direction.
 - [x] The TreeHacks `Weak` match-strength concern was investigated and documented as expected singleton-review behavior, with a remaining UI wording cleanup recommended.
-- [x] Current active planning branch is `codex/coresignal-integration-plan` in both active implementation repos, branched from `codex/clickable-evidence-lifecycle`.
-- [x] Coresignal integration planning has been added to this document. No Coresignal implementation has started yet.
+- [x] Current active planning branch is `codex/brightdata-integration-plan` in both active implementation repos, branched from `codex/clickable-evidence-lifecycle` through the prior Coresignal planning branch.
+- [x] Coresignal integration planning is preserved in this document as a paused archive. No Coresignal implementation has started.
+- [x] Bright Data is now the active vendor direction for professional LinkedIn profile enrichment planning.
 
 ## Current Open Decisions And Waiting State
 
 Last updated: 2026-05-08.
 
-This is the current single source of truth after the successful Phase 3.5 live smoke, real source adapters, clickable evidence/lifecycle deployment, TreeHacks staging reseed, and Coresignal planning update:
+This is the current single source of truth after the successful Phase 3.5 live smoke, real source adapters, clickable evidence/lifecycle deployment, TreeHacks staging reseed, Coresignal planning archive, and Bright Data planning pivot:
 
 - Not waiting on Phase 3.5 access anymore. Firebase CLI access, live sourcing API deploy, live dashboard deploy, and tiny live workflow verification all succeeded.
 - Not waiting on clickable evidence/source links or lifecycle callouts. Those are implemented, verified, and deployed.
@@ -84,12 +85,14 @@ This is the current single source of truth after the successful Phase 3.5 live s
   - Input workbook: `devpost/treehacks-2026.xlsx` from `/Users/spencerwang/Downloads/devpost-20260501T061334Z-3-001.zip`.
   - Exact Firestore counts after Stanford upload: `1` source run, `1,029` source records, `4,878` evidence records, `1,010` dedup review candidates, and `0` review labels / approved entities / enrichment runs / enrichment review items / final profiles.
   - No candidate approvals, merge decisions, enrichment generation, enrichment review decisions, or profile materialization were performed during the Stanford upload.
-- Current Coresignal waiting items:
-  - Obtain `CORESIGNAL_API_KEY`.
-  - Confirm allowed use case, data-use policy, and which Coresignal fields may be stored/displayed.
-  - Confirm whether LinkedIn/profile URLs found in Devpost/GitHub records may be used as Coresignal lookup seeds.
-  - Confirm budget/credit limits and whether v1 should be manual-only.
+- Current Bright Data waiting items:
+  - User/team will provide `BRIGHTDATA_API_KEY` through `wekruit-core-service-cloud-function/.env` for local development and Firebase Secret Manager for deployed testing.
+  - Confirm the Bright Data account has access to the LinkedIn Scraper API / Profiles scraper.
+  - Confirm the team-approved data-use policy for scraping LinkedIn profile URLs that already appear in Devpost/GitHub/source evidence.
+  - Confirm the first live test candidate and LinkedIn URL after the emulator fake path is working.
   - Confirm raw vendor payload retention policy versus normalized summary-only storage.
+- Paused Coresignal waiting items:
+  - Keep the Coresignal API key, field, retention, and budget decisions below for future reference only. Coresignal is not the active implementation path unless the team pivots back.
 - Current tag-system waiting item:
   - Wait for the teammate-owned unified tag npm package, then migrate hardcoded taxonomy definitions out of `records.ts` / `web/app.js` duplication.
 - Current reviewer workflow caution:
@@ -101,12 +104,12 @@ The core v1 workflow is proven locally and against the live `wekruit-dev-env` Fi
 
 Current priority order:
 
-1. **Coresignal professional enrichment integration.**
-   - Status: planned only on `codex/coresignal-integration-plan`; no implementation yet.
-   - Recommended first version: manual lookup for an approved candidate after identity review and merge-blocker checks.
-   - Coresignal results should become reviewer-visible vendor evidence/context. They should not silently mutate approved entities, final profiles, or unified tags.
-   - Implementation should start with an emulator fake/provider contract before any live Coresignal call.
-   - Team input required: API key, allowed fields, budget limits, lookup policy, and retention policy.
+1. **Bright Data professional LinkedIn profile enrichment integration.**
+   - Status: active planning on `codex/brightdata-integration-plan`; no implementation yet.
+   - Recommended first version: manual LinkedIn URL scrape for an approved candidate after identity review and merge-blocker checks.
+   - Bright Data results should become reviewer-visible vendor evidence/context. They should not silently mutate approved entities, final profiles, or unified tags.
+   - Implementation should start with an emulator fake/provider contract before any live Bright Data call.
+   - Team input required: Bright Data API key, account access to the LinkedIn Profiles scraper, allowed fields, lookup policy, budget expectations, and retention policy.
 
 2. **Unified tag package migration.**
    - Status: waiting on teammate-owned npm package.
@@ -124,34 +127,35 @@ Current priority order:
    - Recommended UI wording: show `Single-source` or `Needs identity review` for singleton review candidates; reserve `Weak/Medium/Strong` language for actual multi-record match strength.
 
 5. **Website profile enrichment.**
-   - Candidate personal websites are a better near-term enrichment target than LinkedIn because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
+   - Candidate personal websites remain a valuable enrichment target because they are often public, already present in Devpost/GitHub records, and can be fetched as supporting evidence.
    - A future website enrichment worker can fetch only URLs that already exist on source records or approved candidates, extract page title, description/meta tags, visible about/project text, social/profile links, and outbound project/repo links, then store the extracted facts as evidence/context.
    - This worker should respect robots/rate limits, store source URL + extraction timestamp + raw snapshot pointer, and route meaningful new profile fields through enrichment review instead of silently mutating final profiles.
    - 2026-05-07 scraper research update:
      - ScrapeGraphAI remains useful inspiration for LLM-guided structured extraction from a known page or small website, especially when the target page layout is unknown and the desired output is a typed JSON object.
      - Crawl4AI is also a strong fit for this layer because it is an open-source LLM-friendly crawler/scraper with markdown and structured JSON extraction workflows.
      - Recommended v1 website path: start with a small deterministic worker for already-known candidate URLs, use one crawler/extractor abstraction, and store extracted website facts as source/evidence context. Do not crawl broadly from the open web until reviewer value, compliance posture, and rate limits are clear.
-     - Website extraction is separate from LinkedIn enrichment. Personal websites are the safer first target; LinkedIn should stay behind approved vendor/API policy.
+     - Website extraction is separate from LinkedIn enrichment. Personal websites can use open-web extraction; LinkedIn should stay behind approved vendor/API policy such as Bright Data.
 
 6. **LinkedIn/social profile handling.**
    - For v1, preserve LinkedIn/Twitter/social URLs as clickable reviewer context and optional enrichment context.
    - Do not implement an unofficial LinkedIn scraper as a production path.
-   - Any automated LinkedIn profile fetching should wait until the team confirms approved API/product access and the exact data-use policy. The likely approved paths are either user-consented LinkedIn OAuth for the authenticated member, LinkedIn Talent/Sales partner APIs if WeKruit qualifies, or manual reviewer link-out.
+   - Automated LinkedIn profile fetching should use the approved Bright Data LinkedIn Scraper API path only after the team confirms account access, policy, and field retention. The first version should be URL-first, not broad LinkedIn discovery.
 
 7. **Bright Data / Coresignal evaluation.**
-   - Current recommendation: evaluate Coresignal first for candidate enrichment and list discovery because its product/API surface is already employee/profile-search oriented.
-   - Bright Data is still useful as a URL-first structured fetcher for known public profile/company/job/post URLs and niche public-web extraction, but LinkedIn and Devpost/GitHub scraping should stay behind explicit legal/product approval.
+   - Current recommendation after teammate direction: implement Bright Data first for LinkedIn profile enrichment when WeKruit already has a LinkedIn URL from approved source evidence.
+   - Coresignal planning is preserved as a paused alternative for future professional-profile discovery/enrichment, but it is not the active implementation path.
+   - Bright Data is useful as a URL-first structured fetcher for known public profile/company/job/post URLs and niche public-web extraction, but LinkedIn and Devpost/GitHub scraping should stay behind explicit legal/product approval.
    - Neither vendor should bypass the HITL workflow: any externally enriched professional profile data should become evidence/context and route through enrichment review before profile materialization.
-   - 2026-05-07 vendor decision update:
-     - If the team wants to pick only one vendor path for LinkedIn/professional profile enrichment, choose Coresignal first.
+   - 2026-05-07 vendor decision update, superseded by 2026-05-08 Bright Data pivot:
+     - Historical note: this older recommendation preferred Coresignal if the team needed broad professional-profile discovery from partial attributes.
      - Rationale: Coresignal's API surface is closer to the product problem: search/collect professional employee/profile records, return normalized professional fields, and support discovery from candidate-like attributes.
      - Bright Data is better when WeKruit already has exact LinkedIn/profile/company/job/post URLs and needs URL-first extraction, but it is less directly aligned with "given a Devpost/GitHub candidate, discover or enrich professional identity."
      - Proposed integration shape: Coresignal enrichment worker runs only after candidate identity approval or on an explicitly selected source subset; it uses approved evidence fields as query/context; returned professional data becomes enrichment evidence/context; reviewer approval remains required before final profile or unified tag assignment.
-     - Bright Data should remain a later fallback for known URL extraction, not the primary LinkedIn discovery path.
-   - 2026-05-08 Coresignal integration planning update:
+     - This was the prior recommendation. The active plan now uses Bright Data first because the teammate direction is to use the existing Bright Data LinkedIn URL scraper.
+   - 2026-05-08 Coresignal integration planning update, now paused:
      - Recommendation: integrate Coresignal as a post-identity-approval professional enrichment provider, not as a raw source importer and not as a replacement for the Devpost/GitHub adapters.
      - First-principles reason: raw source adapters answer "what did we discover from GitHub/Devpost/research?"; dedup/HITL answers "is this a real candidate and which source records belong together?"; Coresignal should answer "can we find additional professional evidence for an already-approved person?" These are different jobs and should stay separated.
-     - Coresignal should run after the existing merge-before-enrichment guard. If an approved entity still has unresolved pending merge candidates, block vendor lookup/enrichment until the reviewer resolves identity first.
+     - If the team pivots back, Coresignal should run after the existing merge-before-enrichment guard. If an approved entity still has unresolved pending merge candidates, block vendor lookup/enrichment until the reviewer resolves identity first.
      - Coresignal query seeds should come only from approved candidate evidence and source records: name, GitHub URL, Devpost URL, personal website, LinkedIn URL when present, email when already approved, institution, location, source domains, and reviewer-approved signals.
      - Coresignal output should be stored as vendor evidence/context and routed through enrichment review. It should not silently overwrite approved candidate fields, final profiles, or unified tags.
      - Secret handling: use local `.env` for local tests and Firebase Secret Manager for deployed functions, with a future `CORESIGNAL_API_KEY`. Do not store API keys in Firestore, source records, run metadata, review notes, or dashboard-visible payloads.
@@ -176,8 +180,8 @@ Current priority order:
        - Confirm which returned fields may be displayed/stored: current title/company, location, skills, education, experience, emails, LinkedIn URL, activity, and/or salary-like fields.
        - Confirm retention policy for raw vendor payloads versus normalized summaries only.
      - Vendor comparison:
-       - Coresignal remains the better first choice when WeKruit needs professional profile discovery/enrichment from partial candidate attributes.
-       - Bright Data remains better when WeKruit already has an exact LinkedIn/profile/company/job/post URL and wants a URL-first structured fetch.
+       - Coresignal remains useful if WeKruit later needs professional profile discovery/enrichment from partial candidate attributes.
+       - Bright Data is the active choice when WeKruit already has an exact LinkedIn/profile/company/job/post URL and wants URL-first structured fetch.
        - ScrapeGraphAI/Crawl4AI remain better fits for public personal websites and project pages, not for LinkedIn profile enrichment.
 
 8. **Re-enrichment and profile versioning.**
@@ -1737,24 +1741,41 @@ Final local API verification from this walkthrough:
   - Taylor Chen: `academic_research`, source `openalex`
   - Alex Rivera: `software_engineering`, sources `devpost+github`
 
-## Phase 6.5: Coresignal Professional Enrichment
+## Phase 6.5: Bright Data Professional LinkedIn Enrichment
 
 ### Goal
 
-Use Coresignal to add professional-profile evidence for candidates that have already passed identity/relevance review, without weakening the existing HITL boundaries.
+Use Bright Data's LinkedIn Scraper API to add professional-profile evidence for candidates that have already passed identity/relevance review and already have reviewer-visible LinkedIn URLs from approved source evidence, without weakening the existing HITL boundaries.
 
 ### Why This Phase Exists
 
 The current pipeline can ingest source records, dedup candidates, approve global candidates, generate enrichment drafts, review enrichment, and materialize final profiles. The remaining gap is that a GitHub/Devpost/research source record can be thin: it may show a project, paper, or public repository but not enough professional context to understand the person's current role, career stage, company, or broader domain interests.
 
-Coresignal should fill that professional-context gap. It should not replace source adapters, dedup, reviewer approval, or the OpenAI taxonomy step.
+Bright Data should fill that professional-context gap only when WeKruit already has an explicit LinkedIn profile URL from source data or reviewer-approved evidence. The teammate-provided Bright Data docs confirm the key fit: the LinkedIn Scraper API supports sending a LinkedIn URL and receiving structured JSON back, and the LinkedIn Profiles dataset ID is `gd_l1viktl72bvl7bjuj0`.
+
+This is a vendor evidence layer, not a new raw source importer and not a replacement for dedup/review/enrichment. Bright Data output should help reviewers and enrichment understand an approved candidate, but it must not silently overwrite candidate identity, final profile labels, or future unified tags.
+
+### Bright Data Findings
+
+- Reference docs:
+  - `https://docs.brightdata.com/datasets/scrapers/scrapers-library/overview`
+  - `https://docs.brightdata.com/datasets/scrapers/linkedin/introduction`
+  - `https://docs.brightdata.com/datasets/scrapers/linkedin/send-first-request`
+  - `https://docs.brightdata.com/datasets/scrapers/linkedin/async-requests`
+- Bright Data's Scrapers Library provides pre-built structured scrapers that can be called synchronously or asynchronously.
+- The LinkedIn Scraper API accepts one or more LinkedIn URLs and returns clean structured JSON. The docs explicitly describe this as "send a LinkedIn URL, get structured JSON back."
+- For LinkedIn Profiles, Bright Data documents dataset ID `gd_l1viktl72bvl7bjuj0` and input URL pattern `linkedin.com/in/{username}`.
+- Synchronous `/datasets/v3/scrape` is the shortest v1 path for a manual single-candidate lookup. It supports up to 20 URLs and returns data in the same request, though it may switch to an async snapshot if it exceeds the timeout.
+- Asynchronous `/datasets/v3/trigger` is better for batch jobs, 20+ URLs, discovery tasks, webhooks, and production bulk pipelines. It returns a `snapshot_id`, which must be polled with the progress endpoint and downloaded from the snapshot endpoint.
 
 ### Non-Goals
 
-- Do not use Coresignal to import raw candidate pools before identity review.
-- Do not use Coresignal as the source of truth for candidate identity.
-- Do not write Coresignal output directly into final candidate profiles without reviewer approval.
-- Do not store Coresignal API keys in Firestore or dashboard-visible documents.
+- Do not use Bright Data to import raw candidate pools before identity review.
+- Do not use Bright Data as the source of truth for candidate identity.
+- Do not use Bright Data as a blind LinkedIn discovery/search step in v1. The first implementation should require a known LinkedIn URL.
+- Do not write Bright Data output directly into final candidate profiles without reviewer approval.
+- Do not store Bright Data API keys in Firestore or dashboard-visible documents.
+- Do not store the full raw vendor payload in hot dashboard documents by default.
 - Do not implement broad batch lookup until the manual single-candidate path is proven.
 
 ### Recommended Workflow Placement
@@ -1766,7 +1787,8 @@ flowchart LR
   IdentityHITL["Identity / relevance HITL"]
   Approved["Approved global candidate"]
   MergeGuard["Pending-merge guard"]
-  Coresignal["Coresignal lookup"]
+  UrlCheck["Known LinkedIn URL check"]
+  BrightData["Bright Data LinkedIn profile scrape"]
   VendorReview["Professional evidence review"]
   Enrichment["OpenAI taxonomy enrichment"]
   EnrichmentHITL["Enrichment HITL"]
@@ -1776,8 +1798,9 @@ flowchart LR
   Dedup --> IdentityHITL
   IdentityHITL --> Approved
   Approved --> MergeGuard
-  MergeGuard --> Coresignal
-  Coresignal --> VendorReview
+  MergeGuard --> UrlCheck
+  UrlCheck --> BrightData
+  BrightData --> VendorReview
   VendorReview --> Enrichment
   Enrichment --> EnrichmentHITL
   EnrichmentHITL --> Profile
@@ -1786,34 +1809,153 @@ flowchart LR
 ### Future Implementation Tasks
 
 - [ ] Add a provider interface such as `ProfessionalProfileLookupPort` in core-service.
-- [ ] Add an emulator-only fake Coresignal provider with deterministic fixture responses.
+- [ ] Add a Bright Data provider implementation behind that interface, with `BRIGHTDATA_API_KEY` read only by core-service.
+- [ ] Add an emulator-only fake Bright Data provider with deterministic LinkedIn profile fixture responses. No live vendor calls in the first local tests.
 - [ ] Add Firestore storage for vendor lookup runs and candidate professional-profile matches.
 - [ ] Add a manual dashboard action from the Approved detail panel after merge blockers are clear.
-- [ ] Show Coresignal match candidates with query seeds, match rationale, confidence, and source/evidence lineage.
-- [ ] Let the reviewer approve, reject, or ignore a Coresignal match before it becomes enrichment context.
-- [ ] Feed approved Coresignal evidence into the existing enrichment evidence pack.
-- [ ] Keep OpenAI taxonomy generation and enrichment HITL unchanged: Coresignal adds evidence; it does not assign final labels by itself.
+- [ ] Show all known LinkedIn URLs found on the approved candidate's source/evidence records and require the reviewer to choose which URL(s) to fetch.
+- [ ] Use synchronous Bright Data `/scrape` for the first manual single-candidate path. Support the returned `snapshot_id` case if Bright Data automatically switches to async.
+- [ ] Normalize the returned LinkedIn profile into a compact professional summary: name, headline/current role, company, location, education summary, experience summary, skills, profile URL, and source lineage.
+- [ ] Let the reviewer approve, reject, or ignore a Bright Data profile summary before it becomes enrichment context.
+- [ ] Feed approved Bright Data evidence into the existing enrichment evidence pack.
+- [ ] Keep OpenAI taxonomy generation and enrichment HITL unchanged: Bright Data adds evidence; it does not assign final labels by itself.
 - [ ] Add focused tests for merge-blocked candidates, missing API key behavior, no-match results, rejected vendor matches, approved vendor matches, and enrichment evidence-pack inclusion.
-- [ ] Run the full local emulator workflow before any live Coresignal call.
+- [ ] Run the full local emulator workflow before any live Bright Data call.
+- [ ] After local fake verification, run one live staging lookup against a known approved candidate with a real LinkedIn profile URL.
 
 ### Proposed Firestore Shape
 
 - `sourcing-vendor-enrichment-runs`
-  - provider, approved entity ID, query input hash, requested fields, status, error, created/updated timestamps, and cost/credit metadata when available.
-- `sourcing-vendor-profile-candidates` or `sourcing-external-profile-matches`
-  - approved entity ID, provider, provider record ID/profile URL, normalized display fields, match rationale, confidence, evidence IDs used as query seeds, reviewer status, and raw payload storage pointer.
+  - provider (`brightdata`), lookup type (`linkedin_profile_by_url`), approved entity ID, input URL hash, selected LinkedIn URL(s), requested dataset ID, status, snapshot ID when async, error, created/updated timestamps, and cost/credit metadata when available.
+- `sourcing-vendor-profile-matches`
+  - approved entity ID, provider, provider record ID/profile URL, normalized display fields, match rationale, confidence, evidence IDs that supplied the LinkedIn URL, reviewer status, and raw payload storage pointer only if raw retention is approved.
 
 Keep raw/large vendor payloads out of hot dashboard documents where practical. Store compact normalized summaries in Firestore and use a storage pointer for full payloads if the team approves raw retention.
 
 ### Required Team Decisions
 
-- [ ] Provide `CORESIGNAL_API_KEY` through local `.env` for local testing and Firebase Secret Manager for deployed testing.
-- [ ] Confirm allowed Coresignal use case and data-use policy.
-- [ ] Confirm whether LinkedIn/profile URLs from Devpost/GitHub records may be used as query seeds.
-- [ ] Confirm which fields may be stored/displayed: current title/company, location, skills, education, experience, emails, profile URL, activity, salary-like fields, etc.
+- [ ] Provide `BRIGHTDATA_API_KEY` through `wekruit-core-service-cloud-function/.env` for local testing and Firebase Secret Manager for deployed testing.
+- [ ] Confirm Bright Data account access to the LinkedIn Scraper API and Profiles dataset.
+- [ ] Confirm allowed Bright Data use case and data-use policy for LinkedIn URLs found in Devpost/GitHub/source evidence.
+- [ ] Confirm which fields may be stored/displayed: current title/company, location, skills, education, experience summaries, profile URL, public activity summaries, emails/contact fields, etc.
 - [ ] Confirm first implementation mode: manual-only is recommended.
-- [ ] Confirm credit/budget limits and live test candidate(s).
+- [ ] Confirm credit/budget expectations and live test candidate(s).
 - [ ] Confirm raw payload retention policy.
+
+### Bright Data Decision Log
+
+This section should be updated after each planning discussion so implementation can proceed without relying on chat memory.
+
+1. **Which repo owns the Bright Data API key and live provider call?**
+   - Current recommendation: `wekruit-core-service-cloud-function`.
+   - Reason: core-service owns approved candidates, merge guards, enrichment, Firestore writes, and deployed function secrets. `wekruit-scraping` should continue producing source records and should not call Bright Data directly.
+
+2. **Which Bright Data mode should v1 support first?**
+   - Current recommendation: manual single-candidate LinkedIn profile lookup from the Approved detail panel.
+   - Reason: this matches the existing HITL workflow, avoids large unexpected vendor spend, and is easy to verify in the emulator before touching live staging.
+
+3. **What should be used as the Bright Data input?**
+   - Current recommendation: only LinkedIn profile URLs that already exist in approved source/evidence records or are explicitly selected by a reviewer.
+   - Boundary: name/company/GitHub/Devpost fields can help a reviewer decide whether the returned profile belongs to the candidate, but v1 should not use Bright Data for broad LinkedIn discovery from partial attributes.
+
+4. **How does Bright Data output affect enrichment?**
+   - Current recommendation: Bright Data output becomes vendor evidence/context only after reviewer approval. Approved vendor evidence can then be included in the existing OpenAI enrichment evidence pack.
+   - Boundary: Bright Data does not directly approve candidates, merge candidates, assign final labels, or materialize profiles.
+
+### Coresignal Planning Archive (Paused)
+
+Coresignal planning below is preserved because it may be useful if the team pivots back later. It is not the active implementation plan as of the Bright Data pivot.
+
+### Coresignal Decision Log
+
+This section should be updated after each planning discussion so implementation can proceed without relying on chat memory.
+
+1. **Where should `CORESIGNAL_API_KEY` live?**
+   - Answer: put `CORESIGNAL_API_KEY` in `wekruit-core-service-cloud-function/.env` for local development, then later in Firebase Secret Manager for deployed `sourcing-api`.
+   - Reason: core-service owns approved candidates, merge guards, enrichment, Firestore writes, and deployed function secrets. `wekruit-scraping` should continue producing source records and should not call Coresignal directly.
+
+2. **Which Coresignal use mode should v1 support first?**
+   - Answer: v1 should support manual single-candidate lookup from the Approved detail panel.
+   - Workflow: reviewer approves candidate identity/relevance first; backend confirms there are no pending merge blockers; reviewer manually triggers Coresignal lookup; returned professional profile match is shown to the reviewer; reviewer approves, rejects, or ignores the match; only approved Coresignal evidence becomes enrichment context.
+   - Reason: this avoids burning credits on every approval, keeps the first integration easy to inspect/debug, and preserves the HITL boundary before any professional profile data affects enrichment.
+   - Deferred: automatic lookup after every approval and batch lookup for selected approved candidates/source runs can be revisited after the manual flow is trusted.
+
+3. **Which approved candidate fields may be used as Coresignal query seeds?**
+   - Answer: use only fields that already exist on approved source records/evidence for that candidate.
+   - Allowed query seeds include candidate name, GitHub URL/username, Devpost URL/username, personal website/homepage, LinkedIn URL when it already came from source data, email when already approved, institution/company/location when present, source domains, and reviewer-approved signals.
+   - GitHub, Devpost, and LinkedIn URLs may be used as Coresignal query seeds if they already came from source data.
+   - Boundary: LinkedIn URLs are allowed as lookup seeds/context, but LinkedIn is not promoted to strong dedup evidence and the system should not scrape LinkedIn directly.
+
+4. **Which Coresignal output fields may be stored and displayed?**
+   - Answer: store/display professional context fields that help reviewer judgment, enrichment, and future matching.
+   - Allowed v1 fields include professional profile URL, current title/headline, current company, location, education, work experience summary, skills, industry/domain hints, and public profile links.
+   - Professional email/contact fields should be treated conservatively and only used if the team explicitly approves contact-data usage.
+   - Excluded for v1: salary-like fields, sensitive demographic fields if present, and large raw payloads directly in hot Firestore dashboard documents.
+   - Reason: Coresignal should strengthen professional understanding and matching context, not turn the sourcing flow into a contact-data dump.
+
+5. **Should raw Coresignal payloads be retained or should WeKruit store normalized summaries only?**
+   - Answer: store normalized summaries only for v1.
+   - Firestore should store compact fields such as provider, provider profile URL/ID, current title/company/location, education summary, experience summary, skills/domains, match confidence/rationale, query seeds used, evidence lineage, and reviewer decision.
+   - Do not store the entire raw Coresignal JSON payload by default.
+   - If debugging later requires raw payload inspection, add short-lived raw snapshots or storage pointers with an explicit retention policy.
+   - Reason: raw vendor payloads can be large, noisy, expensive to review, and may include fields the product does not need or should not expose.
+
+6. **Does Coresignal output need its own human review before enrichment uses it?**
+   - Answer: yes. Coresignal lookup is manually triggered and its returned professional match needs lightweight reviewer confirmation before enrichment can use it.
+   - Workflow: reviewer approves candidate identity; reviewer manually triggers Coresignal; system shows the matched professional profile summary; reviewer chooses `approve professional match`, `reject match`, or `ignore / not enough evidence`; only approved Coresignal summaries are added to the enrichment evidence pack.
+   - Reason: Coresignal can return the wrong person for common names or thin source records. Reviewing the professional match before enrichment prevents confidently wrong labels downstream.
+
+7. **How should multiple Coresignal matches or no-match results be handled?**
+   - Answer: handle one strong match, multiple plausible matches, and no-match results explicitly.
+   - One strong match: show it to the reviewer; reviewer approves, rejects, or ignores it.
+   - Multiple plausible matches: show a small ranked list, ideally top 3; reviewer must pick one or reject all. Do not auto-choose unless there is an extremely strong exact URL/profile match.
+   - No match: store a `no_match` vendor lookup result with the query seed hash; do not re-run the same lookup unless candidate evidence changes.
+   - Candidates with no Coresignal match can still proceed through normal OpenAI enrichment using existing approved evidence.
+   - Reason: this avoids wasted credits, avoids repeatedly querying unchanged evidence, and avoids forcing every candidate to have a professional profile match.
+
+8. **What budget, rate-limit, and retry guardrails should v1 enforce?**
+   - Answer: because v1 is manual-only, do not build a complex queue/rate-limit system yet.
+   - Guardrails: no automatic retries; store query seed hash to avoid repeated credit spend for the same unchanged candidate evidence; show temporary API failures to the reviewer and let the reviewer retry manually; log each lookup run with status such as `completed`, `no_match`, `failed`, `rejected`, or `approved`.
+   - No concrete staging cap is required for v1.
+   - Reason: manual-only triggering already limits spend; duplicate-spend prevention gives enough safety without adding unnecessary infrastructure.
+
+9. **How should approved Coresignal evidence affect enrichment and re-enrichment?**
+   - Answer: approved Coresignal evidence should feed first-time enrichment and should make already-profiled candidates eligible for manual re-enrichment.
+   - If the candidate has not been enriched yet, approved Coresignal evidence should be included in the evidence pack when enrichment is generated.
+   - If the candidate already has a final profile, approved Coresignal evidence should set or preserve `needsEnrichment=true` and allow a manual re-enrichment draft.
+   - Do not build smart important-field diffing as part of the first Coresignal implementation. That remains a later re-enrichment/versioning task.
+   - Reason: this keeps v1 straightforward and ensures newly approved professional context can improve the matching-ready profile without silently mutating it.
+
+10. **Where should the Coresignal UI appear?**
+   - Answer: primary Coresignal controls belong in the Approved tab detail panel.
+   - Approved tab should show Coresignal status such as `not_checked`, `lookup_available`, `no_match`, `match_pending_review`, `professional_match_approved`, and `match_rejected`.
+   - Approved tab should expose a manual action such as `Find professional profile`.
+   - If Coresignal results exist, the Approved detail panel should show ranked match cards with approve/reject/ignore controls.
+   - Enrichment tab should show Coresignal evidence only after it has been approved and included in an enrichment evidence pack.
+   - Profiles tab should show Coresignal lineage/source only if it contributed to the final profile.
+   - Reason: Coresignal is an approved-candidate enrichment step. Later tabs should show downstream evidence/lineage, not become the primary action surface.
+
+11. **Should Coresignal data use new collections or be folded into existing enrichment runs?**
+   - Answer: use separate vendor lookup and vendor match collections.
+   - Recommended collections: `sourcing-vendor-enrichment-runs` for lookup attempts and `sourcing-vendor-profile-matches` for returned professional profile match candidates.
+   - Reason: Coresignal lookup happens before OpenAI enrichment; professional match review is a different human decision than enrichment review; no-match/failed/rejected lookup history should exist without creating an OpenAI enrichment run; and one approved Coresignal match may be reused across future enrichment versions.
+   - Boundary: existing OpenAI enrichment runs should remain focused on taxonomy/profile draft generation, not vendor lookup activity.
+
+12. **What should the Coresignal reviewer decision store?**
+   - Answer: store a structured professional-match decision with optional reviewer note.
+   - Fields should include decision (`approve_match`, `reject_match`, or `ignore_match`), reviewer ID, reviewed timestamp, optional review note, approved match ID if approved, rejected match IDs if relevant, approved entity ID, vendor run ID, query seed hash, query seed evidence IDs, match rationale shown to reviewer, and normalized summary snapshot at review time.
+   - Review note should be optional. The structured decision is the important required signal.
+   - Reason: this preserves enough lineage to improve vendor matching later without overburdening the reviewer.
+
+13. **What happens after a rejected or ignored Coresignal match?**
+   - Answer: remember rejected/ignored matches for the same query seed hash, avoid showing them again for unchanged evidence, and allow a new lookup when approved candidate evidence changes.
+   - If reviewer rejects or ignores a match, store the decision and do not automatically retry or redisplay the same match for the same query seed hash.
+   - If new GitHub/Devpost/research evidence is approved later and the query seed hash changes, the reviewer may manually run Coresignal again.
+   - Previously rejected matches should remain hidden unless they are returned with materially different supporting evidence.
+   - Reason: this avoids annoying reviewers with the same wrong match while still allowing better future lookup when the candidate evidence becomes clearer.
+
+14. **Pending: What should the first live Coresignal test environment and candidate be?**
+   - Current recommendation before user decision: implement and verify against the local emulator first, then run one live lookup in `wekruit-dev-env` / `wekruit-sourcing.web.app` using a deliberately chosen test candidate with clear source evidence.
 
 ### Acceptance Criteria
 
@@ -1936,8 +2078,8 @@ gantt
   Live smoke, clickable links, lifecycle UI       :done, c4, after c3, 5d
   TreeHacks staging reseed                        :done, c5, 2026-05-05, 1d
   section Next
-  Coresignal provider planning and local fake     :active, n1, 2026-05-08, 3d
-  Manual Coresignal lookup and review flow        :n2, after n1, 5d
+  Bright Data provider planning and local fake    :active, n1, 2026-05-08, 3d
+  Manual LinkedIn scrape and review flow          :n2, after n1, 5d
   Unified tag package migration                   :n3, after n1, 4d
   Queue pagination and singleton wording cleanup  :n4, after n2, 4d
   section Later
@@ -1979,7 +2121,7 @@ Dates above are placeholders. The sequencing matters more than the exact dates.
 - [x] Final profiles include lineage pointers.
 - [x] Real Devpost and GitHub source adapters have local and controlled live verification.
 - [x] Staging dashboard has clickable evidence/source links and lifecycle callouts.
-- [ ] Coresignal/professional enrichment is integrated only after policy/key/field decisions are confirmed.
+- [ ] Bright Data professional LinkedIn enrichment is integrated only after policy/key/field decisions are confirmed.
 - [ ] Unified tag package is integrated after the teammate-owned package is ready.
 - [ ] Review queue pagination or an equivalent large-queue strategy exists for broad imports.
 - [ ] Singleton review wording avoids implying low candidate quality.
