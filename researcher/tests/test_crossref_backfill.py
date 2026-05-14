@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 
@@ -150,6 +151,55 @@ def test_crossref_resume_skips_seen_dois(tmp_path, monkeypatch):
     manifest = json.loads((data_root / "runs" / "run-crossref-002" / "run.json").read_text(encoding="utf-8"))
     assert manifest["source_attempts"]["crossref"]["record_count"] == 0
     assert manifest["source_attempts"]["crossref"]["request_params"]["skipped_existing"] == 1
+
+
+def test_crossref_backfill_skips_missing_dois_and_continues(tmp_path, monkeypatch):
+    from scripts import s1_crossref_backfill
+    from sources.crossref import CrossrefAdapter
+
+    data_root = tmp_path / "data"
+    works_path = _seed_openalex_run(data_root)
+    stage_record(
+        works_path,
+        build_raw_envelope(
+            run_id="run-openalex-001",
+            source_id="openalex",
+            entity_type="works",
+            source_record_id="https://openalex.org/W3",
+            slice_definition={"type": "venue", "value": "NeurIPS"},
+            checkpoint_cursor="cursor-1",
+            raw={
+                "id": "https://openalex.org/W3",
+                "doi": "https://doi.org/10.1000/example2",
+                "title": "Second DOI example",
+            },
+        ),
+    )
+
+    def fake_fetch_work(self, doi: str):
+        if doi == "10.1000/example1":
+            raise HTTPError(
+                url=f"https://api.crossref.org/works/{doi}",
+                code=404,
+                msg="Not Found",
+                hdrs=None,
+                fp=None,
+            )
+        if doi == "10.1000/example2":
+            return _load_crossref_fixture()
+        raise AssertionError(f"Unexpected DOI: {doi}")
+
+    monkeypatch.setattr(CrossrefAdapter, "fetch_work", fake_fetch_work)
+
+    exit_code = s1_crossref_backfill.main(
+        ["--input-run", "run-openalex-001", "--output-root", str(data_root), "--run-id", "run-crossref-404"]
+    )
+
+    assert exit_code == 0
+    manifest = json.loads((data_root / "runs" / "run-crossref-404" / "run.json").read_text(encoding="utf-8"))
+    assert manifest["source_attempts"]["crossref"]["record_count"] == 1
+    assert manifest["source_attempts"]["crossref"]["request_params"]["skipped_missing"] == 1
+    assert manifest["source_attempts"]["crossref"]["checkpoint_cursor"] == "10.1000/example2"
 
 
 def test_openalex_replay_avoids_network_calls(tmp_path, monkeypatch):

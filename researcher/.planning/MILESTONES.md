@@ -1,35 +1,69 @@
-# Milestones: Researcher Pipeline
+# Milestones: Sourcing Pipeline
 
-## v1.0 Foundation
+## v1.0 Researcher Foundation
 
-**Status:** In progress (foundation shipped, broader loop incomplete)
+**Status:** Foundation shipped
 
 **Goal:** Establish the isolated `researcher/` pipeline and official-source ingest backbone for AI/ML-first scholarly discovery.
 
 **Shipped:**
-- Standalone `researcher/` module initialized inside the repo
+- Standalone `researcher/` module initialized inside `wekruit-scraping`
 - OpenAlex-led official ingest and Crossref DOI backfill
 - Replayable raw staging contracts and run manifests
 - Initial contact-enrichment POC proving ORCID/homepage pathways can surface real public contact signals
 
 **Did not yet close:**
-- Canonical schema and stable-ID-first identity graph
-- AI/CS venue-tier corpus gate
+- Durable product storage
+- Cross-source review queue
+- Approved entity groups
 - Explainable ranking and recruiter-facing export
-- Broader domain expansion
 
-## v1.1 AI/CS Ranking And Recruiter Readiness
+## v1.1 AI/CS Corpus Gate
 
-**Status:** Current
+**Status:** Paused after Phase 6
 
-**Goal:** Close the AI/CS-only loop from official ingest to recruiter-usable ranked outputs with corpus gating, explainable scoring, and provenance-preserving export.
+**Goal:** Gate AI/CS papers before ranking so downstream ranking does not start from broad concept-search noise.
+
+**Shipped:**
+- AI/CS venue-tier asset keyed by exact OpenAlex source IDs
+- Strict corpus gate over staged OpenAlex works
+- Include/exclude decision logs with reason codes
+- Append-only rerun semantics and local POCs
+
+**Paused because:**
+- Ranking before human-reviewed identity merge would amplify uncertain researcher records.
+- The next critical path is a shared sourcing backend, not another researcher-only data file.
+
+## v1.2 Sourcing Service And Human Review Foundation
+
+**Status:** Local POC shipped; production deploy pending
+
+**Goal:** Turn `wekruit-scraping` outputs into a shared schema-first sourcing service backed by the existing Firebase/Core Functions stack.
 
 **Target scope:**
-- Canonical paper/researcher/affiliation/contact schema
-- Stable-ID-first identity resolution
-- AI/CS venue-tier contract using explicit ranking gates
-- Explainable paper and researcher ranking
-- Recruiter-facing export with provenance
+- Core-service `sourcing` service following the existing `matching` / `outbound` file-management pattern
+- Firestore collections and zod schemas for source runs, source records, evidence records, dedup candidates, review labels, and approved entities
+- Explicit sourcing prefixes for Firestore collections, Cloud Storage raw paths, Cloud Tasks queues, and HTTP routes
+- Cloud Storage pointer contract for large raw payloads
+- HTTP ingest API in core-service
+- Python ingest client in `wekruit-scraping`
+- Local Python workers continue to execute scraping and upload source records through the core-service API
+- Researcher four-source integration: OpenAlex, ORCID, DBLP, OpenReview
+- Existing scraping domains can emit the same `sourceRecord` contract: `devpost`, `github`, and future sources
+- Evidence extraction and dedup candidate generation with explicit reasoning, evidence links, and mandatory human review
+- Minimal Firebase-hosted review/upload web for sourcing data
+- Local emulator validation of `scraping -> API -> Firestore -> evidence -> dedup -> human review -> approved entity`
+
+**Explicitly not in scope:**
+- Rewriting Python scrapers into TypeScript
+- Letting Python workers write directly to Firestore
+- Postgres as the v1.2 primary store
+- MongoDB or another new document database
+- Neo4j or graph database as primary store
+- Automatic merge without human approval
+- Full product-grade reviewer/admin UI beyond the minimal Firebase-hosted sourcing loop
+- Ranking or recruiter outreach exports before approved entities exist
+- Writing unresolved dedup candidates into `outbound-candidates`
 
 ---
-*Created: 2026-04-13*
+*Last updated: 2026-04-15 after reframing v1.2 as shared sourcing service*

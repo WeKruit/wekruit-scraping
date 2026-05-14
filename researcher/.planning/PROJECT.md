@@ -1,110 +1,138 @@
-# Researcher Pipeline
+# Sourcing Pipeline
 
 ## What This Is
 
-This is a standalone `researcher/` pipeline for WeKruit that sources researchers from official
-scholarly systems first, then enriches identity and contactability. It links papers, authors,
-affiliations, and public contact channels into ranked researcher profiles for recruiting use
-without relying on generic web scraping as the primary ingest path.
+This project defines the shared WeKruit sourcing pipeline across `wekruit-scraping` and
+`wekruit-core-service-cloud-function`.
+
+`wekruit-scraping` remains the Python execution layer for fetching, scraping, parsing, local JSONL
+replay, and source-specific normalization. `wekruit-core-service-cloud-function` becomes the
+schema-first ingestion and review backend using the existing Firebase/Cloud Functions stack.
+
+The product-level contract is not "researcher only." Researcher is the first high-value domain, but
+the same sourcing service must accept records from `devpost`, `github`, researcher sources, and
+future source families.
 
 ## Core Value
 
-Produce high-confidence researcher profiles with defensible provenance so downstream sourcing and
-outreach can trust who the researcher is, what they worked on, and how the contact signal was found.
+Turn heterogeneous scraping outputs into durable, reviewable, source-backed entities with explicit
+reasoning, without forcing all source-specific payloads into SQL columns or rewriting working
+Python scrapers into TypeScript.
 
-## Current Milestone: v1.1 AI/CS Ranking And Recruiter Readiness
+## Current Milestone: v1.2 Sourcing Service And Human Review Foundation
 
-**Goal:** Close the AI/CS-only loop from official ingest to recruiter-usable ranked outputs without mixing in broader-domain noise.
+**Goal:** Build a shared Firebase-backed sourcing service where local Python workers upload schema-validated source records, and core-service manages storage, evidence extraction, dedup candidates, human review, and approved entities.
 
 **Target features:**
-- Build one canonical AI/CS paper and researcher model with stable-ID-first identity handling.
-- Gate the scoring corpus through an explicit AI/CS venue tier model instead of broad concept search alone.
-- Enrich AI/CS researchers with public profile and contact paths while preserving provenance and quality state.
-- Rank papers and researchers with explainable time, citation, venue, and author-influence signals.
-- Export recruiter-facing ranked outputs for AI/CS only; Bio/Pharma stays out of this milestone.
+- Add a `sourcing` service to `wekruit-core-service-cloud-function` using the existing service layout: `domain`, `application`, `repositories`, `functions/http`, and `functions/tasks`.
+- Define zod schemas and Firestore collection contracts for source runs, source records, evidence records, dedup candidates, review labels, and approved entities.
+- Store queryable summaries, content hashes, and raw payload pointers in Firebase-owned sourcing records.
+- Expose core-service HTTP ingest endpoints that Python workers call instead of writing directly to Firebase.
+- Add a Python ingest client in `wekruit-scraping` that can upload local JSONL/replay output to core-service.
+- Integrate researcher sources (`OpenAlex`, `ORCID`, `DBLP`, `OpenReview`) as `domain=researcher` source records.
+- Adapt existing scraping domains (`devpost`, `github`) to the same source-record contract.
+- Create first-class evidence records for every merge-relevant signal, including source record ID, raw value, normalized value, value hash, extraction path, source URL, quality, and observed timestamp.
+- Generate dedup candidates that reference evidence IDs and reason codes while requiring human review before any approved entity is created.
+- Keep dedup inside the `sourcing` service as a domain/application submodule instead of creating a separate top-level service before the first review loop is proven.
+- Reserve outbound as the downstream consumer of human-approved entities only; unresolved dedup candidates cannot become outbound candidates.
+- Add a minimal Firebase-hosted review web for JSONL upload, dedup review, review-label submission, and approved-entity inspection.
 
 ## Requirements
 
 ### Validated
 
-- Official-source ingest backbone exists for AI/ML-first paper and author discovery (Phase 1).
+- Official-source researcher ingest backbone exists for AI/ML-first paper and author discovery (Phase 1).
 - Raw paper and author staging is replayable and audit-friendly through run manifests (Phase 1).
-- OpenAlex is the working ingest backbone and Crossref is the DOI backfill layer (Phase 1).
+- OpenAlex is the working researcher ingest backbone and Crossref is the DOI backfill layer (Phase 1).
+- AI/CS paper corpus gating exists with venue-tier decisions and include/exclude reason logs (Phase 6).
+- Core-service already has Firebase Functions, Firestore, zod, repository patterns, task queues, emulator config, and centralized collection naming.
+- Core-service now has a `sourcing` service with zod schemas, prefixed Firestore collections, HTTP ingest/review APIs, evidence extraction, dedup candidates, review labels, and approved entities.
+- `wekruit-scraping` now has a researcher replay uploader plus a generic Devpost/GitHub/manual CSV/JSON/JSONL uploader.
+- Firebase Hosting now serves a minimal sourcing review web that creates source runs, uploads JSONL/CSV, fetches detailed dedup packets, submits review labels, and lists approved entities.
 
 ### Active
 
-- [ ] Normalize AI/CS papers, researchers, affiliations, venues, and contacts into one canonical record shape.
-- [ ] Merge identities conservatively using stable identifiers before any name-based heuristics.
-- [ ] Define an AI/CS venue tier contract that gates which papers enter ranking and recruiting outputs.
-- [ ] Enrich AI/CS public contact paths with provenance and quality labels instead of treating any source as guaranteed-email truth.
-- [ ] Rank papers and researchers with explainable AI/CS-specific scoring modes for recruiter use.
-- [ ] Export recruiter-usable AI/CS ranked outputs after identity, corpus quality, and contact quality are established.
+- [ ] Choose staging vs production Firebase deploy target for `sourcing-api` and static review web.
+- [ ] Decide whether Python scraping workers should run on Mac mini/thread first or Cloud Run Jobs next.
+- [ ] Plan outbound handoff from `sourcing-approved-entities` only after approved contact evidence satisfies outbound requirements.
 
 ### Out of Scope
 
-- Generic web crawling as the backbone — official scholarly APIs are the primary ingest path.
-- UI dashboards or operator consoles — not needed before the data loop is correct.
-- Social/profile scraping unrelated to scholarly identity resolution — increases noise without solving the core problem.
-- Closed-platform or login-gated scraping — conflicts with source-policy and compliance goals.
-- “Guaranteed direct email” as a product promise — contact is an enrichment output with varying quality.
-- Bio/Pharma ranking in the same milestone — broad-domain coverage is intentionally deferred until the AI/CS loop is trustworthy.
+- Rewriting Python scrapers into TypeScript Cloud Functions — this creates migration risk without solving sourcing correctness.
+- Letting Python workers write directly to Firestore — schema, credentials, and review-state ownership must stay in core-service.
+- Postgres for v1.2 — not aligned with the existing core-service Firebase stack or the schema-document requirement.
+- MongoDB or another new document database — Firebase is already present.
+- Neo4j as primary store — graph projection can be reconsidered later if traversal becomes a measured product need.
+- Full product-grade reviewer/admin UI — v1.2 only includes the minimal Firebase-hosted upload/review page required for the sourcing loop.
+- Automatic merge without human approval — candidate strength is triage, not approval.
+- Ranking, outreach, or recruiter export based on unreviewed identities.
+- Writing unresolved dedup candidates into `outbound-candidates`.
 
 ## Context
 
-The root repository already contains two sourcing pipelines with different shapes: `devpost/` is a
-source-specific scraper with a curated target list, while `github/` is a staged, multi-source
-pipeline with centralized config, incremental output, and orchestration scripts. `researcher/`
-should follow the cleaner parts of the `github/` model: one config surface, one orchestrator, one
-aggregation boundary, and isolated source adapters.
+`wekruit-scraping` currently contains multiple source domains:
 
-The provided `researcher_scraping.zip` has been preserved under `researcher/reference/` as a
-reference package, along with the spreadsheet under `researcher/docs/`. It is useful, but not the
-authoritative design. Two assumptions from that handoff were specifically corrected during project
-initialization:
+- `devpost/`
+- `github/`
+- `researcher/`
 
-- ORCID should not be treated as an anonymous/no-auth source for a commercial pipeline.
-- OpenReview should be treated as identity/homepage enrichment, not as a direct email source.
+The existing core-service repo already has the operational stack needed for product storage and
+review workflows:
 
-The initial rollout is AI/ML first because that is the highest-signal wedge for WeKruit. The
-architecture, schema, and source ordering should remain broad enough to support adjacent domains
-without redesigning the core merge model.
+- Firebase Functions runtime
+- Firestore repositories
+- zod validation
+- centralized collection registry
+- Cloud Tasks pattern
+- emulator and deploy scripts
+- existing services organized as `matching` and `outbound`
 
-The supplemental P9 source plan is useful as a source-tiering and enrichment checklist, not as an
-authoritative source contract. Its biggest contribution is clarifying which systems belong in the
-core scholarly graph versus later expansion. Its main corrections are around ORCID and rate-limit
-assumptions: production ORCID usage is not a no-auth anonymous path for this pipeline, and exact
-per-source quotas must come from current official docs during phase planning instead of being copied
-from older examples.
+Therefore, v1.2 should not add another database or another backend framework. The right integration
+boundary is:
+
+```text
+Python scraping workers -> core-service sourcing ingest API -> Firebase storage/review workflow
+```
+
+Researcher remains the first domain with merge reasoning. The architecture must also support
+Devpost projects, GitHub developers/repos, and future source families as generic source records.
 
 ## Constraints
 
-- **Source policy**: Official scholarly APIs and dumps first — generic crawling may only appear after identity resolution.
-- **Commercial compliance**: ORCID usage must be validated against credential and terms requirements before it becomes a production contact source.
-- **Identity correctness**: Stable identifiers outrank names; ambiguous matches must stay unmerged by default.
-- **Repo fit**: Keep the implementation as a flat Python pipeline aligned with the existing repo, not a new framework.
-- **Traceability**: Each contact and profile field must preserve source provenance and quality state.
-- **Scope discipline**: AI/ML first, broader domains later — no all-domain blast radius in phase 1.
-- **Operational resilience**: Per-source rate limits, retries, and replayable raw staging are mandatory from the start.
-- **No compatibility layer**: Define one canonical researcher record shape up front instead of maintaining multiple legacy formats.
-- **Tiered sources, staged activation**: A source can be core (`P0`) for the overall program without being a phase-1 blocking ingest dependency.
-- **Official-doc precedence**: If a handoff note conflicts with live official docs, planning follows the official docs.
+- **Core-service owns persistence**: All durable product writes go through core-service APIs or tasks.
+- **Python owns source execution**: Python workers keep fetching/parsing logic and local replay files.
+- **Schema-first Firestore**: Firestore documents are validated through zod schemas in core-service.
+- **Raw payload pointer first**: Source records carry `rawStoragePath` and content hashes; large raw offload can be added when payload size requires it.
+- **No direct Firebase writes from Python**: Python should not carry Admin SDK credentials or bypass service validation.
+- **Existing file-management pattern**: New core-service code follows existing `src/services/{service}/domain|application|repositories|functions` conventions.
+- **Generic source record**: Do not hard-code the storage contract to researcher.
+- **Evidence-first**: Review reasoning must reference durable evidence IDs, not only flattened strings or free-text reasons.
+- **Human-reviewed merge**: Dedup candidates can be strong, medium, or weak, but no candidate becomes approved without a human label.
+- **Dedup is not merge**: Dedup candidates are review proposals, not approved entities.
+- **Reasoning required**: Every dedup candidate must preserve reason codes such as `email_exact`, `orcid_exact`, `github_exact`, `homepage_exact`, `paper_overlap`, or `name_institution`.
+- **Ranking waits**: Ranking and outreach wait until approved entities exist.
+- **Outbound waits**: Outbound integration consumes only approved entities with approved contact evidence.
+- **Sourcing prefix required**: All sourcing-owned Firestore collections, task queues, and raw storage paths use explicit `sourcing` prefixes.
+- **Web is API-only**: The review web calls core-service APIs and never writes directly to Firestore.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| `researcher/` is an isolated pipeline | The root repo already treats sourcing domains as separate folders | — Pending |
-| OpenAlex is the ingest backbone | Broad paper/author/affiliation coverage with stable identifiers and bulk/snapshot options | — Pending |
-| Crossref is metadata backfill, not backbone | Strong DOI and affiliation metadata, but not the best primary discovery layer | — Pending |
-| OpenReview and DBLP are AI/CS enrichers | Stronger profile signal for AI/ML and CS than general-purpose sources | — Pending |
-| Source tiers use `P0/P1/P2`, but phase order still gates activation | `P0` identifies core source families, not “implement all at once in phase 1” | — Pending |
-| ORCID stays behind a verified source contract | Official docs require client credentials for API use and constrain Public API usage; public fields are not a blanket direct-email guarantee | — Pending |
-| Contact is an enrichment layer | Contact quality varies by source and must not distort identity resolution | — Pending |
-| AI/ML is the first domain slice | Highest immediate value and cleanest place to validate the architecture | — Pending |
-| AI/CS venue tiers gate ranking corpus | Broad concept search leaks non-AI papers into the ranking set; ranking starts only after corpus gating | — Pending |
-| AI/CS ranking uses explainable component scores | Recruiter trust requires seeing recency, citation, venue, and author-influence inputs separately | — Pending |
-| Bio/Pharma does not share the first ranking milestone | Cross-domain mixing would distort venue and citation semantics before the AI/CS loop is stable | ✓ Good |
-| Reference package stays under `reference/` | Preserves prior work without forcing unreviewed code into the mainline | ✓ Good |
+| Use core-service Firebase stack as storage/review backend | It already has Functions, Firestore, zod, repositories, tasks, and emulators | ✓ Good |
+| Keep Python scrapers in `wekruit-scraping` | Existing Python source adapters work and should not be rewritten for storage reasons | ✓ Good |
+| Python uploads through core-service API | Keeps schema validation, credentials, and product writes centralized | ✓ Good |
+| Use generic `sourcing` service, not `researcher` backend | Current and future scraping domains need one ingestion/review contract | ✓ Good |
+| Use Firestore + Cloud Storage pointers | Avoids SQL columns and supports heterogeneous source payloads | ✓ Good |
+| Do not use Postgres for v1.2 | Conflicts with current Firebase backend and user preference against column management | ✓ Good |
+| Do not use MongoDB | Adds a new database when Firebase already covers document storage | ✓ Good |
+| Do not use Neo4j as primary store | Current bottleneck is review workflow and evidence, not graph traversal | ✓ Good |
+| Keep dedup inside `sourcing` for v1.2 | Dedup only consumes source records/evidence and feeds review; a separate service boundary would add coordination before the first product loop exists | ✓ Good |
+| Evidence is first-class | Human review needs auditable proof objects, not hidden extraction output | ✓ Good |
+| Dedup candidates are separate from approved entities | The business requirement is explainable grouping, not automatic identity collapse | ✓ Good |
+| All merge candidates require human review | The system can suggest, but only human labels approve identity collapse | ✓ Good |
+| Outbound consumes approved entities only | Outreach should not act on unreviewed identity suggestions | ✓ Good |
+| Minimal review web is in v1.2 | User needs to see/upload/review data through Firebase Hosting before outbound integration | ✓ Good |
 
 ## Evolution
 
@@ -124,4 +152,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 after milestone v1.1 kickoff for AI/CS ranking and recruiter readiness*
+*Last updated: 2026-04-15 after reframing v1.2 around sourcing service and Firebase/core-service integration*

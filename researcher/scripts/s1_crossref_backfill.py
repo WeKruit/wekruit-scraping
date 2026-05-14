@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from urllib.error import HTTPError
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -81,6 +82,7 @@ def run_crossref_backfill(args: argparse.Namespace) -> dict:
     seen_dois = load_seen_ids(args.output_root, lineage_key=args.input_run, source_id="crossref") if args.resume_lineage else set()
     skipped_no_doi = 0
     skipped_existing = 0
+    skipped_missing = 0
     staged_records: list[dict] = []
     last_doi: str | None = None
 
@@ -93,7 +95,15 @@ def run_crossref_backfill(args: argparse.Namespace) -> dict:
             skipped_existing += 1
             continue
 
-        payload = adapter.fetch_work(doi)
+        try:
+            payload = adapter.fetch_work(doi)
+        except HTTPError as exc:
+            if exc.code != 404:
+                raise
+            skipped_missing += 1
+            seen_dois.add(doi)
+            last_doi = doi
+            continue
         staged_records.append(
             adapter.build_work_record(
                 run_id=ctx.run_id,
@@ -131,12 +141,13 @@ def run_crossref_backfill(args: argparse.Namespace) -> dict:
                 "input_run": args.input_run,
                 "skipped_no_doi": skipped_no_doi,
                 "skipped_existing": skipped_existing,
+                "skipped_missing": skipped_missing,
             },
             retry_count=0,
             checkpoint_cursor=last_doi,
             page_count=1,
             record_count=len(staged_records),
-            error_summary="",
+            error_summary=f"{skipped_missing} DOI(s) missing in Crossref" if skipped_missing else "",
         ),
     )
     ctx.complete_source("crossref")

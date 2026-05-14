@@ -1,117 +1,166 @@
-# Roadmap: Researcher Pipeline
+# Roadmap: Sourcing Pipeline
 
 ## Overview
 
-This roadmap is milestone-specific for v1.1 AI/CS Ranking And Recruiter Readiness. It replaces the
-previous forward-looking phases with the AI/CS-only work needed to close the loop from official
-ingest to recruiter-ready ranked outputs. UI/dashboard work and Bio/Pharma expansion remain out of
-scope for this milestone.
+This roadmap is milestone-specific for v1.2 Sourcing Service And Human Review Foundation. It
+reframes the work from a researcher-only merge pipeline into a shared sourcing service across
+`wekruit-scraping` and `wekruit-core-service-cloud-function`.
+
+The key architectural decision is:
+
+```text
+Python scraping workers -> core-service sourcing ingest API -> Firebase storage/review workflow
+```
+
+Python workers keep source execution and local JSONL replay. Core-service owns schema validation,
+Firestore/Cloud Storage writes, task orchestration, review labels, and approved entities.
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+- Integer phases continue from prior researcher work.
+- Phase 1 and Phase 6 are shipped foundations.
+- Phase 7-10 from the prior ranking roadmap are superseded until approved entities exist.
 
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 6: AI/CS Corpus Gate And Venue Tiers** - Gate the ranking corpus with explicit AI/CS venue-tier rules.
-- [ ] **Phase 7: Canonical Schema And Identity Resolution** - Normalize records and merge researchers conservatively.
-- [ ] **Phase 8: Author Detail And Contact Quality Enrichment** - Enrich resolved researchers with influence and contact-quality signals.
-- [ ] **Phase 9: Explainable Ranking Engine** - Score AI/CS papers and researchers with selectable explainable modes.
-- [ ] **Phase 10: Recruiter Export And Calibration** - Review ranked outputs and export recruiter-ready AI/CS datasets.
+- [x] **Phase 11: Sourcing Firebase Schema And Collection Contract** - Define the core-service sourcing service, zod schemas, Firestore collections, raw pointer contract, and queue/API prefixes.
+- [x] **Phase 12: Core Ingest API And Firebase Persistence** - Add source-run and source-record ingest endpoints in core-service and persist validated records to Firebase.
+- [x] **Phase 13: Python Worker Upload Client And Replay Bridge** - Add a Python client in `wekruit-scraping` that uploads local source outputs to the core-service ingest API.
+- [x] **Phase 14: Source Domain Adapter Integration** - Map researcher, Devpost, GitHub, and manual CSV/JSONL outputs into the generic source-record contract.
+- [x] **Phase 15: Evidence Extraction And Dedup Candidate Generation** - Create auditable evidence records and dedup candidates with explicit evidence-linked reasons.
+- [x] **Phase 16: Human Review And Approved Entity Loop** - Export/query dedup review queues, ingest human labels, suppress repeated reviews, and materialize approved entities.
+- [x] **Phase 17: Minimal Review Web And Firebase Hosting** - Add a Firebase-hosted static review/upload page for sourcing data and document deploy/emulator commands.
 
 ## Phase Details
 
-### Phase 6: AI/CS Corpus Gate And Venue Tiers
-**Goal**: Users can gate the AI/CS ranking corpus through explicit venue-tier rules before any downstream ranking or recruiter export happens.
-**Depends on**: Phase 1
-**Requirements**: [CORPUS-01, CORPUS-02, CORPUS-03]
+### Phase 11: Sourcing Firebase Schema And Collection Contract
+**Goal**: Users can review the core-service sourcing contract before any Python worker uploads production data.
+**Depends on**: Existing core-service Firebase stack
+**Requirements**: [CORE-01, CORE-02, CORE-03, CORE-04, CORE-05, CORE-FOUNDATION-01]
 **Success Criteria** (what must be TRUE):
-  1. User can review a local AI/CS venue-tier table with upstream source, grade, normalized tier, and last-reviewed metadata.
-  2. User can run the corpus gate and receive an AI/CS paper set limited to venues that pass explicit inclusion rules.
-  3. User can inspect why each paper was included or excluded from the AI/CS ranking corpus.
-**Plans**: 3 plans
-
-Plans:
-- [x] 06-01-PLAN.md — Define the AI/CS venue-tier asset and strict source-ID join contract
-- [x] 06-02-PLAN.md — Implement append-only corpus gating over staged OpenAlex works
-- [x] 06-03-PLAN.md — Emit full include/exclude decision logs with lineage-safe rerun semantics
-
-### Phase 7: Canonical Schema And Identity Resolution
-**Goal**: Users can work from one canonical AI/CS paper and researcher graph with stable-ID-first identity handling and unresolved ambiguity preserved.
-**Depends on**: Phase 6
-**Requirements**: [IDENT-01, IDENT-02, IDENT-03]
-**Success Criteria** (what must be TRUE):
-  1. User can transform staged AI/CS source data into one canonical schema for papers, researchers, venues, affiliations, and contact candidates.
-  2. User can see stable identifiers drive cross-source merges before any name-based matching is attempted.
-  3. User can keep ambiguous researcher matches unresolved instead of force-merging them.
-**Plans**: 3 plans
-
-Plans:
-- [ ] 07-01: Define the canonical schema and provenance contract
-- [ ] 07-02: Implement normalization from staged source data into canonical records
-- [ ] 07-03: Implement stable-ID-first merge rules and unresolved-match handling
-
-### Phase 8: Author Detail And Contact Quality Enrichment
-**Goal**: Users can enrich resolved AI/CS researchers with source-native author influence inputs and public contact-quality signals without weakening identity correctness.
-**Depends on**: Phase 7
-**Requirements**: [ENRICH-01, ENRICH-02, ENRICH-03]
-**Success Criteria** (what must be TRUE):
-  1. User can backfill key-author details from OpenAlex and inspect the source-native inputs used for author influence.
-  2. User can attach AI/CS public profile and homepage signals only to already-resolved researcher identities.
-  3. User can inspect each contact candidate with an explicit quality state instead of a binary `has email` flag.
-**Plans**: 3 plans
-
-Plans:
-- [ ] 08-01: Add OpenAlex author-detail enrichment for influence inputs
-- [ ] 08-02: Attach AI/CS profile and homepage signals after identity resolution
-- [ ] 08-03: Label contact candidates with quality states and provenance
-
-### Phase 9: Explainable Ranking Engine
-**Goal**: Users can rank AI/CS papers and researchers with explainable component scores and selectable scoring modes.
-**Depends on**: Phase 8
-**Requirements**: [RANK-01, RANK-02, RANK-03]
-**Success Criteria** (what must be TRUE):
-  1. User can rank AI/CS papers with explicit component scores for recency, citation signal, venue tier, and author influence.
-  2. User can rank researcher records from the gated AI/CS corpus and see which paper and influence inputs drove their position.
-  3. User can switch between `latest`, `impact`, and `balanced` ranking modes without changing the underlying corpus gate.
-  4. User can inspect score breakdowns for each ranked paper and ranked researcher record.
-**Plans**: 3 plans
-
-Plans:
-- [ ] 09-01: Define versioned ranking profiles and scoring components
-- [ ] 09-02: Implement paper and researcher scoring with mode selection
-- [ ] 09-03: Emit explainable score breakdown outputs for ranked records
-
-### Phase 10: Recruiter Export And Calibration
-**Goal**: Users can manually review ranked AI/CS outputs, then export recruiter-ready papers and researchers with provenance, score context, and contact-quality context retained.
-**Depends on**: Phase 9
-**Requirements**: [EXPORT-01, EXPORT-02, QUALITY-01]
-**Success Criteria** (what must be TRUE):
-  1. User can open a calibration output that surfaces top-ranked results and corpus exclusions for manual review before the ranking contract is accepted.
-  2. User can export ranked AI/CS papers as CSV and JSONL with provenance and score breakdowns retained.
-  3. User can export ranked AI/CS researchers as CSV and JSONL with top-paper context and contact-quality context retained.
+  1. User can see sourcing collection names added beside existing `matching` and `outbound` collections without changing those services.
+  2. User can see zod schemas for source runs, source records, evidence records, dedup candidates, review labels, and approved entities.
+  3. User can see how large raw payloads are represented through Cloud Storage pointers and content hashes.
+  4. User can see all sourcing-owned Firestore collections, Cloud Storage paths, task queues, and HTTP routes use explicit sourcing prefixes.
+  5. User can run emulator/typecheck tests proving valid fixtures pass and invalid fixtures fail.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: Build calibration outputs for top-ranked results and corpus exclusions
-- [ ] 10-02: Implement recruiter-facing paper and researcher exports in CSV and JSONL
+- [x] 11-01: Define sourcing domain schemas and Firestore collection registry
+- [x] 11-02: Add repository contract and emulator-safe validation through sourcing API smoke tests
+
+### Phase 12: Core Ingest API And Firebase Persistence
+**Goal**: Users can send source runs and source records to core-service, where they are validated and persisted to Firebase.
+**Depends on**: Phase 11
+**Requirements**: [API-01, API-02, API-03, API-04]
+**Success Criteria** (what must be TRUE):
+  1. User can create a source run through a core-service HTTP endpoint.
+  2. User can batch upsert source records through a core-service HTTP endpoint.
+  3. User can complete a source run and inspect stored/skipped/failed counts.
+  4. Invalid payloads are rejected before Firestore writes.
+**Plans**: 2 plans
+
+Plans:
+- [x] 12-01: Implement source-run and source-record ingest application services
+- [x] 12-02: Expose sourcing HTTP API and verify Firebase persistence in emulator tests
+
+### Phase 13: Python Worker Upload Client And Replay Bridge
+**Goal**: Users can keep running Python scraping locally while uploading schema-valid source records to core-service.
+**Depends on**: Phase 12
+**Requirements**: [PY-01, PY-02, PY-03]
+**Success Criteria** (what must be TRUE):
+  1. User can upload a local JSONL replay run to the core-service ingest API.
+  2. User can run a Python worker and have it create/complete a source run through core-service.
+  3. User can keep local JSONL artifacts for replay/debug without treating local files as product storage.
+**Plans**: 2 plans
+
+Plans:
+- [x] 13-01: Add Python sourcing ingest client and local schema preflight
+- [x] 13-02: Add JSONL replay uploader and end-to-end local ingest POC
+
+### Phase 14: Source Domain Adapter Integration
+**Goal**: Users can map existing scraping outputs into the generic source-record contract, with researcher as the first merge-heavy domain.
+**Depends on**: Phase 13
+**Requirements**: [DOMAIN-01, DOMAIN-02, DOMAIN-03, DOMAIN-04, DOMAIN-05]
+**Success Criteria** (what must be TRUE):
+  1. User can upload researcher OpenAlex records as `domain=researcher` source records.
+  2. User can upload researcher ORCID, DBLP, and OpenReview records as `domain=researcher` source records.
+  3. User can upload Devpost and GitHub records through the same generic source-record contract.
+  4. Adding a new source only requires a source adapter and does not require a new Firestore collection.
+**Plans**: 3 plans
+
+Plans:
+- [x] 14-01: Map researcher OpenAlex/contact-enrichment outputs to source records
+- [x] 14-02: Map Devpost outputs to source records
+- [x] 14-03: Map GitHub/manual CSV outputs to source records and document new-source adapter rules
+
+### Phase 15: Evidence Extraction And Dedup Candidate Generation
+**Goal**: Users can see auditable evidence for why source records may represent the same entity without approving the merge automatically.
+**Depends on**: Phase 14
+**Requirements**: [EVIDENCE-01, EVIDENCE-02, EVIDENCE-03, DEDUP-01, DEDUP-02, DEDUP-03, DEDUP-04]
+**Success Criteria** (what must be TRUE):
+  1. User can create evidence records with source provenance, normalized value, value hash, quality state, and extractor version.
+  2. User can create dedup candidates from exact and review-worthy evidence.
+  3. User can inspect machine-readable reasons, referenced evidence IDs, and suggested strength for each dedup candidate.
+  4. No approved entity is created by dedup candidate strength alone.
+**Plans**: 3 plans
+
+Plans:
+- [x] 15-01: Implement evidence extraction over stored source records
+- [x] 15-02: Implement dedup candidate generation from evidence
+- [x] 15-03: Emit dedup reasoning packets with evidence links and strength labels
+
+### Phase 16: Human Review And Approved Entity Loop
+**Goal**: Users can review dedup candidates manually and produce approved entities only after human labels.
+**Depends on**: Phase 15
+**Requirements**: [REVIEW-01, REVIEW-02, REVIEW-03, APPROVE-01, APPROVE-02]
+**Success Criteria** (what must be TRUE):
+  1. User can export or query reviewer-ready dedup candidate queues.
+  2. User can ingest `same_person`, `not_same_person`, and `unsure` labels.
+  3. Negative and unsure labels suppress repeated review spam unless materially new evidence appears.
+  4. Only `same_person` labels can materialize approved entities.
+  5. User can export approved entities separately from unresolved dedup candidates.
+**Plans**: 3 plans
+
+Plans:
+- [x] 16-01: Add review queue API/export
+- [x] 16-02: Add label ingest and repeated-candidate suppression
+- [x] 16-03: Materialize and export approved entities
+
+### Phase 17: Minimal Review Web And Firebase Hosting
+**Goal**: Users can open a minimal Firebase-hosted page to upload source records, review dedup candidates, submit labels, and inspect approved entities.
+**Depends on**: Phase 16
+**Requirements**: [WEB-01, WEB-02, WEB-03]
+**Success Criteria** (what must be TRUE):
+  1. User can serve or deploy a static web folder through Firebase Hosting config.
+  2. User can configure API base URL from the page without rebuilding.
+  3. User can upload JSONL source records from the page or generate the exact API payload.
+  4. User can fetch pending dedup candidates, submit review labels, and fetch approved entities.
+  5. The web code does not write directly to Firestore and does not use unprefixed sourcing resources.
+**Plans**: 2 plans
+
+Plans:
+- [x] 17-01: Add minimal static sourcing review web
+- [x] 17-02: Add Firebase Hosting config and deploy documentation
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 11 → 12 → 13 → 14 → 15 → 16 → 17
 
 **Historical Note:**
-- Phase 1 foundation shipped on 2026-04-13 and is preserved below for continuity.
-- Prior forward-looking placeholder Phases 2-5 were replaced by this milestone-specific v1.1 phase set.
+- Phase 1 official-source researcher ingest foundation shipped on 2026-04-13.
+- Phase 6 AI/CS corpus gate shipped on 2026-04-14.
+- The prior researcher-only v1.2 Postgres direction is superseded by this Firebase/core-service sourcing plan.
+- Outbound integration is the next consumer after approved entities exist; unresolved dedup candidates must not be written to `outbound-candidates`.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Official AI Ingest Foundation | 3/3 | Complete | 2026-04-13 |
 | 6. AI/CS Corpus Gate And Venue Tiers | 3/3 | Complete | 2026-04-14 |
-| 7. Canonical Schema And Identity Resolution | 0/3 | Not started | - |
-| 8. Author Detail And Contact Quality Enrichment | 0/3 | Not started | - |
-| 9. Explainable Ranking Engine | 0/3 | Not started | - |
-| 10. Recruiter Export And Calibration | 0/2 | Not started | - |
+| 11. Sourcing Firebase Schema And Collection Contract | 2/2 | Complete | 2026-04-15 |
+| 12. Core Ingest API And Firebase Persistence | 2/2 | Complete | 2026-04-15 |
+| 13. Python Worker Upload Client And Replay Bridge | 2/2 | Complete | 2026-04-15 |
+| 14. Source Domain Adapter Integration | 3/3 | Complete | 2026-04-15 |
+| 15. Evidence Extraction And Dedup Candidate Generation | 3/3 | Complete | 2026-04-15 |
+| 16. Human Review And Approved Entity Loop | 3/3 | Complete | 2026-04-15 |
+| 17. Minimal Review Web And Firebase Hosting | 2/2 | Complete | 2026-04-15 |
