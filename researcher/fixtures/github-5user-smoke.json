@@ -1,0 +1,87 @@
+[
+  {
+    "username": "torvalds",
+    "emails": "",
+    "total_commits": 0,
+    "score": 100,
+    "profile": {
+      "login": "torvalds",
+      "name": "Linus Torvalds",
+      "company": "Linux Foundation",
+      "blog": "",
+      "html_url": "https://github.com/torvalds",
+      "email": null,
+      "location": "Portland, OR",
+      "followers": 200000,
+      "public_repos": 7
+    }
+  },
+  {
+    "username": "gaearon",
+    "emails": "",
+    "total_commits": 0,
+    "score": 90,
+    "profile": {
+      "login": "gaearon",
+      "name": "Dan Abramov",
+      "company": null,
+      "blog": "https://overreacted.io",
+      "html_url": "https://github.com/gaearon",
+      "email": null,
+      "location": "London, UK",
+      "followers": 80000,
+      "public_repos": 250
+    }
+  },
+  {
+    "username": "sindresorhus",
+    "emails": "",
+    "total_commits": 0,
+    "score": 85,
+    "profile": {
+      "login": "sindresorhus",
+      "name": "Sindre Sorhus",
+      "company": null,
+      "blog": "https://sindresorhus.com",
+      "html_url": "https://github.com/sindresorhus",
+      "email": null,
+      "location": "Norway",
+      "followers": 70000,
+      "public_repos": 1100
+    }
+  },
+  {
+    "username": "antfu",
+    "emails": "",
+    "total_commits": 0,
+    "score": 88,
+    "profile": {
+      "login": "antfu",
+      "name": "Anthony Fu",
+      "company": "@vuejs / @nuxt / @vitejs",
+      "blog": "https://antfu.me",
+      "html_url": "https://github.com/antfu",
+      "email": null,
+      "location": "Land of Hope",
+      "followers": 50000,
+      "public_repos": 400
+    }
+  },
+  {
+    "username": "octocat",
+    "emails": "",
+    "total_commits": 0,
+    "score": 50,
+    "profile": {
+      "login": "octocat",
+      "name": "The Octocat",
+      "company": "@github",
+      "blog": "https://github.blog",
+      "html_url": "https://github.com/octocat",
+      "email": null,
+      "location": "San Francisco",
+      "followers": 15000,
+      "public_repos": 8
+    }
+  }
+]

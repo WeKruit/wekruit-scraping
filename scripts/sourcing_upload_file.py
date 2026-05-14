@@ -223,16 +223,13 @@ def to_source_records(
         entity_type = str(normalized.get("entityType") or "generic_record")
         native_id = first_non_empty(normalized.get("sourceNativeId"), normalized.get("sourceUrl"))
         record_id = source_record_id(source, entity_type, native_id, raw)
-        output.append({
+        record_out: dict[str, Any] = {
             "sourceRecordId": record_id,
             "runId": run_id,
             "domain": domain,
             "source": source,
             "entityType": entity_type,
             "sourceNativeId": native_id or record_id,
-            "sourceUrl": normalized.get("sourceUrl"),
-            "displayName": normalized.get("displayName"),
-            "institution": normalized.get("institution"),
             "display": normalized.get("display") or {},
             "rawSummary": normalized.get("rawSummary") or {},
             "raw": raw,
@@ -246,7 +243,16 @@ def to_source_records(
             "schemaVersion": "sourcing_source_record.v1",
             "createdAt": now,
             "updatedAt": now,
-        })
+        }
+        # Schema-driven omission — Zod treats `null`/empty-string as invalid
+        # for `.optional()` fields (which require `undefined` instead). Only
+        # include these when the upstream normalizer produced a non-empty
+        # value so we don't ship `institution: null` to /batchUpsert.
+        for opt_key in ("sourceUrl", "displayName", "institution"):
+            value = normalized.get(opt_key)
+            if isinstance(value, str) and value.strip():
+                record_out[opt_key] = value.strip()
+        output.append(record_out)
     return output
 
 
