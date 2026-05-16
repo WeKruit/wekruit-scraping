@@ -40,7 +40,7 @@ Use a conservative productization path:
 
 ## Current Source-Of-Truth Snapshot
 
-Last cleaned: 2026-05-13.
+Last cleaned: 2026-05-15.
 
 This section is the authoritative "where are we now?" view. Historical phase notes, research, and implementation details are preserved below as an archive; do not treat older "planning only" text in those archive sections as current status unless this snapshot says it is still active.
 
@@ -49,7 +49,7 @@ This section is the authoritative "where are we now?" view. Historical phase not
 - `wekruit-core-service-cloud-function`: `codex/website-shared-tags-integration-plan`.
 - `wekruit-scraping`: `codex/website-shared-tags-integration-plan`.
 - Both branches were created from the completed Bright Data branch `codex/brightdata-integration-plan` so the working Bright Data baseline remains untouched.
-- `/Users/spencerwang/Documents/GitHub/wekruit-pa` is currently an inspection-only clone on `main` until package repo changes are explicitly approved.
+- `/Users/spencerwang/Documents/GitHub/wekruit-pa` is cloned permanently. Package-publish planning branch: `codex/publish-shared-tags-package`, created from fresh `origin/main` at `8366e9654f8f51d40beca5ea55d5ae884ff26d49` on 2026-05-15. No PA code/package edits have been made yet on that branch.
 - Keep the two implementation-plan copies byte-identical after every architectural decision or verification update.
 
 **Completed Baseline**
@@ -82,7 +82,7 @@ This section is the authoritative "where are we now?" view. Historical phase not
 
 - Current active workstream: personal website enrichment plus shared tag package migration.
 - Current branch: `codex/website-shared-tags-integration-plan`.
-- Current status: planning is complete enough to implement later, but implementation is not greenlit as of 2026-05-13.
+- Current status: planning is complete enough to implement later; package-owner permission to publish `@wekruit/shared-tags` privately has been relayed by the user, but implementation/publish commands still need explicit execution-phase greenlight.
 - Website enrichment is not implemented yet.
 - Shared-tags migration is not implemented yet.
 - Coresignal remains a paused archive. No Coresignal implementation has started.
@@ -113,18 +113,36 @@ This section is the authoritative "where are we now?" view. Historical phase not
   - The shared package registry key is `skillBucket`; sourcing can still expose user-facing `canonicalTags.skills` as objects with validated `bucket` values.
   - Proposed deterministic mappings were read-only checked against shared package source arrays/no-abbreviation rules and produced `failures: []`.
   - Fresh clone package tests could not run yet because dependencies are not installed in `wekruit-pa` (`tsc` / `tsx` missing). This is an environment/install preflight item, not a package logic failure.
-  - 2026-05-13 teammate clarification/investigation: teammate showed that the `WeKruit/wekruit-pa` repository is public, but that does not prove the npm/GitHub Packages package is published. Read-only checks from this machine found:
+  - 2026-05-13 teammate clarification/investigation: teammate confirmed `@wekruit/shared-tags` is workspace-internal at version `0.1.0` and is **not yet published** to GitHub Packages; "Wave 2" is the intended publish step. The `WeKruit/wekruit-pa` repository being public does not make the npm package installable outside that monorepo. Read-only checks from this machine found:
     - `gh repo view WeKruit/wekruit-pa` reports repository visibility `PUBLIC`.
     - `npm view @wekruit/shared-tags` against the public npm registry returns `404 Not Found`.
     - `npm view @wekruit/shared-tags --registry=https://npm.pkg.github.com` returns `404` / package does not exist under owner `wekruit`.
     - `gh api /orgs/WeKruit/packages?package_type=npm` cannot list packages with the current GitHub token because it lacks `read:packages`.
     - Exact GitHub package lookup for `/orgs/WeKruit/packages/npm/%40wekruit%2Fshared-tags` returns `404 Package not found`.
     - Core-service currently has no project-level `@wekruit:registry=https://npm.pkg.github.com` mapping; user-level npm config has a protected GitHub Packages token, but the package still could not be found.
-  - Current conclusion: `wekruit-pa` is public, but `@wekruit/shared-tags` is not confirmed as an installable npm/GitHub Packages dependency. Treat package publication/install access as unresolved until teammate provides a package URL/install command/version or authorizes publishing.
-- Waiting on teammate response:
-  - Is `@wekruit/shared-tags` already published privately to GitHub Packages, and which version should core-service use?
-  - If not published, should Codex prepare a `wekruit-pa` publish-metadata branch/PR or should the teammate publish it?
-  - How should core-service authenticate to install the private package during deploy: local token, GitHub Actions repo access, or another approach?
+    - `wekruit-matching` does not npm-install or import `@wekruit/shared-tags`; it is a Python/uv repo with no package.json/npm lockfile. Its docs/comments reference `wekruit-pa/packages/shared-tags` as the canonical owner and rely on the Firestore/Cloud Function bridge instead.
+    - `wekruit-pa` consumes `@wekruit/shared-tags` internally through npm/pnpm workspace links. That same-monorepo consumption works today, but it is not the same thing as a cross-repo install path for core-service.
+  - Current conclusion: `@wekruit/shared-tags` exists as source in `wekruit-pa` and is actively used by PA workspaces, but it is not yet an installable external dependency for `wekruit-core-service-cloud-function`. Treat package publish/access/deploy auth as a Phase T0 blocker before adding a core-service production dependency.
+  - 2026-05-15 package-publish preflight findings from fresh `wekruit-pa` `origin/main`:
+    - `packages/shared-tags/package.json` still has `private: true`, no `publishConfig`, no `repository` metadata, no `files` allowlist, and no `prepack`/`prepare` build hook.
+    - `packages/shared-tags/dist` is currently missing locally and `node_modules` is not installed in the PA clone.
+    - `npm pack --workspace=@wekruit/shared-tags --dry-run --json` succeeds but the dry-run tarball contains `src/**` and tests, not `dist/**`, even though `main`, `types`, and `exports` point to `dist`. Publishing without changing package metadata/build packing would produce a broken external package.
+    - Local npm/GitHub auth was initially not ready for publish/install: `npm whoami --registry=https://npm.pkg.github.com` returned `403`, `npm config get @wekruit:registry` was `undefined`, the current GitHub CLI token lacked `read:packages` / `write:packages`, and `npm view @wekruit/shared-tags --registry=https://npm.pkg.github.com` still returned `404`.
+    - 2026-05-15 follow-up after user configured a PAT/classic token: local npm package auth now works. Verified `npm whoami --registry=https://npm.pkg.github.com` returns `Spec700`, `npm config get @wekruit:registry` returns `https://npm.pkg.github.com/`, and `npm ping --registry=https://npm.pkg.github.com` succeeds. `npm view @wekruit/shared-tags --registry=https://npm.pkg.github.com` still returns `404`, which is expected because the package has not been published yet.
+    - `npm publish --workspace=@wekruit/shared-tags --dry-run --registry=https://npm.pkg.github.com` reaches the dry-run publish path without auth failure, but skips actual workspace publish because the package is still marked `private`. The dry-run tarball still contains `src/**` and tests rather than built `dist/**`, confirming package metadata/build packing remains the next blocker before real publish.
+    - 2026-05-15 package metadata patch applied on `wekruit-pa` branch `codex/publish-shared-tags-package`: `packages/shared-tags/package.json` now sets `private: false`, `files: ["dist", "README.md"]`, GitHub Packages `publishConfig` with restricted access, repository metadata, and `prepack: npm run build`.
+    - 2026-05-15 package verification on that PA branch:
+      - `npm run typecheck` in `packages/shared-tags` passed.
+      - `npm run build` in `packages/shared-tags` passed and generated ignored `dist/**`.
+      - `npm run test` in `packages/shared-tags` passed: `101` tests, `20` suites, `0` failures.
+      - `npm pack --workspace=@wekruit/shared-tags --dry-run --json` now runs `prepack`, includes `dist/**/*.js`, `dist/**/*.d.ts`, `README.md`, and `package.json`, and excludes `src/**` and tests.
+      - `npm publish --workspace=@wekruit/shared-tags --dry-run --registry=https://npm.pkg.github.com` succeeds and reports publishing to GitHub Packages with restricted access in dry-run mode.
+      - A temp-project smoke test installed the generated `.tgz` and successfully imported both `@wekruit/shared-tags/canonical` and the main `@wekruit/shared-tags` barrel (`package import smoke ok 17 42`).
+    - Real `npm publish` has **not** been run yet. The next execution step is an explicit publish command followed by `npm view`/clean install verification and package visibility/access checks.
+    - Core-service uses npm lockfile v3 and its sourcing deploy bundle writes `deploy/sourcing-functions/package.json`, copies `package-lock.json`, ignores `node_modules`, and currently has no `.npmrc`/scope mapping in either root or deploy bundle. Private package registry mapping and token injection must be verified in the same shape Firebase deploy uses.
+- Waiting on explicit publish greenlight before publish execution:
+  - Local user-level GitHub Packages npm auth is now verified for `Spec700`; do not commit token material and do not move it into app runtime `.env`.
+  - Confirm whether Codex should make the PA package metadata branch changes and run the private publish, or prepare the branch/PR and let the teammate publish.
 
 ## Current Remaining Work Triage
 
@@ -3432,7 +3450,8 @@ Shared tag package findings:
   - `location`;
   - `relevantTags`;
   - `skills`.
-- `wekruit-pa` already consumes `@wekruit/shared-tags` from multiple TypeScript workspaces, including dashboard/functions/job-rec/parser packages.
+- `wekruit-pa` already consumes `@wekruit/shared-tags` from multiple TypeScript workspaces via local workspace links, including dashboard/functions/job-rec/core-types/orchestrator/resume-parser/job-tag-enricher packages.
+- 2026-05-13 teammate clarification and local verification: `wekruit-matching` does **not** consume the package directly. It is a Python repo that writes raw hints through core-service/Firestore; canonical mapping happens in `wekruit-pa` Cloud Functions that do import the package.
 - `packages/shared-tags-py` exists and is useful for Python tag-event writes. Its README currently emphasizes idempotent tag-event parity, not the same per-axis canonical vocab export used by the TypeScript package. Treat Python canonical-vocab support as a verification item before changing `wekruit-scraping`.
 - Teammate signal: the package is finished and ready from the package-owner side. WeKruit sourcing should now plan integration, not wait for package creation.
 - User preference as of 2026-05-12:
@@ -3650,11 +3669,15 @@ Website enrichment implementation plan:
 Shared-tags implementation plan:
 
 1. Phase T0 - Package publishing/auth preflight.
-   - Confirm whether the package owner wants Codex to modify `wekruit-pa` or whether the teammate will publish `@wekruit/shared-tags` from their own branch.
-   - Required package metadata before GitHub Packages publish likely includes changing package publishability from `private: true`, adding `publishConfig.registry = "https://npm.pkg.github.com"`, and ensuring the `repository` field associates the package with the WeKruit repo/org.
+   - Current verified state as of 2026-05-15: `@wekruit/shared-tags` is workspace-internal and **not yet published** to GitHub Packages. Same-monorepo PA apps/packages can consume it through workspace links; core-service cannot use that path safely because it is a separate Firebase-deployed repo.
+   - PA package-publish branch is ready for future work: `/Users/spencerwang/Documents/GitHub/wekruit-pa` on `codex/publish-shared-tags-package`, branched from fresh `origin/main`.
+   - Package-owner permission to publish privately has been relayed by the user, but publish execution still needs package auth and explicit execution greenlight.
+   - Required package metadata before GitHub Packages publish includes changing package publishability from `private: true`, adding `publishConfig.registry = "https://npm.pkg.github.com"`, ensuring the `repository` field associates the package with the WeKruit repo/org, and adding a reliable build/pack rule.
+   - Dry-run pack preflight showed a concrete blocker: without `dist` and package `files`/`prepack` metadata, the tarball would include `src/**` and tests but no `dist/**`, while `main`, `types`, and exports point to `dist`. Fix this before any real publish.
+   - 2026-05-15 update: the metadata/build-packing blocker is fixed on the PA branch and verified locally. The package now dry-run publishes with restricted GitHub Packages access and a dist-only tarball, and a temp npm consumer can import the generated tarball. Real publish has not been run yet.
    - Publishing to GitHub Packages should keep the package private/internal to WeKruit, but visibility and repository access must be verified immediately after first publish.
-   - Core-service local install needs a safe npm auth path. Do not commit real tokens and do not treat app runtime `.env` as the normal npm auth mechanism.
-   - Important deploy risk: the current Firebase bundle copies `package.json` and `package-lock.json` into `deploy/sourcing-functions`, ignores `node_modules`, and has no deploy-source `.npmrc`. A private GitHub package dependency will not deploy unless build/install auth is solved.
+   - Core-service local install needs a safe npm auth path. Current local user-level npm auth is verified for GitHub Packages as `Spec700` after PAT setup, but no token may be committed and app runtime `.env` must not be treated as npm auth.
+   - Important deploy risk: the current Firebase sourcing bundle copies `package.json` and `package-lock.json` into `deploy/sourcing-functions`, ignores `node_modules`, and has no deploy-source `.npmrc`. A private GitHub package dependency will not deploy unless build/install auth is solved in the deploy-bundle shape.
    - Candidate deploy-auth solutions, to be tested rather than guessed:
      - grant the core-service repository/package workflow access and use `GITHUB_TOKEN` for GitHub Actions installs where relevant;
      - use a read-only `read:packages` PAT / `NODE_AUTH_TOKEN` for local deploy packaging without committing it;
